@@ -1,7 +1,30 @@
+# Python environments and bytecode
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Test and coverage output
+.coverage
+htmlcov/
+
+# Local environment and database files
 .env
+.env.*
+!.env.example
+!.env.template
 db.sqlite3
+
+# Node and generated frontend assets
 node_modules/
 static/css/output.css
+staticfiles/
+
+# Operating system files
+.DS_Store
+Thumbs.db
