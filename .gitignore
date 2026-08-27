@@ -4,4 +4,4 @@ __pycache__/
 .env
 db.sqlite3
 node_modules/
-staticfiles/static/css/output.css
+static/css/output.css

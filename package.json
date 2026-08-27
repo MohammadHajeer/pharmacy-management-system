@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev:css": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/output.css --watch",
-    "build:css": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/output.css --minify"
+    "build:css": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/output.css --minify",
+    "dev": "concurrently --hide \"TW-WATCH\" --names \"DJANGO,TW-INFO,TW-WATCH\" --prefix \"[{name}]\" \"uv run python -u manage.py runserver\" \"echo Tailwind watcher is running in the background\" \"npm run dev:css\"",
+    "migrate": "uv run manage.py migrate",
+    "makemigrations": "uv run manage.py makemigrations",
+    "test": "uv run manage.py test",
+    "shell": "uv run manage.py shell"
   },
   "repository": {
     "type": "git",
@@ -20,6 +25,7 @@
   "homepage": "https://github.com/MohammadHajeer/pharmacy-management-system#readme",
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
+    "concurrently": "^10.0.5",
     "tailwindcss": "^4.3.3"
   }
 }
