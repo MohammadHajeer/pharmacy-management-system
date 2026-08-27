@@ -1,0 +1,48 @@
+<aside id="dashboard-sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:translate-x-0" aria-label="Primary navigation">
+  <div class="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4">
+    <a href="/" class="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600">
+      <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white shadow-sm">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v16M4 12h16" stroke-linecap="round" /></svg>
+      </span>
+      <span class="min-w-0"><span class="block truncate text-sm font-semibold text-slate-900">Pharmacy</span><span class="block truncate text-xs text-slate-500">Management System</span></span>
+    </a>
+    <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 lg:hidden" data-sidebar-close aria-label="Close navigation menu">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" /></svg>
+    </button>
+  </div>
+  <nav class="flex-1 overflow-y-auto px-3 py-5">
+    <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Workspace</p>
+    <ul class="mt-2 space-y-1">
+      {% for item in dashboard_navigation %}
+        <li>
+          {% if item.url %}
+            <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if item.is_active %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+          {% else %}
+            <span aria-disabled="true" title="Available when the {{ item.label }} feature is added" class="group flex min-h-10 cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400">
+          {% endif %}
+              <svg class="size-5 shrink-0 {% if item.is_active %}text-primary-600{% else %}text-slate-400{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                {% if item.icon == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
+                {% elif item.icon == "medicines" %}<path d="m8.5 15.5 7-7a3.5 3.5 0 1 1 5 5l-7 7a3.5 3.5 0 0 1-5-5ZM12 12l5 5" stroke-linecap="round" />
+                {% elif item.icon == "inventory" %}<path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10" stroke-linejoin="round" />
+                {% elif item.icon == "suppliers" %}<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke-linejoin="round" />
+                {% elif item.icon == "purchases" %}<path d="M6 6h15l-2 8H8L6 3H3M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke-linecap="round" stroke-linejoin="round" />
+                {% elif item.icon == "customers" %}<path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 4 18.5V20M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 9v6M20 12h-6" stroke-linecap="round" />
+                {% elif item.icon == "sales" %}<path d="M4 19V9M10 19V5M16 19v-7M22 19V3" stroke-linecap="round" />
+                {% elif item.icon == "prescriptions" %}<path d="M7 3h10v18H7zM9.5 7h5M9.5 11h5M9.5 15H12" stroke-linecap="round" stroke-linejoin="round" />
+                {% elif item.icon == "payments" %}<path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke-linecap="round" stroke-linejoin="round" />
+                {% else %}<path d="M5 20V10M12 20V4M19 20v-7" stroke-linecap="round" />{% endif %}
+              </svg>
+              <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+              {% if not item.url %}<span class="ml-auto shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Soon</span>{% endif %}
+          {% if item.url %}</a>{% else %}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+  <div class="border-t border-slate-200 p-4">
+    <div class="rounded-lg bg-slate-50 px-3 py-3">
+      <p class="text-xs font-medium text-slate-700">UI foundation</p>
+      <p class="mt-1 text-xs leading-5 text-slate-500">Feature links become available as apps are added.</p>
+    </div>
+  </div>
+</aside>

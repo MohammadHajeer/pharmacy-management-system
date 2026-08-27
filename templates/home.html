@@ -1,113 +1,96 @@
-{% extends "base.html" %}
+{% extends "layouts/dashboard.html" %}
 
-{% block title %}Pharmacy Management{% endblock %}
+{% block title %}UI Foundation | Pharmacy Management{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50">
-    <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-            <div>
-                <h1 class="text-xl font-bold text-primary-700">
-                    Pharmacy Management
-                </h1>
-                <p class="text-sm text-slate-500">
-                    Operations, inventory, and financial tracking
-                </p>
-            </div>
+  <div class="mx-auto max-w-7xl">
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Dashboard UI foundation</h1>
+        {% include "components/badge.html" with text="Demo" variant="primary" only %}
+      </div>
+      <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500">A development-only preview of the shared layouts, controls, feedback, and navigation patterns.</p>
+    </div>
 
-            <button class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-700">
-                New Sale
-            </button>
+    <section class="mt-7" aria-labelledby="overview-heading">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 id="overview-heading" class="text-sm font-semibold text-slate-900">Mock overview</h2>
+        <span class="text-xs text-slate-400">Sample data only</span>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {% include "components/card.html" with eyebrow="Today's sales" metric="$2,450" text="8.4% above yesterday's mock total" only %}
+        {% include "components/card.html" with eyebrow="Low stock" metric="12" text="Sample items needing attention" only %}
+        {% include "components/card.html" with eyebrow="Expiring soon" metric="7" text="Sample batches within 30 days" only %}
+        {% include "components/card.html" with eyebrow="Receivables" metric="$1,280" text="Sample outstanding balance" only %}
+      </div>
+    </section>
+
+    <section class="mt-7 rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="forms-heading">
+      <div class="border-b border-slate-200 px-5 py-4">
+        <h2 id="forms-heading" class="text-base font-semibold text-slate-900">Form controls</h2>
+        <p class="mt-1 text-sm text-slate-500">Consistent labels, dimensions, focus rings, help text, and validation states.</p>
+      </div>
+      <div class="grid gap-5 p-5 md:grid-cols-2">
+        {% include "components/input.html" with name="medicine_name" label="Medicine name" placeholder="e.g. Paracetamol" required=True help_text="Use the name shown on the package." only %}
+        {% include "components/input.html" with name="sku" label="Reference code" value="RX-1048" error="A mock validation error is shown here." only %}
+        {% include "components/select.html" with name="category" label="Category" placeholder="Choose a category" options=demo_categories only %}
+        {% include "components/input.html" with name="created_at" label="Created date" type="date" disabled=True only %}
+        <div class="md:col-span-2">
+          {% include "components/textarea.html" with name="notes" label="Notes" placeholder="Add a short internal note..." rows="3" only %}
         </div>
-    </header>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4">
+        {% include "components/button.html" with text="Save changes" variant="primary" type="submit" only %}
+        {% include "components/button.html" with text="Cancel" variant="secondary" href="/" only %}
+      </div>
+    </section>
 
-    <main class="mx-auto max-w-7xl px-6 py-8">
-        <section class="mb-8">
-            <h2 class="text-2xl font-bold text-slate-900">
-                Dashboard
-            </h2>
-            <p class="mt-1 text-slate-500">
-                Overview of today's pharmacy activity.
-            </p>
-        </section>
+    <div class="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="buttons-heading">
+        <h2 id="buttons-heading" class="text-base font-semibold text-slate-900">Buttons</h2>
+        <p class="mt-1 text-sm leading-6 text-slate-500">Shared sizes, states, and focus treatment.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          {% include "components/button.html" with text="Primary" variant="primary" only %}
+          {% include "components/button.html" with text="Secondary" variant="secondary" only %}
+          {% include "components/button.html" with text="Danger" variant="danger" only %}
+          {% include "components/button.html" with text="Ghost" variant="ghost" only %}
+          {% include "components/button.html" with text="Disabled" variant="primary" disabled=True only %}
+        </div>
+      </section>
 
-        <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm font-medium text-slate-500">Today's Sales</p>
-                <p class="mt-2 text-3xl font-bold text-slate-900">$2,450</p>
-                <p class="mt-2 text-sm text-success">+8.4% from yesterday</p>
-            </div>
+      <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="badges-heading">
+        <h2 id="badges-heading" class="text-base font-semibold text-slate-900">Status badges</h2>
+        <p class="mt-1 text-sm leading-6 text-slate-500">Compact semantic states with clear spacing.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          {% include "components/badge.html" with text="Default" variant="default" only %}
+          {% include "components/badge.html" with text="Primary" variant="primary" only %}
+          {% include "components/badge.html" with text="Paid" variant="success" only %}
+          {% include "components/badge.html" with text="Low stock" variant="warning" only %}
+          {% include "components/badge.html" with text="Overdue" variant="danger" only %}
+          {% include "components/badge.html" with text="Information" variant="info" only %}
+        </div>
+      </section>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm font-medium text-slate-500">Low Stock</p>
-                <p class="mt-2 text-3xl font-bold text-warning">12</p>
-                <p class="mt-2 text-sm text-slate-500">Medicines need attention</p>
-            </div>
+      <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="feedback-heading">
+        <h2 id="feedback-heading" class="text-base font-semibold text-slate-900">Feedback and toasts</h2>
+        <p class="mt-1 text-sm leading-6 text-slate-500">These triggers use the same toast system as Django Messages.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          {% include "components/button.html" with text="Success" variant="secondary" toast_level="success" toast_message="Changes saved successfully." only %}
+          {% include "components/button.html" with text="Error" variant="secondary" toast_level="error" toast_message="Something went wrong." only %}
+          {% include "components/button.html" with text="Warning" variant="secondary" toast_level="warning" toast_message="This item needs attention." only %}
+          {% include "components/button.html" with text="Info" variant="secondary" toast_level="info" toast_message="Here is a useful update." only %}
+        </div>
+      </section>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm font-medium text-slate-500">Expiring Soon</p>
-                <p class="mt-2 text-3xl font-bold text-danger">7</p>
-                <p class="mt-2 text-sm text-slate-500">Batches within 30 days</p>
-            </div>
+      <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="modal-heading">
+        <h2 id="modal-heading" class="text-base font-semibold text-slate-900">Modal</h2>
+        <p class="mt-1 text-sm leading-6 text-slate-500">A centered dialog with focus management and keyboard dismissal.</p>
+        <div class="mt-4">
+          {% include "components/button.html" with text="Open modal" variant="primary" modal_target="demo-modal" only %}
+        </div>
+      </section>
+    </div>
+  </div>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm font-medium text-slate-500">Receivables</p>
-                <p class="mt-2 text-3xl font-bold text-info">$1,280</p>
-                <p class="mt-2 text-sm text-slate-500">Outstanding customer balance</p>
-            </div>
-        </section>
-
-        <section class="mt-8 grid gap-6 lg:grid-cols-3">
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-                <div class="mb-6 flex items-center justify-between">
-                    <div>
-                        <h3 class="font-semibold text-slate-900">Sales Overview</h3>
-                        <p class="text-sm text-slate-500">
-                            Chart will go here later.
-                        </p>
-                    </div>
-
-                    <span class="rounded-full bg-primary-100 px-3 py-1 text-sm font-medium text-primary-700">
-                        This month
-                    </span>
-                </div>
-
-                <div class="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50">
-                    <p class="text-sm text-slate-400">
-                        Chart.js area
-                    </p>
-                </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="font-semibold text-slate-900">
-                    Inventory Alerts
-                </h3>
-
-                <div class="mt-5 space-y-4">
-                    <div class="rounded-lg bg-red-50 p-4">
-                        <p class="font-medium text-danger">Expired batch</p>
-                        <p class="mt-1 text-sm text-slate-600">
-                            Amoxicillin — Batch AMX-102
-                        </p>
-                    </div>
-
-                    <div class="rounded-lg bg-amber-50 p-4">
-                        <p class="font-medium text-warning">Low stock</p>
-                        <p class="mt-1 text-sm text-slate-600">
-                            Panadol Extra — 8 units left
-                        </p>
-                    </div>
-
-                    <div class="rounded-lg bg-primary-50 p-4">
-                        <p class="font-medium text-primary-700">New purchase received</p>
-                        <p class="mt-1 text-sm text-slate-600">
-                            4 batches added today
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-</div>
+  {% include "components/modal.html" with modal_id="demo-modal" title="Reusable modal" description="Vanilla JavaScript, accessible focus behavior, and no external library." body="This demo confirms the shared modal pattern is ready. Future pages can open it with a data-modal-open attribute matching the modal ID." close_text="Cancel" confirm_text="Looks good" only %}
 {% endblock %}

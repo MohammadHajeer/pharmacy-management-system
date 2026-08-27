@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <main class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+    <div class="w-full max-w-md">
+      <a href="/" class="mb-8 flex items-center justify-center gap-3 text-slate-900">
+        <span class="flex size-11 items-center justify-center rounded-xl bg-primary-600 text-white shadow-sm">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v16M4 12h16" stroke-linecap="round" /></svg>
+        </span>
+        <span class="text-lg font-semibold">Pharmacy Management</span>
+      </a>
+      <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        {% block content %}{% endblock %}
+      </section>
+    </div>
+  </main>
+{% endblock %}

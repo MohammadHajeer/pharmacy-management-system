@@ -1,17 +1,23 @@
-{% load static %}
-
-<!doctype html>
+{% load static django_browser_reload %}
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>{% block title %}Pharmacy Management{% endblock %}</title>
-
-    <link rel="stylesheet" href="{% static 'css/output.css' %}" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Pharmacy Management System">
+    <title>{% block title %}Pharmacy Management System{% endblock %}</title>
+    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    {% block extra_head %}{% endblock %}
   </head>
+  <body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased {% block body_class %}{% endblock %}">
+    {% block body %}{% endblock %}
 
-  <body class="bg-gray-50 text-gray-900">
-    {% block content %} {% endblock %}
+    {% include "components/toast.html" %}
+    <script src="{% static 'js/sidebar.js' %}" defer></script>
+    <script src="{% static 'js/modal.js' %}" defer></script>
+    <script src="{% static 'js/toast.js' %}" defer></script>
+    {% block extra_scripts %}{% endblock %}
+    {% django_browser_reload_script %}
   </body>
 </html>
