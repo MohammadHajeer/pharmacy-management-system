@@ -13,12 +13,21 @@ document.addEventListener("DOMContentLoaded", () => {
   ].join(",");
 
   const lockPageScroll = () => {
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth = Math.max(
+      0,
+      window.innerWidth - document.documentElement.clientWidth,
+    );
+    const computedPaddingRight =
+      Number.parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
+
     previousBodyStyles = {
       overflow: document.body.style.overflow,
       paddingRight: document.body.style.paddingRight,
     };
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${computedPaddingRight + scrollbarWidth}px`;
+    }
     document.body.style.overflow = "hidden";
   };
 
@@ -29,24 +38,35 @@ document.addEventListener("DOMContentLoaded", () => {
     previousBodyStyles = null;
   };
 
-  const closeModal = () => {
+  const closeModal = ({ restoreFocus = true } = {}) => {
     if (!activeModal) return;
     activeModal.hidden = true;
     activeModal.setAttribute("aria-hidden", "true");
     unlockPageScroll();
-    previousFocus?.focus();
+    if (restoreFocus && previousFocus?.isConnected) {
+      previousFocus.focus({ preventScroll: true });
+    }
     activeModal = null;
     previousFocus = null;
   };
 
   const openModal = (modal) => {
-    if (!modal) return;
-    previousFocus = document.activeElement;
-    if (!activeModal) lockPageScroll();
+    if (!modal || modal === activeModal) return;
+
+    if (activeModal) {
+      activeModal.hidden = true;
+      activeModal.setAttribute("aria-hidden", "true");
+    } else {
+      previousFocus = document.activeElement;
+      lockPageScroll();
+    }
+
     activeModal = modal;
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
-    (modal.querySelector("[data-modal-panel]") || modal).focus();
+    (modal.querySelector("[data-modal-panel]") || modal).focus({
+      preventScroll: true,
+    });
   };
 
   document.querySelectorAll("[data-modal-open]").forEach((button) => {
@@ -69,14 +89,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (event.key !== "Tab") return;
 
-    const focusable = [...activeModal.querySelectorAll(focusableSelector)];
+    const panel = activeModal.querySelector("[data-modal-panel]") || activeModal;
+    const focusable = [...activeModal.querySelectorAll(focusableSelector)].filter(
+      (element) => element.getClientRects().length > 0,
+    );
     if (!focusable.length) {
       event.preventDefault();
+      panel.focus({ preventScroll: true });
       return;
     }
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+    if (
+      event.shiftKey &&
+      (document.activeElement === first || document.activeElement === panel)
+    ) {
       event.preventDefault();
       last.focus();
     } else if (!event.shiftKey && document.activeElement === last) {

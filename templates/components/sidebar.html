@@ -1,30 +1,30 @@
 {% load static %}
 
 <aside id="dashboard-sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col overflow-hidden border-r border-sidebar-800 bg-sidebar-900 text-sidebar-100 shadow-xl shadow-sidebar-950/20 transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Primary navigation">
-  <div class="flex shrink-0 items-center justify-between px-5 max-lg:pr-0">
-    <a href="{% url 'dashboard:home' %}" class="flex min-w-0 w-full items-center rounded-lg px-1 py-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sidebar-100" aria-label="Pharmanex home">
+  <div class="flex shrink-0 items-center justify-between px-5 max-lg:pr-2">
+    <a href="{% url 'dashboard:home' %}" class="flex min-w-0 w-full items-center rounded-lg px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900" aria-label="Pharmanex home">
       <img src="{% static 'logo-white.png' %}" alt="Pharmanex" class="object-contain">
     </a>
-    <button type="button" class="ml-2 rounded-lg p-2 text-sidebar-300 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100 lg:hidden" data-sidebar-close aria-label="Close navigation menu">
+    <button type="button" class="ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-300 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900 lg:hidden" data-sidebar-close aria-label="Close navigation menu">
       <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" /></svg>
     </button>
   </div>
 
   {% regroup dashboard_navigation by section as navigation_sections %}
   <nav class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1 [scrollbar-color:var(--color-sidebar-800)_transparent]" aria-label="Dashboard navigation">
-    <div class="space-y-6">
+    <div class="space-y-7">
       {% for navigation_section in navigation_sections %}
         <section aria-labelledby="sidebar-section-{{ navigation_section.grouper|slugify }}">
-          <h2 id="sidebar-section-{{ navigation_section.grouper|slugify }}" class="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-300">{{ navigation_section.grouper }}</h2>
+          <h2 id="sidebar-section-{{ navigation_section.grouper|slugify }}" class="px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-300">{{ navigation_section.grouper }}</h2>
           <ul class="mt-2 space-y-1">
             {% for item in navigation_section.list %}
               <li>
                 {% if item.method == "post" %}
-                  <button type="button" class="group flex min-h-9 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-sidebar-100 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation">
+                  <button type="button" class="group flex h-9 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-sidebar-100 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation">
                 {% elif item.url %}
-                  <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex min-h-9 items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100 {% if item.is_active %}bg-sidebar-800 font-semibold text-white shadow-sm{% else %}font-medium text-sidebar-100 hover:bg-sidebar-800 hover:text-white{% endif %}">
+                  <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900 {% if item.is_active %}bg-sidebar-800 font-semibold text-white ring-1 ring-inset ring-white/10{% else %}font-medium text-sidebar-100 hover:bg-sidebar-800 hover:text-white{% endif %}">
                 {% else %}
-                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex min-h-9 cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-sidebar-300 opacity-55">
+                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-300 opacity-50">
                 {% endif %}
                     <svg class="size-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                       {% if item.icon == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
