@@ -16,14 +16,22 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.contrib.auth.decorators import login_required
-from django.urls import path, include
-from django.views.generic import TemplateView
+from django.shortcuts import redirect
+from django.urls import include, path
+
+
+def home(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard:home")
+
+    return redirect("accounts:login")
+
 
 urlpatterns = [
+    path("", home, name="home"),
     path("admin/", admin.site.urls),
     path("__reload__/", include("django_browser_reload.urls")),
     path("accounts/", include("apps.accounts.urls")),
-    path("", include("apps.dashboard.urls")),
+    path("dashboard/", include("apps.dashboard.urls")),
     path("catalog/", include("apps.catalog.urls")),
 ]

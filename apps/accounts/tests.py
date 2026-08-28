@@ -99,7 +99,7 @@ class LogoutViewTests(TestCase):
         response = self.client.get(reverse("dashboard:home"))
 
         self.assertContains(response, 'href="/static/logo-icon.png"')
-        self.assertContains(response, 'src="/static/logo.png"')
+        self.assertContains(response, 'src="/static/logo-white.png"')
         self.assertNotContains(response, "favicon.svg")
         self.assertContains(
             response,

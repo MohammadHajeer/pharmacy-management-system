@@ -157,9 +157,10 @@ Explicitly prohibited by `AGENTS.md` unless approved: Django REST Framework, Rea
 
 | Route | Name | Behavior |
 |---|---|---|
+| `/` | `home` | Redirects anonymous users to login and authenticated users to `dashboard:home`; it does not render a second dashboard page |
 | `/accounts/login/` | `accounts:login` | GET displays the custom login template; valid POST logs the user in and redirects to `dashboard:home`; already-authenticated users are redirected to the dashboard |
 | `/accounts/logout/` | `accounts:logout` | POST only; calls Django logout and redirects to login; GET returns HTTP 405 |
-| `/` | `dashboard:home` | Protected by `login_required` and `never_cache`; renders `dashboard/index.html` |
+| `/dashboard/` | `dashboard:home` | Protected by `login_required` and `never_cache`; renders `dashboard/index.html` |
 
 The login view does not currently process a `next` parameter. Password reset/change, account profile, invitation, registration, MFA, login throttling/rate limiting, and custom staff-management screens are not present.
 

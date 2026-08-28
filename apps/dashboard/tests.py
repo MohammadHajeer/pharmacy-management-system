@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, TestCase
-from django.urls import resolve
+from django.urls import resolve, reverse
 
 from config.context_processors import dashboard_navigation
 
@@ -85,6 +85,27 @@ class SharedComponentTests(SimpleTestCase):
 
 
 class DashboardNavigationTests(TestCase):
+    role_permissions = {
+        "Owner / Admin": "all",
+        "Pharmacist": {
+            "catalog.view_medicine",
+            "inventory.view_medicinebatch",
+            "parties.view_customer",
+            "prescriptions.view_prescription",
+            "returns.view_customerreturn",
+            "sales.view_salesinvoice",
+        },
+        "Inventory Manager": {
+            "catalog.view_medicine",
+            "inventory.view_medicinebatch",
+            "parties.view_supplier",
+            "purchasing.view_purchaseinvoice",
+        },
+        "Accountant": {
+            "finance.view_customerpayment",
+            "sales.view_salesinvoice",
+        },
+    }
     role_items = {
         "Owner / Admin": {
             "Dashboard",
@@ -111,6 +132,7 @@ class DashboardNavigationTests(TestCase):
             "Prescriptions",
             "Invoices",
             "Returns & Refunds",
+            "Reports",
             "Logout",
         },
         "Inventory Manager": {
@@ -119,10 +141,12 @@ class DashboardNavigationTests(TestCase):
             "Inventory",
             "Suppliers",
             "Purchases",
+            "Reports",
             "Logout",
         },
         "Accountant": {
             "Dashboard",
+            "Sales",
             "Invoices",
             "Payments",
             "Reports",
@@ -138,9 +162,23 @@ class DashboardNavigationTests(TestCase):
         )
         user.groups.add(group)
 
-        request = RequestFactory().get("/")
+        configured_permissions = self.role_permissions[role_name]
+        if configured_permissions == "all":
+            permissions = Permission.objects.all()
+        else:
+            permissions = [
+                Permission.objects.get(
+                    content_type__app_label=permission_name.split(".", 1)[0],
+                    codename=permission_name.split(".", 1)[1],
+                )
+                for permission_name in configured_permissions
+            ]
+        group.permissions.add(*permissions)
+
+        dashboard_url = reverse("dashboard:home")
+        request = RequestFactory().get(dashboard_url)
         request.user = user
-        request.resolver_match = resolve("/")
+        request.resolver_match = resolve(dashboard_url)
         return dashboard_navigation(request)["dashboard_navigation"]
 
     def test_navigation_preserves_role_visibility(self):
@@ -152,14 +190,16 @@ class DashboardNavigationTests(TestCase):
     def test_dashboard_is_active_and_future_modules_are_disabled(self):
         items = self.navigation_for("Owner / Admin")
         dashboard = next(item for item in items if item["label"] == "Dashboard")
+        medicines = next(item for item in items if item["label"] == "Medicines")
         future_items = [
             item
             for item in items
-            if item["label"] not in {"Dashboard", "Logout"}
+            if item["label"] not in {"Dashboard", "Medicines", "Logout"}
         ]
 
         self.assertTrue(dashboard["is_active"])
-        self.assertEqual(dashboard["url"], "/")
+        self.assertEqual(dashboard["url"], "/dashboard/")
+        self.assertEqual(medicines["url"], "/catalog/medicines/")
         self.assertTrue(all(item["url"] is None for item in future_items))
 
     def test_sections_and_post_logout_are_exposed_to_the_template(self):
@@ -172,3 +212,83 @@ class DashboardNavigationTests(TestCase):
         )
         self.assertEqual(logout_item["url"], "/accounts/logout/")
         self.assertEqual(logout_item["method"], "post")
+
+
+class DashboardViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="dashboard-user",
+            password="test-password",
+        )
+        self.dashboard_url = reverse("dashboard:home")
+
+    def grant(self, *permission_names):
+        permissions = []
+        for permission_name in permission_names:
+            app_label, codename = permission_name.split(".", 1)
+            permissions.append(
+                Permission.objects.get(
+                    content_type__app_label=app_label,
+                    codename=codename,
+                )
+            )
+        self.user.user_permissions.add(*permissions)
+
+    def test_dashboard_uses_the_single_canonical_route(self):
+        self.assertEqual(self.dashboard_url, "/dashboard/")
+        self.assertEqual(resolve(self.dashboard_url).view_name, "dashboard:home")
+        self.assertRedirects(
+            self.client.get("/"),
+            reverse("accounts:login"),
+            fetch_redirect_response=False,
+        )
+
+    def test_dashboard_requires_authentication(self):
+        response = self.client.get(self.dashboard_url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.dashboard_url}",
+        )
+
+    def test_dashboard_replaces_the_component_preview(self):
+        self.user.is_superuser = True
+        self.user.is_staff = True
+        self.user.save(update_fields=["is_superuser", "is_staff"])
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.dashboard_url)
+
+        self.assertContains(response, "Overview of today's pharmacy activity.")
+        self.assertContains(response, "Today&#x27;s Sales")
+        self.assertContains(response, "Recent Activity")
+        self.assertContains(response, "Attention Required")
+        self.assertNotContains(response, "Dashboard UI foundation")
+        self.assertNotContains(response, ">Demo<")
+        self.assertNotContains(response, "Form controls")
+
+    def test_dashboard_widgets_are_filtered_by_permissions(self):
+        self.grant(
+            "inventory.view_medicinebatch",
+            "purchasing.view_purchaseinvoice",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.dashboard_url)
+
+        self.assertContains(response, "Low Stock")
+        self.assertContains(response, "Expiring Soon")
+        self.assertContains(response, "Purchase received")
+        self.assertContains(response, "Invoice PI-0298")
+        self.assertNotContains(response, "Today&#x27;s Sales")
+        self.assertNotContains(response, "Receivables")
+        self.assertNotContains(response, "Customer payment")
+
+    def test_dashboard_has_readable_empty_states_without_business_permissions(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.dashboard_url)
+
+        self.assertContains(response, "No summary metrics are available.")
+        self.assertContains(response, "No recent activity is available.")
+        self.assertContains(response, "No attention items are available.")
