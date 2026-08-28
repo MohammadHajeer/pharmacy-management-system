@@ -1,8 +1,11 @@
 """Project-level dashboard navigation.
 
-Feature apps can add their URL name and optional Django permission here when
-they are introduced. Missing URL names are handled as disabled links.
+Feature apps add their URL name and Django permission here when introduced.
+Missing URL names are handled as disabled links.
+
+Groups organize permissions; navigation checks permissions only.
 """
+
 
 DASHBOARD_NAVIGATION = (
     {
@@ -12,7 +15,6 @@ DASHBOARD_NAVIGATION = (
         "url_name": "dashboard:home",
         "namespace": "dashboard",
         "permission": None,
-        "groups": None,  # everyone
     },
     {
         "section": "Main",
@@ -20,17 +22,15 @@ DASHBOARD_NAVIGATION = (
         "icon": "sales",
         "url_name": None,
         "namespace": "sales",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist"),
+        "permission": "sales.view_salesinvoice",
     },
     {
         "section": "Management",
         "label": "Medicines",
         "icon": "medicines",
-        "url_name": None,
-        "namespace": "medicines",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist", "Inventory Manager"),
+        "url_name": "catalog:medicine-list",
+        "namespace": "catalog",
+        "permission": "catalog.view_medicine",
     },
     {
         "section": "Management",
@@ -38,26 +38,23 @@ DASHBOARD_NAVIGATION = (
         "icon": "inventory",
         "url_name": None,
         "namespace": "inventory",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist", "Inventory Manager"),
+        "permission": "inventory.view_medicinebatch",
     },
     {
         "section": "Management",
         "label": "Suppliers",
         "icon": "suppliers",
         "url_name": None,
-        "namespace": "suppliers",
-        "permission": None,
-        "groups": ("Owner / Admin", "Inventory Manager"),
+        "namespace": "parties",
+        "permission": "parties.view_supplier",
     },
     {
         "section": "Management",
         "label": "Customers",
         "icon": "customers",
         "url_name": None,
-        "namespace": "customers",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist"),
+        "namespace": "parties",
+        "permission": "parties.view_customer",
     },
     {
         "section": "Management",
@@ -65,35 +62,31 @@ DASHBOARD_NAVIGATION = (
         "icon": "prescriptions",
         "url_name": None,
         "namespace": "prescriptions",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist"),
+        "permission": "prescriptions.view_prescription",
     },
     {
         "section": "Transactions",
         "label": "Purchases",
         "icon": "purchases",
         "url_name": None,
-        "namespace": "purchases",
-        "permission": None,
-        "groups": ("Owner / Admin", "Inventory Manager"),
+        "namespace": "purchasing",
+        "permission": "purchasing.view_purchaseinvoice",
     },
     {
         "section": "Transactions",
         "label": "Invoices",
         "icon": "invoices",
         "url_name": None,
-        "namespace": "invoices",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist", "Accountant"),
+        "namespace": "sales",
+        "permission": "sales.view_salesinvoice",
     },
     {
         "section": "Transactions",
         "label": "Payments",
         "icon": "payments",
         "url_name": None,
-        "namespace": "payments",
-        "permission": None,
-        "groups": ("Owner / Admin", "Accountant"),
+        "namespace": "finance",
+        "permission": "finance.view_customerpayment",
     },
     {
         "section": "Transactions",
@@ -101,8 +94,7 @@ DASHBOARD_NAVIGATION = (
         "icon": "returns",
         "url_name": None,
         "namespace": "returns",
-        "permission": None,
-        "groups": ("Owner / Admin", "Pharmacist"),
+        "permission": "returns.view_customerreturn",
     },
     {
         "section": "Reports",
@@ -111,16 +103,14 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "reports",
         "permission": None,
-        "groups": ("Owner / Admin", "Accountant"),
     },
     {
         "section": "System",
         "label": "Settings",
         "icon": "settings",
         "url_name": None,
-        "namespace": "settings",
-        "permission": None,
-        "groups": ("Owner / Admin",),
+        "namespace": "core",
+        "permission": "core.change_pharmacysettings",
     },
     {
         "section": "System",
@@ -129,7 +119,6 @@ DASHBOARD_NAVIGATION = (
         "url_name": "accounts:logout",
         "namespace": None,
         "permission": None,
-        "groups": None,
         "method": "post",
     },
 )

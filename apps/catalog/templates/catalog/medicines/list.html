@@ -1,0 +1,11 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>Medicines</h1>
+
+    {% for medicine in medicines %}
+        <p>{{ medicine }}</p>
+    {% empty %}
+        <p>No medicines found.</p>
+    {% endfor %}
+{% endblock %}
