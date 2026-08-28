@@ -3,6 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import redirect, render
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
+from django.views.decorators.http import require_POST
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -24,6 +25,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
     )
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     return redirect("accounts:login")

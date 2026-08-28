@@ -12,6 +12,13 @@
   --color-primary-700: #0f766e;
   --color-primary-800: #115e59;
 
+  /* Dashboard sidebar */
+  --color-sidebar-950: #054f4b;
+  --color-sidebar-900: #076b64;
+  --color-sidebar-800: #0b8278;
+  --color-sidebar-300: #83cec8;
+  --color-sidebar-100: #d8f3f0;
+
   /* Semantic — use sparingly */
   --color-success: #15803d;
   --color-warning: #b45309;

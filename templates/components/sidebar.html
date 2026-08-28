@@ -1,48 +1,71 @@
-<aside id="dashboard-sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-out lg:translate-x-0" aria-label="Primary navigation">
-  <div class="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4">
-    <a href="/" class="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600">
-      <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white shadow-sm">
-        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v16M4 12h16" stroke-linecap="round" /></svg>
+<aside id="dashboard-sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col overflow-hidden border-r border-sidebar-800 bg-sidebar-900 text-sidebar-100 shadow-xl shadow-sidebar-950/20 transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Primary navigation">
+  <div class="flex min-h-20 shrink-0 items-center justify-between px-5 py-4">
+    <a href="{% url 'dashboard:home' %}" class="flex min-w-0 items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sidebar-100">
+      <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sidebar-800 text-sidebar-100">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M12 3.5 19 6v5.3c0 4.5-2.9 7.8-7 9.2-4.1-1.4-7-4.7-7-9.2V6l7-2.5Z" stroke-linejoin="round" />
+          <path d="M12 8v6M9 11h6" stroke-linecap="round" />
+        </svg>
       </span>
-      <span class="min-w-0"><span class="block truncate text-sm font-semibold text-slate-900">Pharmacy</span><span class="block truncate text-xs text-slate-500">Management System</span></span>
+      <span class="min-w-0">
+        <span class="block truncate text-sm font-semibold text-white">Pharmacy Management</span>
+        <span class="mt-0.5 block truncate text-[11px] text-sidebar-300">Management System</span>
+      </span>
     </a>
-    <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 lg:hidden" data-sidebar-close aria-label="Close navigation menu">
-      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" /></svg>
+    <button type="button" class="ml-2 rounded-lg p-2 text-sidebar-300 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100 lg:hidden" data-sidebar-close aria-label="Close navigation menu">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" /></svg>
     </button>
   </div>
-  <nav class="flex-1 overflow-y-auto px-3 py-5">
-    <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Workspace</p>
-    <ul class="mt-2 space-y-1">
-      {% for item in dashboard_navigation %}
-        <li>
-          {% if item.url %}
-            <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {% if item.is_active %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
-          {% else %}
-            <span aria-disabled="true" title="Available when the {{ item.label }} feature is added" class="group flex min-h-10 cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400">
-          {% endif %}
-              <svg class="size-5 shrink-0 {% if item.is_active %}text-primary-600{% else %}text-slate-400{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                {% if item.icon == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
-                {% elif item.icon == "medicines" %}<path d="m8.5 15.5 7-7a3.5 3.5 0 1 1 5 5l-7 7a3.5 3.5 0 0 1-5-5ZM12 12l5 5" stroke-linecap="round" />
-                {% elif item.icon == "inventory" %}<path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10" stroke-linejoin="round" />
-                {% elif item.icon == "suppliers" %}<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke-linejoin="round" />
-                {% elif item.icon == "purchases" %}<path d="M6 6h15l-2 8H8L6 3H3M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke-linecap="round" stroke-linejoin="round" />
-                {% elif item.icon == "customers" %}<path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 4 18.5V20M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 9v6M20 12h-6" stroke-linecap="round" />
-                {% elif item.icon == "sales" %}<path d="M4 19V9M10 19V5M16 19v-7M22 19V3" stroke-linecap="round" />
-                {% elif item.icon == "prescriptions" %}<path d="M7 3h10v18H7zM9.5 7h5M9.5 11h5M9.5 15H12" stroke-linecap="round" stroke-linejoin="round" />
-                {% elif item.icon == "payments" %}<path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke-linecap="round" stroke-linejoin="round" />
-                {% else %}<path d="M5 20V10M12 20V4M19 20v-7" stroke-linecap="round" />{% endif %}
-              </svg>
-              <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-              {% if not item.url %}<span class="ml-auto shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Soon</span>{% endif %}
-          {% if item.url %}</a>{% else %}</span>{% endif %}
-        </li>
+
+  {% regroup dashboard_navigation by section as navigation_sections %}
+  <nav class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1 [scrollbar-color:var(--color-sidebar-800)_transparent]" aria-label="Dashboard navigation">
+    <div class="space-y-6">
+      {% for navigation_section in navigation_sections %}
+        <section aria-labelledby="sidebar-section-{{ navigation_section.grouper|slugify }}">
+          <h2 id="sidebar-section-{{ navigation_section.grouper|slugify }}" class="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-300">{{ navigation_section.grouper }}</h2>
+          <ul class="mt-2 space-y-1">
+            {% for item in navigation_section.list %}
+              <li>
+                {% if item.method == "post" %}
+                  <form method="post" action="{{ item.url }}">
+                    {% csrf_token %}
+                    <button type="submit" class="group flex min-h-9 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-sidebar-100 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100">
+                {% elif item.url %}
+                  <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex min-h-9 items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100 {% if item.is_active %}bg-sidebar-800 font-semibold text-white shadow-sm{% else %}font-medium text-sidebar-100 hover:bg-sidebar-800 hover:text-white{% endif %}">
+                {% else %}
+                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex min-h-9 cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-sidebar-300 opacity-55">
+                {% endif %}
+                    <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                      {% if item.icon == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
+                      {% elif item.icon == "sales" %}<path d="M4 7h16v10H4zM8 7V5h8v2M7 12h2m3 0h5m-10 3h4" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "medicines" %}<path d="m7.8 16.2 8.4-8.4a3.4 3.4 0 0 1 4.8 4.8L12.6 21a3.4 3.4 0 0 1-4.8-4.8ZM11 13l4.8 4.8" stroke-linecap="round" />
+                      {% elif item.icon == "inventory" %}<path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10" stroke-linejoin="round" />
+                      {% elif item.icon == "suppliers" %}<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm10 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke-linejoin="round" />
+                      {% elif item.icon == "customers" %}<path d="M15 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 3 18.5V20M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6m4 17v-1.5a4.5 4.5 0 0 0-3-4.2" stroke-linecap="round" />
+                      {% elif item.icon == "prescriptions" %}<path d="M7 3h10v18H7zM9.5 7h5M9.5 11h5M9.5 15H12m2.5 0 3 3m0-3-3 3" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "purchases" %}<path d="M6 6h15l-2 8H8L6 3H3M9 20h.01M18 20h.01" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "invoices" %}<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6m-6 4h3" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "payments" %}<path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "returns" %}<path d="m8 7-4 4 4 4M4 11h10a5 5 0 0 1 5 5v2" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "reports" %}<path d="M4 19V9m5 10V5m5 14v-7m5 7V3M3 21h18" stroke-linecap="round" />
+                      {% elif item.icon == "settings" %}<path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-4v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3.1 14H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1.5 1Z" stroke-linecap="round" stroke-linejoin="round" />
+                      {% elif item.icon == "logout" %}<path d="M10 5H5v14h5m5-4 4-3-4-3m4 3H9" stroke-linecap="round" stroke-linejoin="round" />
+                      {% endif %}
+                    </svg>
+                    <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+                {% if item.method == "post" %}
+                    </button>
+                  </form>
+                {% elif item.url %}
+                  </a>
+                {% else %}
+                  </span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
       {% endfor %}
-    </ul>
-  </nav>
-  <div class="border-t border-slate-200 p-4">
-    <div class="rounded-lg bg-slate-50 px-3 py-3">
-      <p class="text-xs font-medium text-slate-700">UI foundation</p>
-      <p class="mt-1 text-xs leading-5 text-slate-500">Feature links become available as apps are added.</p>
     </div>
-  </div>
+  </nav>
 </aside>
