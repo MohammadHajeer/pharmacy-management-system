@@ -59,22 +59,23 @@ document.addEventListener("DOMContentLoaded", () => {
     stack.forEach((toast, index) => {
       toast.style.zIndex = String(stack.length - index);
       if (expanded) {
-        toast.style.transform = `translateY(${cumulative}px) scale(1)`;
+        toast.style.transform = `translateY(-${cumulative}px) scale(1)`;
         toast.style.opacity = "1";
         toast.style.pointerEvents = "auto";
         cumulative += toast.offsetHeight + GAP;
       } else {
         const depth = Math.min(index, MAX_PEEK - 1);
-        toast.style.transform = `translateY(${depth * OFFSET_STEP}px) scale(${1 - depth * SCALE_STEP})`;
+        toast.style.transform = `translateY(-${depth * OFFSET_STEP}px) scale(${1 - depth * SCALE_STEP})`;
         toast.style.opacity = index < MAX_PEEK ? String(1 - index * 0.12) : "0";
         toast.style.pointerEvents = index === 0 ? "auto" : "none";
       }
     });
 
     const frontHeight = stack[0]?.offsetHeight ?? 0;
+    const peekCount = Math.min(stack.length, MAX_PEEK);
     viewport.style.height = expanded
       ? `${Math.max(cumulative - GAP, 0)}px`
-      : `${frontHeight + (Math.min(stack.length, MAX_PEEK) - 1) * OFFSET_STEP}px`;
+      : `${peekCount ? frontHeight + (peekCount - 1) * OFFSET_STEP : 0}px`;
   };
 
   const dismiss = (toast) => {
@@ -162,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toast.setAttribute("role", level === "error" ? "alert" : "status");
     toast.setAttribute("aria-atomic", "true");
     toast.style.opacity = "0";
-    toast.style.transform = "translateY(-8px) scale(0.96)";
+    toast.style.transform = "translateY(8px) scale(0.96)";
 
     const icon = document.createElement("span");
     icon.className =
@@ -227,7 +228,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .querySelectorAll("#django-message-queue [data-toast-message]")
     .forEach((message) => {
-      showToast(message.dataset.toastMessage, message.dataset.toastLevel);
+      showToast(message.dataset.toastMessage, message.dataset.toastLevel, {
+        title: message.dataset.toastTitle,
+        duration: message.dataset.toastDuration
+          ? Number(message.dataset.toastDuration)
+          : undefined,
+      });
     });
 
   document.querySelectorAll("[data-toast-trigger]").forEach((button) => {

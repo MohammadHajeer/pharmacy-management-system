@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import redirect, render
@@ -12,16 +13,27 @@ def login_view(request: HttpRequest) -> HttpResponse:
 
     form = AuthenticationForm(request, data=request.POST or None)
 
-    if request.method == "POST" and form.is_valid():
-        user = form.get_user()
-        login(request, user)
+    if request.method == "POST":
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
 
-        return redirect("dashboard:home")
+            return redirect("dashboard:home")
+
+        if form.non_field_errors():
+            messages.error(
+                request,
+                "Please check your username and password and try again.",
+            )
 
     return render(
         request,
         "accounts/login.html",
-        {"form": form},
+        {
+            "form": form,
+            "toast_title": "Unable to sign in" if form.non_field_errors() else "",
+            "toast_duration": 6000 if form.non_field_errors() else None,
+        },
     )
 
 

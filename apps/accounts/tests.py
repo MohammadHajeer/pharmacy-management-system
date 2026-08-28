@@ -31,15 +31,21 @@ class LoginViewTests(TestCase):
         self.assertContains(response, "Signing in...")
         self.assertNotContains(response, "<ul class=\"errorlist\">")
 
-    def test_invalid_credentials_show_non_field_error_and_keep_username(self):
+    def test_invalid_credentials_show_error_toast_and_keep_username(self):
         response = self.client.post(
             self.login_url,
             {"username": "pharmacist", "password": "incorrect-password"},
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Unable to sign in")
+        self.assertContains(response, 'data-toast-level="error"')
+        self.assertContains(response, 'data-toast-title="Unable to sign in"')
+        self.assertContains(response, 'data-toast-duration="6000"')
         self.assertContains(
+            response,
+            "Please check your username and password and try again.",
+        )
+        self.assertNotContains(
             response,
             "Please enter a correct username and password.",
         )
@@ -54,6 +60,7 @@ class LoginViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This field is required.", count=2)
         self.assertContains(response, 'aria-invalid="true"', count=2)
+        self.assertNotContains(response, 'id="django-message-queue"')
 
     def test_valid_login_uses_django_authentication_and_redirects(self):
         response = self.client.post(

@@ -32,6 +32,7 @@ Variants are `primary`, `secondary`, `outline`, `ghost`, and `destructive`. The 
 ```django
 {% include "components/button.html" with text="Open modal" variant="primary" modal_target="confirm-modal" %}
 {% include "components/button.html" with text="Show toast" variant="secondary" toast_level="success" toast_message="Saved successfully." %}
+{% include "components/button.html" with text="Show details" variant="secondary" toast_level="info" toast_title="Report ready" toast_message="The report can now be downloaded." toast_duration=6000 %}
 ```
 
 ## Input
@@ -108,6 +109,8 @@ messages.error(request, "Something went wrong.")
 messages.warning(request, "Stock is running low.")
 messages.info(request, "The report is being prepared.")
 ```
+
+When a server-rendered message needs a separate title or a non-default display time, pass `toast_title` and `toast_duration` in the template context for that response. Untitled messages and existing button triggers keep their current behavior.
 
 ## Sidebar navigation
 
