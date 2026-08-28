@@ -1,19 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block body %}
   <main class="flex min-h-screen items-center justify-center bg-linear-to-br from-primary-50 via-slate-50 to-white px-4 py-10 sm:py-12">
     <div class="w-full max-w-md">
-      <a href="/" class="mx-auto mb-7 flex w-fit items-center gap-3 rounded-xl text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600" aria-label="Pharmacy Management home">
-        <span class="flex size-11 items-center justify-center rounded-xl bg-primary-600 text-white shadow-sm shadow-primary-600/20">
-          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M12 3.5 19 6v5.3c0 4.5-2.9 7.8-7 9.2-4.1-1.4-7-4.7-7-9.2V6l7-2.5Z" stroke-linejoin="round" />
-            <path d="M12 8v6M9 11h6" stroke-linecap="round" />
-          </svg>
-        </span>
-        <span>
-          <span class="block text-base font-semibold">Pharmacy Management</span>
-          <span class="block text-xs text-slate-500">Management System</span>
-        </span>
+      <a href="/" class="mx-auto mb-7 flex w-fit max-w-full items-center rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600" aria-label="Pharmanex home">
+        <img src="{% static 'logo.png' %}" alt="Pharmanex" class="h-24 w-auto max-w-full object-contain">
       </a>
       <section class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">
         {% block content %}{% endblock %}

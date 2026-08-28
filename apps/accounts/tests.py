@@ -17,6 +17,9 @@ class LoginViewTests(TestCase):
     def test_login_page_manually_renders_authentication_form_fields(self):
         response = self.client.get(self.login_url)
 
+        self.assertContains(response, 'href="/static/logo-icon.png"')
+        self.assertContains(response, 'src="/static/logo.png"')
+        self.assertNotContains(response, "favicon.svg")
         self.assertContains(response, 'name="username"')
         self.assertContains(response, 'id="id_username"')
         self.assertContains(response, 'autocomplete="username"')
@@ -95,6 +98,9 @@ class LogoutViewTests(TestCase):
     def test_dashboard_logout_uses_confirmation_modal_and_loading_state(self):
         response = self.client.get(reverse("dashboard:home"))
 
+        self.assertContains(response, 'href="/static/logo-icon.png"')
+        self.assertContains(response, 'src="/static/logo.png"')
+        self.assertNotContains(response, "favicon.svg")
         self.assertContains(
             response,
             'data-modal-open="sidebar-logout-confirmation"',

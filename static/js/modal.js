@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   let activeModal = null;
   let previousFocus = null;
+  let previousBodyStyles = null;
 
   const focusableSelector = [
     "a[href]",
@@ -11,11 +12,28 @@ document.addEventListener("DOMContentLoaded", () => {
     "[tabindex]:not([tabindex='-1'])",
   ].join(",");
 
+  const lockPageScroll = () => {
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    previousBodyStyles = {
+      overflow: document.body.style.overflow,
+      paddingRight: document.body.style.paddingRight,
+    };
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    document.body.style.overflow = "hidden";
+  };
+
+  const unlockPageScroll = () => {
+    if (!previousBodyStyles) return;
+    document.body.style.overflow = previousBodyStyles.overflow;
+    document.body.style.paddingRight = previousBodyStyles.paddingRight;
+    previousBodyStyles = null;
+  };
+
   const closeModal = () => {
     if (!activeModal) return;
     activeModal.hidden = true;
     activeModal.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("overflow-hidden");
+    unlockPageScroll();
     previousFocus?.focus();
     activeModal = null;
     previousFocus = null;
@@ -24,10 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const openModal = (modal) => {
     if (!modal) return;
     previousFocus = document.activeElement;
+    if (!activeModal) lockPageScroll();
     activeModal = modal;
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
-    document.body.classList.add("overflow-hidden");
     (modal.querySelector("[data-modal-panel]") || modal).focus();
   };
 
