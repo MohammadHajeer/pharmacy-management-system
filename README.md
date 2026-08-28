@@ -10,7 +10,9 @@
 ```bash
 uv sync
 npm install
-npm run migrate
+uv run manage.py migrate
+uv run manage.py seed_dev_auth
+npm run dev
 ```
 
 ## Development
