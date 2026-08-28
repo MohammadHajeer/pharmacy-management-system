@@ -27,9 +27,7 @@
             {% for item in navigation_section.list %}
               <li>
                 {% if item.method == "post" %}
-                  <form method="post" action="{{ item.url }}">
-                    {% csrf_token %}
-                    <button type="submit" class="group flex min-h-9 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-sidebar-100 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100">
+                  <button type="button" class="group flex min-h-9 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-sidebar-100 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation">
                 {% elif item.url %}
                   <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex min-h-9 items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-100 {% if item.is_active %}bg-sidebar-800 font-semibold text-white shadow-sm{% else %}font-medium text-sidebar-100 hover:bg-sidebar-800 hover:text-white{% endif %}">
                 {% else %}
@@ -54,8 +52,7 @@
                     </svg>
                     <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
                 {% if item.method == "post" %}
-                    </button>
-                  </form>
+                  </button>
                 {% elif item.url %}
                   </a>
                 {% else %}
@@ -69,3 +66,9 @@
     </div>
   </nav>
 </aside>
+
+{% for item in dashboard_navigation %}
+  {% if item.method == "post" %}
+    {% include "components/modal.html" with modal_id="sidebar-logout-confirmation" title="Sign out of your account?" description="Your current pharmacy session will end." body="You will need to sign in again to access the management dashboard." close_text="Cancel" confirm_text="Sign out" confirm_action=item.url confirm_variant="danger" confirm_loading_text="Signing out..." %}
+  {% endif %}
+{% endfor %}

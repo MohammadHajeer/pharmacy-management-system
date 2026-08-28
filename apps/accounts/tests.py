@@ -91,3 +91,19 @@ class LogoutViewTests(TestCase):
 
         self.assertRedirects(response, reverse("accounts:login"))
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_dashboard_logout_uses_confirmation_modal_and_loading_state(self):
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertContains(
+            response,
+            'data-modal-open="sidebar-logout-confirmation"',
+        )
+        self.assertContains(response, 'id="sidebar-logout-confirmation"')
+        self.assertContains(
+            response,
+            f'action="{reverse("accounts:logout")}"',
+        )
+        self.assertContains(response, 'name="csrfmiddlewaretoken"')
+        self.assertContains(response, "Sign out")
+        self.assertContains(response, "Signing out...")

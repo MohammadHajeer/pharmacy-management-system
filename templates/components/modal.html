@@ -13,7 +13,16 @@
     <div class="overflow-y-auto px-5 py-5 text-sm leading-6 text-slate-600">{{ body }}</div>
     <div class="flex shrink-0 flex-wrap justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
       {% include "components/button.html" with text=close_text|default:"Close" variant="secondary" modal_close=True only %}
-      {% if confirm_text %}{% include "components/button.html" with text=confirm_text variant="primary" modal_close=True only %}{% endif %}
+      {% if confirm_text %}
+        {% if confirm_action %}
+          <form method="post" action="{{ confirm_action }}" class="contents" data-submit-form>
+            {% csrf_token %}
+            {% include "components/button.html" with text=confirm_text loading_text=confirm_loading_text|default:"Working..." variant=confirm_variant|default:"primary" type="submit" only %}
+          </form>
+        {% else %}
+          {% include "components/button.html" with text=confirm_text variant=confirm_variant|default:"primary" modal_close=True only %}
+        {% endif %}
+      {% endif %}
     </div>
   </div>
 </div>

@@ -87,6 +87,12 @@ Render a modal once, then open it from any button whose `data-modal-open` matche
 
 Buttons with `data-modal-close`, the backdrop, and the Escape key close it. Focus stays inside while it is open.
 
+For a confirmed POST action, pass `confirm_action`. The modal renders a CSRF-protected form and can reuse the submitting state through `confirm_loading_text`:
+
+```django
+{% include "components/modal.html" with modal_id="logout-modal" title="Sign out?" body="Your session will end." close_text="Cancel" confirm_text="Sign out" confirm_action=logout_url confirm_variant="danger" confirm_loading_text="Signing out..." %}
+```
+
 ## Toasts
 
 Use Django's standard messages API. The base template automatically turns messages into stacked, dismissible notifications.
