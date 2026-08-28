@@ -40,6 +40,30 @@ The project must not replace Django's built-in User model merely to force UUIDs.
 
 Never use float for authoritative financial calculations.
 
+### Financial calculation and rounding policy
+
+All authoritative calculations use `Decimal` and `ROUND_HALF_UP`. Tax is calculated after the line discount:
+
+```python
+money_quantum = Decimal("0.01")
+line_subtotal = (quantity * unit_price).quantize(
+    money_quantum,
+    rounding=ROUND_HALF_UP,
+)
+taxable_amount = line_subtotal - discount_amount
+tax_amount = (
+    taxable_amount * tax_rate_percent / Decimal("100")
+).quantize(money_quantum, rounding=ROUND_HALF_UP)
+line_total = (taxable_amount + tax_amount).quantize(
+    money_quantum,
+    rounding=ROUND_HALF_UP,
+)
+```
+
+Purchase lines substitute `unit_cost` for `unit_price`. Quantity, conversion, and four-decimal unit price/cost values retain their approved precision until multiplication. Round the line subtotal to two decimals before applying the stored two-decimal discount, which must not exceed the subtotal. Round tax once to two decimals, then round the line total to two decimals.
+
+Invoice totals sum the already-rounded line snapshots. Payments, refunds, paid totals, and balances use two decimals and the same rounding mode. Reports sum stored posted monetary snapshots. COGS uses full-precision `allocated_quantity_base × acquisition_cost_snapshot`, summed per sales line and then quantized to two decimals before aggregation.
+
 ## 1.3 Timestamp convention
 
 Mutable entities normally include:
@@ -58,6 +82,10 @@ Append-style stock movements do not require `updated_at`.
 - draft transaction records may be deleted if unreferenced;
 - posted/completed transaction records are retained;
 - stock movements are append-style history and are not deleted through normal workflows.
+
+## 1.5 `VOID` semantics
+
+For `PurchaseInvoice`, `SalesInvoice`, `CustomerReturn`, and `SupplierReturn`, `VOID` is reserved for cancellation of an unposted/uncompleted `DRAFT`. A void draft has no stock movements, batch allocations, payments, refunds, or balance effect. Phase 1 services may allow only `DRAFT → VOID`; `POSTED → VOID` and `COMPLETED → VOID` are not valid Phase 1 transitions. Compensating reversal workflows for effective transactions remain deferred.
 
 ---
 
@@ -685,6 +713,22 @@ sum(allocated_quantity_base × acquisition_cost_snapshot)
 
 The corresponding negative `StockMovement` rows are created for each allocation.
 
+The mapping is explicit through the existing generic source-reference fields; no reverse foreign key from inventory to sales is added. For every allocation created during sale completion, exactly one corresponding movement must have:
+
+```text
+movement_type = "SALE"
+source_type = "SALE"
+source_id = SalesInvoice.id
+source_line_id = SaleBatchAllocation.id
+medicine = SalesInvoiceLine.medicine
+batch = SaleBatchAllocation.batch
+quantity_delta_base = -SaleBatchAllocation.allocated_quantity_base
+unit_cost_snapshot = SaleBatchAllocation.acquisition_cost_snapshot
+reference_number = SalesInvoice.invoice_number
+```
+
+The allocation, negative movement, and batch quantity decrease are created atomically by the sales/inventory service. This one-to-one mapping and exact quantity correspondence are service-layer invariants because the schema intentionally uses generic UUID source references rather than a circular hard foreign key.
+
 ---
 
 # 12. Finance Entities (`apps.finance`)
@@ -720,19 +764,23 @@ Rules:
 
 **Table:** `finance_supplier_payment`
 
-Same pattern as customer payment:
+| Field              | Exact Django type and behavior                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `id`               | `UUIDField(primary_key=True, default=uuid.uuid4, editable=False)`                                       |
+| `purchase_invoice` | `ForeignKey(PurchaseInvoice, on_delete=PROTECT, related_name="payments")`                               |
+| `supplier`         | `ForeignKey(Supplier, on_delete=PROTECT, related_name="payments")`                                      |
+| `payment_method`   | `ForeignKey(PaymentMethod, on_delete=PROTECT, related_name="supplier_payments")`                        |
+| `amount`           | `DecimalField(max_digits=14, decimal_places=2)`                                                         |
+| `reference`        | `CharField(max_length=150, blank=True)`                                                                 |
+| `processed_by`     | `ForeignKey(User, on_delete=PROTECT, related_name="supplier_payments_processed")`                       |
+| `paid_at`          | `DateTimeField()`                                                                                       |
+| `status`           | `CharField(max_length=10, choices=POSTED/REVERSED, default=POSTED)`                                     |
+| `reversed_by`      | `ForeignKey(User, on_delete=PROTECT, null=True, blank=True, related_name="supplier_payments_reversed")` |
+| `reversed_at`      | `DateTimeField(null=True, blank=True)`                                                                  |
+| `reversal_reason`  | `TextField(blank=True)`; stored as an empty string when omitted, not `NULL`                             |
+| `created_at`       | `DateTimeField(auto_now_add=True)`                                                                      |
 
-- `id UUID PK`
-- `purchase_invoice FK → PurchaseInvoice`
-- `supplier FK → Supplier`
-- `payment_method FK → PaymentMethod`
-- `amount Decimal(14,2)`
-- `reference CharField(150), blank`
-- `processed_by FK → User`
-- `paid_at`
-- `status POSTED/REVERSED`
-- reversal fields
-- `created_at`
+No explicit model default is declared for `reversed_by`, `reversed_at`, or `reversal_reason`. The nullable fields resolve to `NULL` when omitted; `reversal_reason` is non-null and resolves to an empty string when omitted. A finance service changes `POSTED → REVERSED`, sets `reversed_by` and `reversed_at`, may record `reversal_reason`, preserves the original row, and recalculates the purchase invoice balance. Complex reversal state machines are not part of Phase 1.
 
 ---
 
@@ -767,7 +815,7 @@ Fields:
 - `sales_invoice_line FK → SalesInvoiceLine, PROTECT`
 - `batch FK → MedicineBatch, PROTECT`
 - `returned_quantity_base Decimal(14,3)`
-- `condition RESALABLE/NON_RESELLABLE`
+- `condition RESELLABLE/NON_RESELLABLE`
 - `restock Boolean`
 - `refund_amount Decimal(14,2)`
 - `created_at`
@@ -794,12 +842,14 @@ Fields:
 - `reference CharField(150), blank`
 - `processed_by FK → User`
 - `refunded_at DateTime`
-- `status POSTED/REVERSED`
+- `status POSTED`
 - `created_at`
 
 For Phase 1, a refund is a separate linked transaction and does not rewrite the original sale total.
 
 Statements/reporting account for the refund separately.
+
+Refund reversal is not supported in Phase 1. `CustomerRefund` is posted-only because no reversal actor, timestamp, reason, or compensating financial workflow is approved. The `REVERSED` choice is therefore intentionally absent.
 
 ## 13.4 SupplierReturn
 
@@ -1039,7 +1089,7 @@ To keep the schema implementable within the delivery window:
 2. **Timezone:** use Django's configured project/pharmacy timezone; do not add a separate timezone model requirement.
 3. **Document numbering:** only require a unique human-readable number; no Phase 1 `DocumentSequence` model.
 4. **Discounts:** store authoritative discount amount on transaction lines; percentage UI may calculate an amount before server validation.
-5. **Tax:** tax is server-calculated from stored rate and line taxable amount using Decimal arithmetic.
+5. **Tax:** tax is server-calculated after discount using Decimal arithmetic and the financial rounding policy in section 1.2.
 6. **Prescription association:** one optional prescription per sale is sufficient for Phase 1.
 7. **Purchase invoice receiving:** the purchase invoice itself is the receiving document; no PO/receipt consolidation question exists.
 8. **Customer return condition:** Pharmacist or Owner/Admin may classify the item in the permitted return workflow.

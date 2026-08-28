@@ -366,6 +366,8 @@ Completing a sale must:
 - record initial payment when supplied;
 - calculate the remaining balance.
 
+Each `SaleBatchAllocation` created during completion must map to exactly one negative `SALE` `StockMovement` in the same database transaction. For that movement, `source_type = "SALE"`, `source_id = SalesInvoice.id`, and `source_line_id = SaleBatchAllocation.id`; its batch must equal the allocation batch and `quantity_delta_base` must equal `-allocated_quantity_base`.
+
 ### Phase 1 simplification
 
 Held/resumed sales and physical-stock discrepancy overrides are deferred.
@@ -487,6 +489,8 @@ Rules:
 - walk-in sales must be fully settled at completion;
 - saved customers may have unpaid/partial balances.
 
+Customer and supplier payment reversals use the same minimal metadata: `status` changes from `POSTED` to `REVERSED`, `reversed_by` identifies the user, `reversed_at` records the timestamp, and `reversal_reason` may contain explanatory text. Reversal preserves the original payment and is performed by the finance service; it is not a generic reversal state machine.
+
 Customer and supplier statements are derived from invoices, payments, and returns; no separate mutable balance table is required.
 
 ---
@@ -514,6 +518,8 @@ Rules:
 - inventory restoration must use the inventory service and create a stock movement;
 - refund remains linked to the return and original invoice;
 - refund cannot exceed the eligible refundable amount.
+
+Customer refunds are posted-only in Phase 1. Reversing an already-posted refund is deferred because no refund-reversal workflow or metadata is approved; a refund must not be assigned a `REVERSED` state.
 
 For Phase 1, the Pharmacist may classify a returned item as resellable/non-resellable as part of the permitted return workflow; Owner/Admin may also perform the action.
 
@@ -670,6 +676,8 @@ Use explicit service functions for multi-record business operations such as:
 
 Use `transaction.atomic()` where several related writes must succeed or fail together.
 
+For Phase 1 transaction statuses, `VOID` means only that an unposted/uncompleted `DRAFT` was cancelled and retained for traceability. A void draft has no stock movements, batch allocations, payments, refunds, or balance effect. Phase 1 services may allow only `DRAFT → VOID`; they must not expose `POSTED → VOID` or `COMPLETED → VOID`. Reversing an effective transaction requires compensating inventory and financial behavior and remains deferred.
+
 The most important ownership rule is:
 
 > `apps.inventory` is the only app allowed to directly change `MedicineBatch.quantity_available_base`.
@@ -693,6 +701,30 @@ Every increase/decrease must create a corresponding `StockMovement` in the same 
 - Master data with history is deactivated rather than hard-deleted.
 - Posted transactions remain traceable.
 - Payments remain separate from invoices.
+
+## 9.1 Financial calculation and rounding policy
+
+All authoritative calculations use `Decimal`; float arithmetic is prohibited. Tax is calculated after the line discount. Sales lines use:
+
+```python
+money_quantum = Decimal("0.01")
+line_subtotal = (quantity * unit_price).quantize(
+    money_quantum,
+    rounding=ROUND_HALF_UP,
+)
+taxable_amount = line_subtotal - discount_amount
+tax_amount = (
+    taxable_amount * tax_rate_percent / Decimal("100")
+).quantize(money_quantum, rounding=ROUND_HALF_UP)
+line_total = (taxable_amount + tax_amount).quantize(
+    money_quantum,
+    rounding=ROUND_HALF_UP,
+)
+```
+
+Purchase lines use the same sequence with `unit_cost` in place of `unit_price`. Quantity, conversion, and four-decimal unit price/cost values retain their approved precision until multiplication. The line subtotal is rounded to two decimals before applying the stored two-decimal discount; the discount must not exceed that subtotal. Tax is then rounded once to two decimals, followed by the line total.
+
+Invoice subtotal, discount, tax, and grand total are sums of the already-rounded line snapshots and are stored at two decimals. Payments, refunds, paid totals, and balances use two decimals and `ROUND_HALF_UP` for any required quantization. Reports sum stored posted monetary values rather than recalculating historical tax. For COGS, allocation quantity × acquisition-cost snapshot is calculated at full Decimal precision, summed per sales line, then quantized to two decimals with `ROUND_HALF_UP` before report aggregation.
 
 ---
 

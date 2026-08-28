@@ -13,9 +13,8 @@ class ReturnStatus(models.TextChoices):
     VOID = "VOID", "Void"
 
 
-class PostedStatus(models.TextChoices):
+class RefundStatus(models.TextChoices):
     POSTED = "POSTED", "Posted"
-    REVERSED = "REVERSED", "Reversed"
 
 
 class CustomerReturn(models.Model):
@@ -74,7 +73,7 @@ class CustomerReturn(models.Model):
 
 class CustomerReturnLine(models.Model):
     class Condition(models.TextChoices):
-        RESALABLE = "RESALABLE", "Resalable"
+        RESELLABLE = "RESELLABLE", "Resellable"
         NON_RESELLABLE = "NON_RESELLABLE", "Non-resellable"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -112,8 +111,8 @@ class CustomerReturnLine(models.Model):
                 name="returns_customer_line_refund_nonnegative",
             ),
             models.CheckConstraint(
-                condition=Q(restock=False) | Q(condition="RESALABLE"),
-                name="returns_restock_requires_resalable",
+                condition=Q(restock=False) | Q(condition="RESELLABLE"),
+                name="returns_restock_requires_resellable",
             ),
         ]
 
@@ -131,8 +130,8 @@ class CustomerReturnLine(models.Model):
         if self.sales_invoice_line_id and self.batch_id:
             if not self.sales_invoice_line.batch_allocations.filter(batch_id=self.batch_id).exists():
                 errors["batch"] = "The batch must have been allocated to the original sales line."
-        if self.restock and self.condition != self.Condition.RESALABLE:
-            errors["restock"] = "Only resalable items may be restocked."
+        if self.restock and self.condition != self.Condition.RESELLABLE:
+            errors["restock"] = "Only resellable items may be restocked."
         if errors:
             raise ValidationError(errors)
 
@@ -166,7 +165,7 @@ class CustomerRefund(models.Model):
         related_name="customer_refunds_processed",
     )
     refunded_at = models.DateTimeField()
-    status = models.CharField(max_length=10, choices=PostedStatus, default=PostedStatus.POSTED)
+    status = models.CharField(max_length=10, choices=RefundStatus, default=RefundStatus.POSTED)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -176,7 +175,11 @@ class CustomerRefund(models.Model):
             models.CheckConstraint(
                 condition=Q(amount__gt=0),
                 name="returns_customer_refund_positive",
-            )
+            ),
+            models.CheckConstraint(
+                condition=Q(status=RefundStatus.POSTED),
+                name="returns_customer_refund_posted_only",
+            ),
         ]
         indexes = [
             models.Index(
