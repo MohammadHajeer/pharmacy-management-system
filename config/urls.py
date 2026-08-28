@@ -16,25 +16,13 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.contrib.auth.decorators import login_required
 from django.urls import path, include
 from django.views.generic import TemplateView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("__reload__/", include("django_browser_reload.urls")),
-    path(
-        "",
-        TemplateView.as_view(
-            template_name="home.html",
-            extra_context={
-                "page_context": "Dashboard",
-                "demo_categories": (
-                    {"value": "prescription", "label": "Prescription medicine"},
-                    {"value": "otc", "label": "Over-the-counter"},
-                    {"value": "wellness", "label": "Health and wellness"},
-                ),
-            },
-        ),
-        name="home",
-    ),
+    path("accounts/", include("apps.accounts.urls")),
+    path("", include("apps.dashboard.urls")),
 ]

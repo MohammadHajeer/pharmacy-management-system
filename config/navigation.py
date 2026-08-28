@@ -8,9 +8,10 @@ DASHBOARD_NAVIGATION = (
     {
         "label": "Dashboard",
         "icon": "dashboard",
-        "url_name": "home",
-        "namespace": None,
+        "url_name": "dashboard:home",
+        "namespace": "dashboard",
         "permission": None,
+        "groups": None,  # everyone
     },
     {
         "label": "Medicines",
@@ -18,6 +19,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "medicines",
         "permission": None,
+        "groups": ("Owner / Admin", "Pharmacist", "Inventory Manager"),
     },
     {
         "label": "Inventory",
@@ -25,6 +27,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "inventory",
         "permission": None,
+        "groups": ("Owner / Admin", "Pharmacist", "Inventory Manager"),
     },
     {
         "label": "Suppliers",
@@ -32,6 +35,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "suppliers",
         "permission": None,
+        "groups": ("Owner / Admin", "Inventory Manager"),
     },
     {
         "label": "Purchases",
@@ -39,6 +43,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "purchases",
         "permission": None,
+        "groups": ("Owner / Admin", "Inventory Manager"),
     },
     {
         "label": "Customers",
@@ -46,6 +51,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "customers",
         "permission": None,
+        "groups": ("Owner / Admin", "Pharmacist"),
     },
     {
         "label": "Sales",
@@ -53,6 +59,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "sales",
         "permission": None,
+        "groups": ("Owner / Admin", "Pharmacist"),
     },
     {
         "label": "Prescriptions",
@@ -60,6 +67,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "prescriptions",
         "permission": None,
+        "groups": ("Owner / Admin", "Pharmacist"),
     },
     {
         "label": "Payments",
@@ -67,6 +75,7 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "payments",
         "permission": None,
+        "groups": ("Owner / Admin", "Accountant"),
     },
     {
         "label": "Reports",
@@ -74,5 +83,6 @@ DASHBOARD_NAVIGATION = (
         "url_name": None,
         "namespace": "reports",
         "permission": None,
+        "groups": ("Owner / Admin", "Accountant"),
     },
 )

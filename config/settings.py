@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "django_browser_reload",
+    "apps.accounts",
+    "apps.dashboard",
 ]
 
 MIDDLEWARE = [
@@ -131,3 +133,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+LOGIN_URL = "accounts:login"

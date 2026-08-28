@@ -10,9 +10,24 @@ def dashboard_navigation(request):
     current_url_name = resolver_match.url_name if resolver_match else None
     items = []
 
+    user_groups = (
+        set(request.user.groups.values_list("name", flat=True))
+        if request.user.is_authenticated
+        else set()
+    )
+
     for configured_item in DASHBOARD_NAVIGATION:
         permission = configured_item["permission"]
         if permission and not request.user.has_perm(permission):
+            continue
+
+        allowed_groups = configured_item.get("groups")
+
+        if (
+            allowed_groups
+            and not request.user.is_superuser
+            and not user_groups.intersection(allowed_groups)
+        ):
             continue
 
         item = configured_item.copy()
