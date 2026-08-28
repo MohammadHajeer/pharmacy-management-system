@@ -44,6 +44,16 @@ INSTALLED_APPS = [
     "django_browser_reload",
     "apps.accounts",
     "apps.dashboard",
+    "apps.core",
+    "apps.catalog",
+    "apps.parties",
+    "apps.inventory",
+    "apps.purchasing",
+    "apps.prescriptions",
+    "apps.sales",
+    "apps.finance",
+    "apps.returns",
+    "apps.reports",
 ]
 
 MIDDLEWARE = [

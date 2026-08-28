@@ -42,6 +42,25 @@ templates/                    Shared project templates
 
 Keep feature behavior inside its owning app. Project-wide configuration belongs in `config/`; reusable presentation belongs in shared templates or `static/js/`.
 
+## Phase 1 model ownership
+
+The approved Phase 1 business models have one authoritative owning app:
+
+| App | Models owned |
+| --- | --- |
+| `core` | `PharmacySettings`, `TaxRate`, `PaymentMethod` |
+| `catalog` | `Category`, `Manufacturer`, `Medicine`, `MedicineUnit`, `MedicineBarcode` |
+| `parties` | `Supplier`, `Customer`, `Prescriber` |
+| `inventory` | `MedicineBatch`, `StockMovement` |
+| `purchasing` | `PurchaseInvoice`, `PurchaseInvoiceLine` |
+| `prescriptions` | `Prescription`, `PrescriptionItem` |
+| `sales` | `SalesInvoice`, `SalesInvoiceLine`, `SaleBatchAllocation` |
+| `finance` | `CustomerPayment`, `SupplierPayment` |
+| `returns` | `CustomerReturn`, `CustomerReturnLine`, `CustomerRefund`, `SupplierReturn`, `SupplierReturnLine` |
+| `reports` | No database models; reports are derived queries/services |
+
+Keep the inventory boundary explicit: `Medicine` is the product definition and is not physical inventory. `MedicineBatch` is physical stock and its acquisition-cost layer. `StockMovement` is append-style stock-change history. Future stock-changing workflows must update `MedicineBatch.quantity_available_base` only through `apps.inventory` services and create the corresponding `StockMovement` in the same database transaction.
+
 ## Creating a feature app
 
 Use a short, plural feature name where practical. The following example creates `medicines` under `apps/`:
