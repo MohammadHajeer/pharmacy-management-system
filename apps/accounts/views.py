@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 
 def login_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
-        return redirect("home")
+        return redirect("dashboard:home")
 
     form = AuthenticationForm(request, data=request.POST or None)
 

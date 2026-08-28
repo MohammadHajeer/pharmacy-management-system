@@ -35,7 +35,7 @@
                 {% else %}
                   <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex min-h-9 cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-sidebar-300 opacity-55">
                 {% endif %}
-                    <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <svg class="size-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                       {% if item.icon == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
                       {% elif item.icon == "sales" %}<path d="M4 7h16v10H4zM8 7V5h8v2M7 12h2m3 0h5m-10 3h4" stroke-linecap="round" stroke-linejoin="round" />
                       {% elif item.icon == "medicines" %}<path d="m7.8 16.2 8.4-8.4a3.4 3.4 0 0 1 4.8 4.8L12.6 21a3.4 3.4 0 0 1-4.8-4.8ZM11 13l4.8 4.8" stroke-linecap="round" />

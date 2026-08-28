@@ -38,11 +38,25 @@ Variants are `primary`, `secondary`, `danger`, and `ghost`. Buttons can also ope
 ```django
 {% include "components/input.html" with name="medicine_name" label="Medicine name" required=True %}
 {% include "components/input.html" with name="sku" label="SKU" value=form.sku.value error=form.sku.errors %}
+{% include "components/input.html" with name="username" label="Username" autocomplete="username" maxlength="150" autofocus=True %}
 {% include "components/textarea.html" with name="notes" label="Notes" rows="4" %}
 {% include "components/select.html" with name="category" label="Category" options=category_options value=form.category.value %}
 ```
 
 Select options are dictionaries with `value`, `label`, and an optional `disabled` value. Pass a bound field's `.errors` to show Django validation feedback.
+
+Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, and `disabled`. Buttons accept `full_width=True` when a form action should fill its container.
+
+For a reusable submit/loading state, mark the form with `data-submit-form` and pass `loading_text` to its submit button:
+
+```django
+<form method="post" data-submit-form>
+  {% csrf_token %}
+  {% include "components/button.html" with text="Save" loading_text="Saving..." type="submit" full_width=True %}
+</form>
+```
+
+The shared form script waits for the browser's valid `submit` event, disables the button, sets `aria-busy`, and swaps in the spinner/loading label without interrupting the POST.
 
 ## Badge
 
