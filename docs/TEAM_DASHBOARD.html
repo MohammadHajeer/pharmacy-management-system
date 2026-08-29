@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Phase 1 team delivery dashboard for the Pharmacy Management System">
+  <title>Pharmacy Management System — Team Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #14213d;
+      --muted: #60708a;
+      --line: #dce5ee;
+      --panel: #ffffff;
+      --canvas: #f3f7fa;
+      --navy: #102a43;
+      --blue: #176b87;
+      --teal: #0f766e;
+      --green-bg: #e7f7f1;
+      --green: #13795b;
+      --amber-bg: #fff4dc;
+      --amber: #9a5b00;
+      --shadow: 0 14px 34px rgba(27, 55, 86, 0.09);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    button, select { font: inherit; }
+    button:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 3px solid rgba(23, 107, 135, 0.28);
+      outline-offset: 3px;
+    }
+    code {
+      overflow-wrap: anywhere;
+      color: #174f68;
+      font: 0.82rem/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 44px 20px 90px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 85% 20%, rgba(45, 212, 191, 0.28), transparent 27rem),
+        linear-gradient(135deg, #0b1f36, #123f5b 58%, #176b87);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -8% -95px 35%;
+      height: 180px;
+      transform: rotate(-3deg);
+      border-radius: 50%;
+      background: rgba(255,255,255,.055);
+    }
+    .hero-inner, main { width: min(1420px, 100%); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #9ee7df;
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 { max-width: 850px; margin: 0; font-size: clamp(2rem, 5vw, 4rem); line-height: 1.05; letter-spacing: -.04em; }
+    .hero-copy { max-width: 720px; margin: 18px 0 0; color: #d7e8f2; font-size: 1.05rem; }
+    .date-chip {
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      margin-top: 22px;
+      padding: 9px 13px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      background: rgba(255,255,255,.09);
+      font-weight: 750;
+    }
+
+    main { position: relative; z-index: 2; margin-top: -58px; padding: 0 20px 56px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .metric {
+      min-height: 112px;
+      padding: 18px;
+      border: 1px solid rgba(220,229,238,.9);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .metric-label { display: block; color: var(--muted); font-size: .76rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .metric-value { display: block; margin-top: 7px; font-size: 1.65rem; font-weight: 850; letter-spacing: -.04em; }
+    .metric-note { display: block; margin-top: 2px; color: var(--muted); font-size: .8rem; }
+    .balance-track { height: 5px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #e9eff4; }
+    .balance-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #2f9eb1); }
+
+    .toolbar {
+      position: sticky;
+      top: 10px;
+      z-index: 10;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      margin: 22px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 8px 24px rgba(27,55,86,.08);
+      backdrop-filter: blur(10px);
+    }
+    .tabs { display: flex; gap: 6px; padding: 3px; border-radius: 12px; background: #edf3f6; }
+    .tab, .copy-button {
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .tab { padding: 9px 16px; color: #4b6078; background: transparent; }
+    .tab[aria-pressed="true"] { color: #fff; background: var(--navy); box-shadow: 0 5px 14px rgba(16,42,67,.18); }
+    .member-control { display: flex; gap: 9px; align-items: center; color: var(--muted); font-size: .86rem; font-weight: 750; }
+    select { max-width: 190px; padding: 9px 34px 9px 11px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; }
+
+    .section { margin-top: 34px; }
+    .section-heading { margin-bottom: 15px; }
+    .section-heading h2 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.035em; }
+    .section-heading p { margin: 5px 0 0; color: var(--muted); }
+    .context-grid { display: grid; grid-template-columns: .9fr 1.4fr; gap: 18px; }
+    .context-grid > *, .onboarding-grid > * { min-width: 0; }
+    .panel { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+    .panel h3 { margin: 0 0 12px; font-size: 1.05rem; }
+
+    .tree, .tree ul { margin: 0; padding: 0; list-style: none; }
+    .tree > li + li { margin-top: 15px; }
+    .tree ul { margin: 7px 0 0 12px; padding-left: 18px; border-left: 1px solid #cad8e3; }
+    .tree li { position: relative; padding: 4px 0; overflow-wrap: anywhere; }
+    .tree ul li::before { content: ""; position: absolute; left: -18px; top: 16px; width: 12px; border-top: 1px solid #cad8e3; }
+    .folder { font-weight: 830; }
+    .owner-tag {
+      display: inline-block;
+      margin-left: 7px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      color: #25536a;
+      background: #e9f4f7;
+      font-size: .7rem;
+      font-weight: 800;
+      vertical-align: 1px;
+    }
+    .owner-tag.shared { color: #6b4d09; background: #fff3d6; }
+
+    .onboarding-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .prompt-card { display: flex; flex-direction: column; min-height: 210px; padding: 18px; border: 1px solid var(--line); border-radius: 15px; background: #fbfdfe; }
+    .prompt-head { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    .prompt-head h3 { margin: 0; }
+    .prompt-card p { margin: 12px 0 16px; color: #43566d; font-size: .88rem; }
+    .copy-button { margin-top: auto; padding: 9px 12px; color: #fff; background: var(--blue); }
+    .copy-button:hover { background: #105974; }
+
+    .epic-list { display: grid; gap: 14px; }
+    .epic {
+      overflow: clip;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 10px 26px rgba(27,55,86,.07);
+    }
+    .epic > summary {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 19px 22px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .epic > summary::-webkit-details-marker { display: none; }
+    .epic > summary::after { content: "+"; color: var(--blue); font-size: 1.45rem; font-weight: 600; }
+    .epic[open] > summary::after { content: "−"; }
+    .epic-title { display: block; font-size: 1.05rem; font-weight: 850; }
+    .epic-count { color: var(--muted); font-size: .78rem; font-weight: 700; }
+    .task-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 0 18px 18px; }
+    .task-card { display: flex; flex-direction: column; min-width: 0; padding: 18px; border: 1px solid #e1e9f0; border-radius: 16px; background: #fcfefe; }
+    .task-top { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+    .task-title { margin: 0; font-size: 1rem; line-height: 1.35; }
+    .badge { flex: 0 0 auto; padding: 4px 8px; border-radius: 99px; font-size: .68rem; font-weight: 850; white-space: nowrap; }
+    .badge.ready { color: var(--green); background: var(--green-bg); }
+    .badge.blocked { color: var(--amber); background: var(--amber-bg); }
+    .task-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 13px 0; }
+    .meta-chip { padding: 4px 8px; border-radius: 8px; color: #52677d; background: #eef3f6; font-size: .73rem; font-weight: 730; }
+    .blocker {
+      margin: 1px 0 13px;
+      padding: 10px 11px;
+      border-left: 3px solid #dfa42d;
+      border-radius: 7px;
+      color: #724700;
+      background: #fff9eb;
+      font-size: .79rem;
+    }
+    .blocker strong { display: block; margin-bottom: 3px; }
+    .blocker ul { margin: 0; padding-left: 18px; }
+    .task-details { margin-top: 8px; border-top: 1px solid #e5ecf1; }
+    .task-details summary { padding: 10px 0 2px; cursor: pointer; color: var(--blue); font-size: .8rem; font-weight: 850; }
+    .task-details ol, .task-details ul { margin: 9px 0 4px; padding-left: 20px; color: #4c6075; font-size: .8rem; }
+    .task-details li + li { margin-top: 5px; }
+    .empty-state { display: none; padding: 42px 20px; border: 1px dashed #bac9d5; border-radius: var(--radius); text-align: center; color: var(--muted); background: rgba(255,255,255,.65); }
+    .source-note { margin: 28px 0 0; color: var(--muted); font-size: .78rem; text-align: center; }
+
+    @media (max-width: 980px) {
+      .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .context-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .hero { padding-top: 32px; }
+      main { padding-inline: 13px; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric:first-child { grid-column: 1 / -1; }
+      .toolbar { position: static; align-items: stretch; flex-direction: column; }
+      .tabs { width: 100%; }
+      .tab { flex: 1; }
+      .member-control { justify-content: space-between; }
+      .onboarding-grid, .task-grid { grid-template-columns: 1fr; }
+      .task-grid { padding-inline: 12px; }
+      .task-top { flex-direction: column; }
+    }
+    @media (max-width: 430px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .metric:first-child { grid-column: auto; }
+      .panel { padding: 17px; }
+      .onboarding-grid { grid-template-columns: 1fr; }
+      .member-control { align-items: stretch; flex-direction: column; }
+      select { max-width: none; width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Phase 1 delivery plan</p>
+      <h1>Pharmacy Management System</h1>
+      <p class="hero-copy">One connected, single-pharmacy workflow—from purchase receiving and batch inventory to POS, payments, returns, and basic reports.</p>
+      <div class="date-chip" aria-label="Nine-day delivery window">29 Aug – 6 Sep 2026 · 9 calendar days</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary-grid" id="summary" aria-label="Plan summary"></section>
+
+    <div class="toolbar" aria-label="Dashboard view controls">
+      <div class="tabs" role="group" aria-label="View mode">
+        <button class="tab" id="all-plans" type="button" aria-pressed="true">All Plans</button>
+        <button class="tab" id="my-plan" type="button" aria-pressed="false">My Plan</button>
+      </div>
+      <label class="member-control" for="member-select">
+        Team member
+        <select id="member-select" aria-label="Select team member">
+          <option>Malik</option>
+          <option>Mhmd Hajeer</option>
+          <option>Hala</option>
+          <option>Yasser</option>
+        </select>
+      </label>
+    </div>
+
+    <section class="section" aria-labelledby="context-title">
+      <div class="section-heading">
+        <h2 id="context-title">Ownership & handoff context</h2>
+        <p>The current app boundaries and one reusable onboarding prompt for each teammate.</p>
+      </div>
+      <div class="context-grid">
+        <article class="panel">
+          <h3>Repository ownership tree</h3>
+          <ul class="tree">
+            <li><span class="folder">apps/</span>
+              <ul>
+                <li>accounts/ <span class="owner-tag">Mhmd Hajeer</span></li>
+                <li>dashboard/ <span class="owner-tag">Mhmd Hajeer</span></li>
+                <li>core/ <span class="owner-tag shared">Mhmd Hajeer + Malik</span></li>
+                <li>catalog/ <span class="owner-tag">Hala</span></li>
+                <li>parties/ <span class="owner-tag">Hala</span></li>
+                <li>inventory/ <span class="owner-tag">Hala</span></li>
+                <li>purchasing/ <span class="owner-tag">Hala</span></li>
+                <li>prescriptions/ <span class="owner-tag">Malik</span></li>
+                <li>sales/ <span class="owner-tag">Malik</span></li>
+                <li>finance/ <span class="owner-tag">Yasser</span></li>
+                <li>returns/ <span class="owner-tag shared">Hala + Yasser</span></li>
+                <li>reports/ <span class="owner-tag">Yasser</span></li>
+              </ul>
+            </li>
+            <li><span class="folder">docs/</span> <span class="owner-tag">Malik · coordination & handoff</span>
+              <ul>
+                <li>BRD.md</li>
+                <li>ERD.md</li>
+                <li>JIRA_BACKLOG.csv</li>
+                <li>DEVELOPMENT_GUIDE.md</li>
+                <li>REPO_IMPLEMENTATION_CONTEXT.md</li>
+                <li>COMPONENTS.md <span class="owner-tag">Mhmd Hajeer · UI contract</span></li>
+                <li>BACKUP_RUNBOOK.md</li>
+                <li>TEAM_DASHBOARD.html</li>
+              </ul>
+            </li>
+          </ul>
+        </article>
+
+        <div class="onboarding-grid" id="onboarding">
+          <article class="prompt-card">
+            <div class="prompt-head"><h3>Malik</h3></div>
+            <p>Help me deliver Phase 1 of a single-pharmacy Django management system. I own POS, sales, prescriptions, and sales invoice/receipt output, and the approved backlog also assigns me planning coordination, core settings workflow logic, UUID-derived document numbering, and final documentation handoff. Before changing anything, read AGENTS.md and the current docs/DEVELOPMENT_GUIDE.md, docs/BRD.md, docs/ERD.md, docs/JIRA_BACKLOG.csv, and docs/REPO_IMPLEMENTATION_CONTEXT.md. Stay inside my assigned ticket and existing app boundaries, preserve Django authentication, Decimal rules, FEFO and the apps.inventory stock boundary, and do not add deferred Phase 2 architecture.</p>
+            <button class="copy-button" type="button">Copy onboarding prompt</button>
+          </article>
+          <article class="prompt-card">
+            <div class="prompt-head"><h3>Mhmd Hajeer</h3></div>
+            <p>Help me deliver Phase 1 of a single-pharmacy Django management system. I own core/platform work, authentication and authorization, all shared design/UI-UX, permission-aware navigation, and final integration, including the UI tickets assigned to me across each domain. Before changing anything, read AGENTS.md and the current docs/DEVELOPMENT_GUIDE.md, docs/BRD.md, docs/ERD.md, docs/JIRA_BACKLOG.csv, docs/REPO_IMPLEMENTATION_CONTEXT.md, and docs/COMPONENTS.md for UI work. Stay inside my assigned ticket, preserve Django Groups and Permissions, shared layouts/components, namespaced navigation, Tailwind v4, and vanilla JavaScript, and do not add a new auth or frontend architecture.</p>
+            <button class="copy-button" type="button">Copy onboarding prompt</button>
+          </article>
+          <article class="prompt-card">
+            <div class="prompt-head"><h3>Hala</h3></div>
+            <p>Help me deliver Phase 1 of a single-pharmacy Django management system. I own catalog, parties, inventory, purchasing, and supplier returns. Before changing anything, read AGENTS.md and the current docs/DEVELOPMENT_GUIDE.md, docs/BRD.md, docs/ERD.md, docs/JIRA_BACKLOG.csv, and docs/REPO_IMPLEMENTATION_CONTEXT.md, then inspect the relevant existing models, migrations, and tests. Stay inside my assigned ticket and owning apps; keep apps.inventory as the only stock-mutation boundary, use Decimal unit economics, atomic transactions and the approved targeted locks, create matching StockMovement history, and do not introduce purchase orders, goods receipts, manual adjustments, or other deferred features.</p>
+            <button class="copy-button" type="button">Copy onboarding prompt</button>
+          </article>
+          <article class="prompt-card">
+            <div class="prompt-head"><h3>Yasser</h3></div>
+            <p>Help me deliver Phase 1 of a single-pharmacy Django management system. I own finance, customer and supplier payments, customer returns/refunds, statements, and reporting. Before changing anything, read AGENTS.md and the current docs/DEVELOPMENT_GUIDE.md, docs/BRD.md, docs/ERD.md, docs/JIRA_BACKLOG.csv, and docs/REPO_IMPLEMENTATION_CONTEXT.md, then inspect the relevant existing finance, returns, sales, purchasing, inventory, and reports files. Stay inside my assigned ticket; use Decimal and targeted invoice/batch locking, keep payments and returns as separate traceable events, preserve payment-only invoice balances, protect financial reports with finance.view_financial_reports, and do not add a ledger, mutable balance table, or report transaction model.</p>
+            <button class="copy-button" type="button">Copy onboarding prompt</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="board-title">
+      <div class="section-heading">
+        <h2 id="board-title">Task board</h2>
+        <p id="board-caption">All 29 approved Phase 1 tasks, grouped by epic.</p>
+      </div>
+      <div class="epic-list" id="task-board"></div>
+      <div class="empty-state" id="empty-state">No tasks match this view.</div>
+    </section>
+
+    <p class="source-note">Built only from the current BRD, ERD, approved Jira backlog, and repository implementation context. Acceptance criteria and assignments are preserved from the backlog.</p>
+  </main>
+
+  <script id="backlog-data" type="text/csv">
+"Issue Type","Summary","Description","Epic Link","Assignee","Story Points","Priority","Sprint/Due Date","Acceptance Criteria"
+"Epic","Core / Platform & Delivery","Preserve the existing Django authentication and shared architecture while completing permissions, core settings, approved UUID numbering, planning coordination, and final integration. Authentication and all shared design/UI-UX work remain exclusively owned by Mhmd Hajeer; Malik owns planning coordination and also contributes implementation.","","Mhmd Hajeer","","Highest","2026-09-06",""
+"Story","Coordinate the approved Phase 1 source of truth and dated delivery plan","Maintain implementation traceability across the approved BRD, ERD, repository context, backlog, and team handoffs without changing scope. Estimate: 240m.","Core / Platform & Delivery","Malik","5","Highest","2026-08-29","1) Every delivery item maps to an approved BRD/ERD requirement or a documented repository gap; 2) all due dates fall from 2026-08-29 through 2026-09-06; 3) completed baseline model work is not scheduled again; 4) deferred Phase 2 features remain absent."
+"Story","Provision the exact role permissions and enforce the existing authentication boundary","Complete deterministic permission provisioning for Owner / Admin, Pharmacist, Inventory Manager, and Accountant while preserving Django User, sessions, AuthenticationForm login, and POST-only CSRF-protected logout. Estimate: 360m.","Core / Platform & Delivery","Mhmd Hajeer","8","Highest","2026-08-30","1) The four groups retain their exact names; 2) Owner / Admin receives full business permissions through its group without requiring is_superuser; 3) every protected action checks authentication and permissions server-side; 4) anonymous and unauthorized requests are denied; 5) current login, session, and logout behavior remains unchanged; 6) the financial reports permission is exactly finance.view_financial_reports and is defined on the existing CustomerPayment model/content type; 7) Owner / Admin and Accountant receive finance.view_financial_reports; 8) no Reports model or table is created solely for permission handling; 9) Django Groups and Permissions remain the authorization architecture."
+"Story","Integrate the shared application UI and permission-aware navigation","Own all shared design and UI-UX integration across layouts, components, responsive behavior, navigation, dialogs, toasts, and feature-route activation. Estimate: 360m.","Core / Platform & Delivery","Mhmd Hajeer","8","High","2026-09-01","1) Feature pages reuse the existing dashboard/auth layouts and documented components; 2) navigation uses the reserved namespaces and permission filtering; 3) missing routes remain safely unavailable until implemented; 4) responsive and keyboard behavior is preserved; 5) no duplicate navigation or UI framework is introduced; 6) Reports navigation requires finance.view_financial_reports; 7) navigation remains permission-driven and sidebar/navigation templates do not use hardcoded group checks."
+"Story","Complete core settings workflow logic over the existing models","Use the existing PharmacySettings, TaxRate, and PaymentMethod models to implement validation, permission-scoped handlers, and reusable form processing; do not recreate or rewrite baseline models or migrations. Estimate: 240m.","Core / Platform & Delivery","Malik","5","High","2026-08-31","1) Only Owner / Admin can change settings; 2) singleton pharmacy settings, one currency, tax ranges, low-stock/expiry defaults, and payment-method activation are validated; 3) secrets and environment settings are never exposed; 4) existing model constraints remain authoritative."
+"Story","Deliver the core settings UI-UX","Design and implement the Owner/Admin settings screens using existing forms, layouts, and shared components while keeping operational configuration separate from environment secrets. Estimate: 240m.","Core / Platform & Delivery","Mhmd Hajeer","5","High","2026-09-01","1) Pharmacy identity, currency, tax, thresholds, payment methods, and invoice/receipt text are presented clearly; 2) unauthorized users cannot access change actions; 3) validation errors are accessible and preserve entered values; 4) no secret or deployment variable appears in the interface."
+"Story","Implement approved UUID-derived document numbering","Create one reusable service/helper for deterministic document numbers using the complete uppercase UUID hex value; no DocumentSequence model or sequence infrastructure is permitted. Estimate: 240m.","Core / Platform & Delivery","Malik","5","Highest","2026-08-31","1) Numbers use SAL-, PUR-, CRT-, SRT-, and CRF- plus the complete uppercase UUID hex value; 2) draft sales and purchase numbers may stay blank until completion/posting; 3) return/refund numbers are assigned at creation; 4) uniqueness is preserved; 5) focused tests cover every prefix and retry-safe deterministic output."
+"Story","Integrate and verify the complete Phase 1 workflow","Lead cross-feature integration and final technical readiness beyond authentication/design ownership, coordinating shared routes, permissions, deployment-safe configuration, and end-to-end checks. Estimate: 420m.","Core / Platform & Delivery","Mhmd Hajeer","8","Highest","2026-09-06","1) One representative purchase-to-stock-to-sale-to-payment-to-return/refund-to-report scenario succeeds; 2) role access matches the BRD matrix; 3) Django checks and critical tests pass; 4) no deferred purchase-order, cashier-shift, discrepancy, manual-adjustment, generic audit/idempotency, or sequence subsystem is introduced."
+"Sub-task","Review and apply pending Phase 1 follow-up migrations to Neon","Deployment/migration subtask of Integrate and verify the complete Phase 1 workflow. Review the pending finance, inventory, sales, and any related follow-up 0002 migrations. Do not mark Done until the migrations are actually applied and confirmed on Neon.","Core / Platform & Delivery","Mhmd Hajeer","","Highest","2026-09-06","1) Review the pending finance, inventory, sales, and any related follow-up 0002 migrations; 2) confirm the migration files are committed and merged before applying them; 3) run uv run manage.py showmigrations before application; 4) apply the migrations through the coordinated shared-Neon process; 5) run uv run manage.py showmigrations afterward and confirm the expected migrations are applied; 6) do not reset, drop, or recreate the database."
+"Story","Coordinate final documentation and operational handoff","Reconcile implementation outcomes with the BRD, ERD, repository context, development guide, Jira backlog, and Neon backup runbook; record only genuine remaining gaps and decisions. Estimate: 240m.","Core / Platform & Delivery","Malik","5","Medium","2026-09-06","1) Documentation matches the final repository state; 2) the backup runbook remains discoverable and contains no credentials; 3) migration and inventory ownership rules are explicit; 4) unresolved team-lead decisions are recorded without silently inventing requirements; 5) no completed work remains described as unimplemented."
+"Epic","Catalog / Inventory / Purchasing","Complete catalog, party, inventory, purchase-receiving, and supplier-return workflows on the existing baseline models. All stock mutation remains inside apps.inventory; Phase 1 has no direct/manual adjustment workflow.","","Hala","","Highest","2026-09-06",""
+"Story","Expose catalog and party workflows over the existing models","Implement remaining query, validation, form-processing, permission, and route logic for medicines, units, barcodes, suppliers, customers, and prescribers without rebuilding their models. Estimate: 360m.","Catalog / Inventory / Purchasing","Hala","8","High","2026-08-31","1) Authorized users can search and maintain approved master data; 2) unique barcodes/codes, base-unit rules, conversions, thresholds, and active-state rules are enforced; 3) used master records are deactivated rather than hard-deleted; 4) walk-in sales require no fake Customer row; 5) role permissions match the BRD matrix."
+"Story","Implement authoritative inventory and FEFO services with row locking","Build apps.inventory services for receiving, sale deductions, safe customer-return restocking, supplier-return deductions, FEFO eligibility, and matching StockMovement creation. No direct/manual adjustment operation is included. Estimate: 600m.","Catalog / Inventory / Purchasing","Hala","13","Highest","2026-09-01","1) Only apps.inventory changes batch quantity; 2) every mutation and movement is created in one transaction.atomic block; 3) eligible batches are locked with select_for_update in expiry_date, first_received_at, id order before quantities are rechecked; 4) expired or insufficient stock is rejected; 5) concurrent requests cannot oversell; 6) reserved manual-adjustment codes are never exposed or used."
+"Story","Add the two approved stock-traceability uniqueness constraints","Create reviewed follow-up migrations for sales_allocation_line_batch_unique on (sales_invoice_line, batch) and the conditional inventory_movement_source_line_unique on non-null (movement_type, source_type, source_id, source_line_id), as required by ERD Section 20; do not alter unrelated baseline fields. Status recommendation: Ready for Review. Estimate: 240m.","Catalog / Inventory / Purchasing","Hala","5","Highest","2026-08-30","1) SaleBatchAllocation enforces sales_allocation_line_batch_unique, one row per sales line and batch; 2) StockMovement enforces inventory_movement_source_line_unique, one movement per non-null authoritative source line using the approved conditional key; 3) duplicate preflight found zero conflicting rows; 4) temporary SQLite migration/application tests passed; 5) duplicate attempts fail deterministically and existing valid rows remain usable; 6) the final coordinated Neon application step must be confirmed before completion; 7) do not mark Done while changes remain uncommitted or unmerged."
+"Story","Post purchase invoices atomically with targeted locks","Implement purchase-invoice posting and receiving over existing models, using inventory services and targeted row locking; PurchaseInvoice itself is the receiving document. Estimate: 600m.","Catalog / Inventory / Purchasing","Hala","13","Highest","2026-09-03","1) Posting locks the PurchaseInvoice and each existing batch cost layer that will be increased; 2) status, totals, expiry, quantities, costs, and permissions are rechecked after locking; 3) batch increases and PURCHASE_RECEIPT movements commit atomically; 4) snapshots and balances are correct; 5) failure rolls back every write; 6) no PurchaseOrder or separate GoodsReceipt is created; 7) base_quantity = selected_quantity × conversion_to_base_snapshot, using Decimal and quantized to 3 decimal places with ROUND_HALF_UP; 8) acquisition_cost_per_base_unit = selected_unit_cost ÷ conversion_to_base_snapshot and is quantized to 4 decimal places with ROUND_HALF_UP; 9) PurchaseInvoiceLine.unit_cost is the selected purchase-unit cost while MedicineBatch.acquisition_cost_per_base_unit is cost per base unit; 10) purchase discounts and tax do not change the Phase 1 batch acquisition-cost layer; 11) posting continues to use the approved targeted locking and atomic inventory rules."
+"Story","Post supplier returns against exact batches with targeted row locks","Implement supplier-return posting over the existing return models, exact source batches, apps.inventory services, and targeted row locks. Estimate: 360m.","Catalog / Inventory / Purchasing","Hala","8","Highest","2026-09-04","1) Posting locks the SupplierReturn and every affected MedicineBatch before validation; 2) status and available quantities are rechecked after locking; 3) exact-batch deductions and SUPPLIER_RETURN movements commit atomically; 4) value snapshots and supplier statement effects remain traceable; 5) over-return and rollback paths are tested."
+"Story","Deliver catalog, inventory, purchasing, and supplier-return UI-UX","Design and implement the domain screens using the existing component system while Hala-owned services remain the business boundary. Estimate: 360m.","Catalog / Inventory / Purchasing","Mhmd Hajeer","8","High","2026-09-04","1) Catalog/party maintenance, batch lookup, expiry/low-stock states, purchase posting, and supplier returns are usable on desktop and mobile; 2) permissions control visible actions; 3) batch quantity is never directly editable; 4) confirmation, error, empty, and loading states use shared components; 5) navigation uses existing namespaces."
+"Story","Verify catalog, inventory, purchasing, and supplier-return behavior","Add focused automated tests for the remaining domain logic and concurrency-sensitive paths; reuse existing model tests instead of duplicating baseline coverage. Estimate: 360m.","Catalog / Inventory / Purchasing","Hala","8","Highest","2026-09-05","1) Tests cover units, barcodes, deactivation, FEFO, expiry, multi-batch allocation, insufficient stock, purchase receiving, supplier returns, permissions, rollback, and movements; 2) concurrent stock tests prove targeted locks prevent lost updates/overselling; 3) no test depends on shared database state."
+"Epic","POS / Sales / Prescriptions","Complete prescription, barcode POS, FEFO sale-completion, and invoice/receipt workflows over the existing baseline models. Malik owns domain logic and planning coordination; Mhmd Hajeer owns all domain design/UI-UX.","","Malik","","Highest","2026-09-06",""
+"Story","Deliver lightweight prescription workflows over the existing models","Implement remaining prescription validation, permission, query, and request-handling logic without recreating Prescription or PrescriptionItem. Attachment upload remains disabled unless storage, access control, and retention are explicitly approved and configured. Estimate: 240m.","POS / Sales / Prescriptions","Malik","5","High","2026-09-01","1) Authorized users can create and retrieve lightweight prescriptions with optional customer/prescriber and medicine items; 2) required quantities and instructions validate; 3) POS receives non-clinical prescription-required warning data; 4) no clinical advice or complex lifecycle is added; 5) file upload is not enabled without the documented prerequisite decision."
+"Story","Build server-side POS search, barcode, cart, and totals logic","Implement medicine/barcode lookup, draft-sale handling, unit conversion, customer/prescription association, and authoritative Decimal preview calculations over the existing sales models. Estimate: 360m.","POS / Sales / Prescriptions","Malik","8","Highest","2026-09-02","1) Known barcodes resolve to the correct active medicine/unit and unknown barcodes create nothing; 2) saved and walk-in customer flows work; 3) quantities, discounts, tax, and totals are recalculated server-side using the approved rounding sequence; 4) tampered totals are rejected; 5) stock/expiry information is query-only until completion; 6) Medicine.default_selling_price is the base-unit selling price; 7) selected-unit selling price = base_unit_price × conversion_to_base, using Decimal and quantized to 4 decimal places with ROUND_HALF_UP; 8) SalesInvoiceLine.unit_price stores the selected-unit price snapshot used for the sale; 9) inventory quantity conversion continues to use base units."
+"Story","Complete sales atomically with deterministic FEFO row locks","Implement sale completion over existing invoices/lines/allocations by calling apps.inventory and applying targeted locks and status revalidation. Estimate: 600m.","POS / Sales / Prescriptions","Malik","13","Highest","2026-09-03","1) Completion locks the SalesInvoice and eligible MedicineBatch rows with select_for_update in expiry_date, first_received_at, id order; 2) status, permission, totals, prescription acknowledgement, and stock are rechecked after locking; 3) allocations, negative SALE movements, cost snapshots, optional initial payment, and invoice status commit atomically; 4) insufficient/expired stock or any error rolls back all writes; 5) concurrent completions cannot oversell."
+"Story","Deliver keyboard-first POS, sales, and prescription UI-UX","Design and implement the server-rendered POS and prescription screens with minimal vanilla JavaScript and the existing shared components. Estimate: 360m.","POS / Sales / Prescriptions","Mhmd Hajeer","8","Highest","2026-09-04","1) Barcode Enter behavior, manual search, cart editing, customer context, warning acknowledgement, stock feedback, and completion confirmation are keyboard-accessible; 2) the interface remains responsive; 3) errors preserve the cart safely; 4) no SPA or additional frontend framework is introduced; 5) permissions control visible actions."
+"Story","Deliver print-ready sales invoice and receipt output","Own the visual design and implementation of historically accurate HTML print views using stored invoice snapshots and shared branding. Estimate: 240m.","POS / Sales / Prescriptions","Mhmd Hajeer","5","High","2026-09-04","1) Completed invoices display the approved number, pharmacy/customer snapshots, lines, discounts, tax, totals, payments, and balance; 2) browser print output is clean and legible; 3) later master-data edits do not change historical output; 4) PDF remains optional and cannot delay the HTML output."
+"Story","Verify prescription, POS, sale-completion, and invoice behavior","Add focused tests for remaining sales and prescription services, permissions, Decimal calculations, concurrency, and output data; do not duplicate baseline model tests. Estimate: 360m.","POS / Sales / Prescriptions","Malik","8","Highest","2026-09-05","1) Tests cover barcode lookup, walk-in/saved customers, prescription warnings, rounding, FEFO multi-batch allocation, cost snapshots, payments, rollback, and permissions; 2) concurrency tests prove deterministic locks prevent overselling; 3) invoice output uses snapshots; 4) tests create their own isolated data."
+"Epic","Finance / Returns / Reporting","Complete payment, customer-return/refund, invoice/statement, and essential reporting workflows over the existing baseline models. Yasser owns finance/reporting logic; Mhmd Hajeer owns all domain design/UI-UX.","","Yasser","","Highest","2026-09-06",""
+"Story","Post and reverse customer and supplier payments with invoice row locks","Implement payment services over the existing CustomerPayment and SupplierPayment models using targeted invoice locking and approved reversal metadata. Estimate: 600m.","Finance / Returns / Reporting","Yasser","13","Highest","2026-09-03","1) Posting/reversal locks the affected sales or purchase invoice with select_for_update; 2) status, outstanding balance, amount, method, and permission are rechecked after locking; 3) multiple payments work without overpayment; 4) paid totals, balances, and payment status update atomically; 5) reversals retain actor/time/reason and original history; 6) concurrent payments cannot exceed the balance."
+"Story","Process customer returns and refunds with targeted row locks","Implement customer-return/refund services over existing models, exact sold allocations, apps.inventory restocking services, and targeted row locks. Estimate: 600m.","Finance / Returns / Reporting","Yasser","13","Highest","2026-09-04","1) Posting locks the CustomerReturn and every affected batch before quantity/restock validation; 2) cumulative returned quantity and refund value cannot exceed the original sale allocation/value; 3) safe non-expired items restore the original batch with a movement while unsafe/damaged/expired items do not; 4) refunds remain separate posted records and original invoice totals are unchanged; 5) all writes roll back together on failure."
+"Story","Provide invoice search and derived customer/supplier statements","Build permission-scoped query services over existing invoices, active payments, reversals, customer refunds, and supplier returns; do not create mutable balance or duplicate invoice tables. Estimate: 360m.","Finance / Returns / Reporting","Yasser","8","High","2026-09-04","1) Users can filter and locate sales/purchase invoices; 2) statements show chronological authoritative transactions; 3) invoice payment-only balances reconcile to active posted payments; returns, refunds, and supplier returns appear as separate statement entries and affect net party balances without rewriting original invoice balance fields; 4) posted invoice totals remain historical snapshots and returns/refunds do not mutate original invoice grand totals; 5) party data is isolated by permission; 6) no summary table becomes a source of truth."
+"Story","Deliver the essential Phase 1 report queries","Implement permission-scoped report queries for sales, purchases, inventory, low stock, near-expiry, expired stock, receivables, payables, payments, and basic COGS/gross profit using authoritative records. Estimate: 360m.","Finance / Returns / Reporting","Yasser","8","High","2026-09-05","1) Report totals reconcile to stored transactions; 2) COGS uses SaleBatchAllocation acquisition-cost snapshots; 3) inventory/expiry reports use current batches and UTC expiry rules; 4) receivables/payables distinguish payment-only invoice balances from net party statement balances and apply each return/refund event exactly once; 5) financial reports are protected by finance.view_financial_reports; 6) no report transaction or mutable summary model is added; 7) CSV export is attempted only after core reports pass."
+"Story","Deliver finance, returns, statements, and reporting UI-UX","Design and implement permission-aware screens for payments, reversals, customer returns/refunds, invoice search, statements, and reports using shared components. Estimate: 360m.","Finance / Returns / Reporting","Mhmd Hajeer","8","High","2026-09-05","1) Screens expose only role-permitted actions and financial detail; 2) balances, statuses, transaction chronology, conditions, refund eligibility, filters, totals, and empty states are clear; 3) destructive/effective actions require confirmation; 4) layouts are responsive and accessible; 5) no duplicate role-specific interface is created."
+"Story","Verify finance, returns, statements, and report behavior","Add focused tests for remaining finance/reporting logic, targeted-lock concurrency, permissions, reconciliation, and rollback; reuse baseline model tests. Estimate: 360m.","Finance / Returns / Reporting","Yasser","8","Highest","2026-09-06","1) Tests cover partial/multiple payments, overpayment rejection, reversals, return/refund caps, safe/unsafe restocking, statements, reports, COGS, permissions, and rollback; 2) concurrency tests prevent double payment and over-return; 3) report totals reconcile to source records; 4) tests use isolated data."
+"Story","Reconcile the end-to-end financial and inventory effects","Validate one representative cross-domain scenario from purchase receiving through sale, partial/full payment, customer return/refund, supplier return, balances, and reports. Estimate: 240m.","Finance / Returns / Reporting","Yasser","5","Highest","2026-09-06","1) Stock movements reconcile to batch changes; 2) original invoice balances reconcile to active posted payments only, while net customer/supplier statement balances separately reconcile returns and refunds; 3) COGS and gross profit use stored allocation costs; 4) statements reconcile to authoritative transaction events and may differ from original invoice balances because returns/refunds are separate entries; 5) no source transaction is silently rewritten; 6) discrepancies fail the acceptance run with traceable evidence; 7) no general ledger or credit-note subsystem is introduced."
+  </script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const BASE_FILES = [
+        "AGENTS.md",
+        "docs/DEVELOPMENT_GUIDE.md",
+        "docs/BRD.md",
+        "docs/ERD.md",
+        "docs/JIRA_BACKLOG.csv",
+        "docs/REPO_IMPLEMENTATION_CONTEXT.md"
+      ];
+
+      const FILE_PROFILES = {
+        planning: [],
+        auth: ["apps/accounts/views.py", "apps/accounts/urls.py", "apps/accounts/tests.py", "apps/accounts/management/commands/seed_dev_auth.py", "apps/finance/models.py", "apps/finance/migrations/0002_alter_customerpayment_options.py", "config/context_processors.py", "config/navigation.py", "templates/components/sidebar.html"],
+        ui: ["docs/COMPONENTS.md", "templates/base.html", "templates/layouts/dashboard.html", "templates/components/card.html", "templates/components/modal.html", "templates/components/sidebar.html", "assets/css/input.css", "static/js/form-submit.js", "static/js/modal.js", "static/js/sidebar.js", "config/navigation.py"],
+        core: ["apps/core/models.py", "apps/core/tests.py", "apps/core/migrations/0001_initial.py", "config/settings.py"],
+        numbering: ["apps/sales/models.py", "apps/sales/tests.py", "apps/purchasing/models.py", "apps/purchasing/tests.py", "apps/returns/models.py", "apps/returns/tests.py"],
+        deployment: ["docs/BACKUP_RUNBOOK.md", "config/settings.py", "apps/finance/migrations/0002_alter_customerpayment_options.py", "apps/inventory/migrations/0002_stockmovement_inventory_movement_source_line_unique.py", "apps/sales/migrations/0002_salebatchallocation_sales_allocation_line_batch_unique.py", "apps/returns/migrations/0002_remove_customerreturnline_returns_restock_requires_resalable_and_more.py"],
+        catalog: ["apps/catalog/models.py", "apps/catalog/unit_economics.py", "apps/catalog/tests.py", "apps/catalog/migrations/0001_initial.py", "apps/parties/models.py", "apps/parties/tests.py", "apps/parties/migrations/0001_initial.py"],
+        inventory: ["apps/inventory/models.py", "apps/inventory/tests.py", "apps/inventory/migrations/0001_initial.py", "apps/inventory/migrations/0002_stockmovement_inventory_movement_source_line_unique.py", "apps/catalog/models.py", "apps/catalog/unit_economics.py"],
+        purchasing: ["apps/purchasing/models.py", "apps/purchasing/tests.py", "apps/purchasing/migrations/0001_initial.py", "apps/inventory/models.py", "apps/inventory/tests.py", "apps/catalog/unit_economics.py"],
+        supplierReturn: ["apps/returns/models.py", "apps/returns/tests.py", "apps/returns/migrations/0001_initial.py", "apps/returns/migrations/0002_remove_customerreturnline_returns_restock_requires_resalable_and_more.py", "apps/inventory/models.py", "apps/inventory/tests.py", "apps/purchasing/models.py"],
+        prescription: ["apps/prescriptions/models.py", "apps/prescriptions/tests.py", "apps/prescriptions/migrations/0001_initial.py", "apps/parties/models.py", "apps/catalog/models.py"],
+        sales: ["apps/sales/models.py", "apps/sales/tests.py", "apps/sales/migrations/0001_initial.py", "apps/sales/migrations/0002_salebatchallocation_sales_allocation_line_batch_unique.py", "apps/catalog/models.py", "apps/catalog/unit_economics.py", "apps/inventory/models.py", "apps/inventory/tests.py"],
+        finance: ["apps/finance/models.py", "apps/finance/tests.py", "apps/finance/migrations/0001_initial.py", "apps/finance/migrations/0002_alter_customerpayment_options.py", "apps/sales/models.py", "apps/purchasing/models.py"],
+        customerReturn: ["apps/returns/models.py", "apps/returns/tests.py", "apps/returns/migrations/0001_initial.py", "apps/returns/migrations/0002_remove_customerreturnline_returns_restock_requires_resalable_and_more.py", "apps/sales/models.py", "apps/inventory/models.py", "apps/finance/models.py"],
+        statements: ["apps/finance/models.py", "apps/finance/tests.py", "apps/returns/models.py", "apps/returns/tests.py", "apps/sales/models.py", "apps/purchasing/models.py"],
+        reports: ["apps/reports/models.py", "apps/reports/tests.py", "apps/finance/models.py", "apps/returns/models.py", "apps/sales/models.py", "apps/purchasing/models.py", "apps/inventory/models.py"],
+        integration: ["config/settings.py", "config/urls.py", "config/navigation.py", "config/context_processors.py", "apps/inventory/models.py", "apps/purchasing/models.py", "apps/sales/models.py", "apps/finance/models.py", "apps/returns/models.py", "apps/reports/tests.py"],
+        handoff: ["docs/BACKUP_RUNBOOK.md", "README.md", "config/settings.py"]
+      };
+
+      const TASK_PROFILES = {
+        "Coordinate the approved Phase 1 source of truth and dated delivery plan": ["planning"],
+        "Provision the exact role permissions and enforce the existing authentication boundary": ["auth"],
+        "Integrate the shared application UI and permission-aware navigation": ["ui", "auth"],
+        "Complete core settings workflow logic over the existing models": ["core"],
+        "Deliver the core settings UI-UX": ["core", "ui"],
+        "Implement approved UUID-derived document numbering": ["numbering"],
+        "Integrate and verify the complete Phase 1 workflow": ["integration", "auth"],
+        "Review and apply pending Phase 1 follow-up migrations to Neon": ["deployment"],
+        "Coordinate final documentation and operational handoff": ["handoff"],
+        "Expose catalog and party workflows over the existing models": ["catalog"],
+        "Implement authoritative inventory and FEFO services with row locking": ["inventory"],
+        "Add the two approved stock-traceability uniqueness constraints": ["inventory", "sales"],
+        "Post purchase invoices atomically with targeted locks": ["purchasing", "inventory"],
+        "Post supplier returns against exact batches with targeted row locks": ["supplierReturn", "inventory"],
+        "Deliver catalog, inventory, purchasing, and supplier-return UI-UX": ["catalog", "purchasing", "supplierReturn", "ui"],
+        "Verify catalog, inventory, purchasing, and supplier-return behavior": ["catalog", "inventory", "purchasing", "supplierReturn"],
+        "Deliver lightweight prescription workflows over the existing models": ["prescription"],
+        "Build server-side POS search, barcode, cart, and totals logic": ["sales", "prescription"],
+        "Complete sales atomically with deterministic FEFO row locks": ["sales", "inventory", "finance"],
+        "Deliver keyboard-first POS, sales, and prescription UI-UX": ["sales", "prescription", "ui"],
+        "Deliver print-ready sales invoice and receipt output": ["sales", "finance", "ui"],
+        "Verify prescription, POS, sale-completion, and invoice behavior": ["sales", "prescription", "finance"],
+        "Post and reverse customer and supplier payments with invoice row locks": ["finance"],
+        "Process customer returns and refunds with targeted row locks": ["customerReturn", "inventory"],
+        "Provide invoice search and derived customer/supplier statements": ["statements"],
+        "Deliver the essential Phase 1 report queries": ["reports"],
+        "Deliver finance, returns, statements, and reporting UI-UX": ["finance", "customerReturn", "statements", "reports", "ui"],
+        "Verify finance, returns, statements, and report behavior": ["finance", "customerReturn", "statements", "reports"],
+        "Reconcile the end-to-end financial and inventory effects": ["integration", "purchasing", "sales", "finance", "customerReturn", "reports"]
+      };
+
+      const DEPENDENCIES = {
+        "Deliver the core settings UI-UX": [
+          ["Complete core settings workflow logic over the existing models", "Malik"]
+        ],
+        "Implement authoritative inventory and FEFO services with row locking": [
+          ["Add the two approved stock-traceability uniqueness constraints", "Hala"]
+        ],
+        "Post purchase invoices atomically with targeted locks": [
+          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
+        ],
+        "Post supplier returns against exact batches with targeted row locks": [
+          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
+        ],
+        "Deliver catalog, inventory, purchasing, and supplier-return UI-UX": [
+          ["Expose catalog and party workflows over the existing models", "Hala"],
+          ["Post purchase invoices atomically with targeted locks", "Hala"],
+          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
+        ],
+        "Verify catalog, inventory, purchasing, and supplier-return behavior": [
+          ["Expose catalog and party workflows over the existing models", "Hala"],
+          ["Implement authoritative inventory and FEFO services with row locking", "Hala"],
+          ["Post purchase invoices atomically with targeted locks", "Hala"],
+          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
+        ],
+        "Complete sales atomically with deterministic FEFO row locks": [
+          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
+        ],
+        "Deliver keyboard-first POS, sales, and prescription UI-UX": [
+          ["Deliver lightweight prescription workflows over the existing models", "Malik"],
+          ["Build server-side POS search, barcode, cart, and totals logic", "Malik"],
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"]
+        ],
+        "Deliver print-ready sales invoice and receipt output": [
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"]
+        ],
+        "Verify prescription, POS, sale-completion, and invoice behavior": [
+          ["Deliver lightweight prescription workflows over the existing models", "Malik"],
+          ["Build server-side POS search, barcode, cart, and totals logic", "Malik"],
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
+          ["Deliver print-ready sales invoice and receipt output", "Mhmd Hajeer"]
+        ],
+        "Process customer returns and refunds with targeted row locks": [
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
+          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
+        ],
+        "Provide invoice search and derived customer/supplier statements": [
+          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
+          ["Process customer returns and refunds with targeted row locks", "Yasser"],
+          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
+        ],
+        "Deliver the essential Phase 1 report queries": [
+          ["Post purchase invoices atomically with targeted locks", "Hala"],
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
+          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
+          ["Process customer returns and refunds with targeted row locks", "Yasser"],
+          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
+        ],
+        "Deliver finance, returns, statements, and reporting UI-UX": [
+          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
+          ["Process customer returns and refunds with targeted row locks", "Yasser"],
+          ["Provide invoice search and derived customer/supplier statements", "Yasser"],
+          ["Deliver the essential Phase 1 report queries", "Yasser"]
+        ],
+        "Verify finance, returns, statements, and report behavior": [
+          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
+          ["Process customer returns and refunds with targeted row locks", "Yasser"],
+          ["Provide invoice search and derived customer/supplier statements", "Yasser"],
+          ["Deliver the essential Phase 1 report queries", "Yasser"]
+        ],
+        "Reconcile the end-to-end financial and inventory effects": [
+          ["Post purchase invoices atomically with targeted locks", "Hala"],
+          ["Post supplier returns against exact batches with targeted row locks", "Hala"],
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
+          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
+          ["Process customer returns and refunds with targeted row locks", "Yasser"],
+          ["Deliver the essential Phase 1 report queries", "Yasser"]
+        ],
+        "Integrate and verify the complete Phase 1 workflow": [
+          ["Post purchase invoices atomically with targeted locks", "Hala"],
+          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
+          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
+          ["Process customer returns and refunds with targeted row locks", "Yasser"],
+          ["Deliver the essential Phase 1 report queries", "Yasser"]
+        ],
+        "Coordinate final documentation and operational handoff": [
+          ["Integrate and verify the complete Phase 1 workflow", "Mhmd Hajeer"]
+        ]
+      };
+
+      function parseCsv(text) {
+        const rows = [];
+        let row = [], value = "", quoted = false;
+        for (let i = 0; i < text.length; i += 1) {
+          const char = text[i];
+          if (quoted) {
+            if (char === '"' && text[i + 1] === '"') { value += '"'; i += 1; }
+            else if (char === '"') quoted = false;
+            else value += char;
+          } else if (char === '"') quoted = true;
+          else if (char === ',') { row.push(value); value = ""; }
+          else if (char === '\n') { row.push(value.replace(/\r$/, "")); if (row.some(Boolean)) rows.push(row); row = []; value = ""; }
+          else value += char;
+        }
+        if (value || row.length) { row.push(value); rows.push(row); }
+        const headers = rows.shift();
+        return rows.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])));
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"})[char]);
+      }
+
+      function acceptanceItems(text) {
+        return text.split(/(?:^|;\s+)(?=\d+\)\s)/).map(item => item.replace(/^\d+\)\s*/, "").trim()).filter(Boolean);
+      }
+
+      function formatDate(value) {
+        const [year, month, day] = value.split("-").map(Number);
+        return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(Date.UTC(year, month - 1, day)));
+      }
+
+      function hoursFor(description) {
+        const match = description.match(/Estimate:\s*(\d+)m/);
+        if (!match) return "Not estimated";
+        const hours = Number(match[1]) / 60;
+        return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} h`;
+      }
+
+      function filesFor(summary) {
+        const profiles = TASK_PROFILES[summary] || [];
+        return [...new Set([...BASE_FILES, ...profiles.flatMap(profile => FILE_PROFILES[profile] || [])])];
+      }
+
+      const data = parseCsv(document.getElementById("backlog-data").textContent.trim());
+      const epics = data.filter(row => row["Issue Type"] === "Epic");
+      const tasks = data.filter(row => row["Issue Type"] !== "Epic");
+      const members = ["Malik", "Mhmd Hajeer", "Hala", "Yasser"];
+
+      function renderSummary() {
+        const points = Object.fromEntries(members.map(member => [member, tasks.filter(task => task.Assignee === member).reduce((sum, task) => sum + Number(task["Story Points"] || 0), 0)]));
+        const max = Math.max(...Object.values(points));
+        const metrics = [
+          `<article class="metric"><span class="metric-label">Approved tasks</span><span class="metric-value">${tasks.length}</span><span class="metric-note">${epics.length} delivery epics</span></article>`,
+          ...members.map(member => `<article class="metric"><span class="metric-label">${escapeHtml(member)}</span><span class="metric-value">${points[member]} pts</span><span class="metric-note">${tasks.filter(task => task.Assignee === member).length} assigned tasks</span><div class="balance-track" aria-hidden="true"><div class="balance-fill" style="width:${(points[member] / max) * 100}%"></div></div></article>`)
+        ];
+        document.getElementById("summary").innerHTML = metrics.join("");
+      }
+
+      function renderTask(task) {
+        const blockers = DEPENDENCIES[task.Summary] || [];
+        const blocked = blockers.length > 0;
+        const blockerMarkup = blocked ? `<div class="blocker"><strong>Blocked by</strong><ul>${blockers.map(([title, owner]) => `<li>${escapeHtml(title)} — <b>${escapeHtml(owner)}</b></li>`).join("")}</ul></div>` : "";
+        const criteria = acceptanceItems(task["Acceptance Criteria"]);
+        const files = filesFor(task.Summary);
+        return `<article class="task-card" data-assignee="${escapeHtml(task.Assignee)}">
+          <div class="task-top"><h3 class="task-title">${escapeHtml(task.Summary)}</h3><span class="badge ${blocked ? "blocked" : "ready"}">${blocked ? "Blocked" : "Ready to start"}</span></div>
+          <div class="task-meta">
+            <span class="meta-chip">${escapeHtml(task.Assignee)}</span>
+            <span class="meta-chip">${escapeHtml(hoursFor(task.Description))}</span>
+            <span class="meta-chip">Due ${escapeHtml(formatDate(task["Sprint/Due Date"]))}</span>
+            ${task["Story Points"] ? `<span class="meta-chip">${escapeHtml(task["Story Points"])} points</span>` : ""}
+          </div>
+          ${blockerMarkup}
+          <details class="task-details"><summary>Acceptance criteria (${criteria.length})</summary><ol>${criteria.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ol></details>
+          <details class="task-details"><summary>Files to attach for your AI assistant (${files.length})</summary><ul>${files.map(file => `<li><code>${escapeHtml(file)}</code></li>`).join("")}</ul></details>
+        </article>`;
+      }
+
+      function renderBoard() {
+        const html = epics.map((epic, index) => {
+          const epicTasks = tasks.filter(task => task["Epic Link"] === epic.Summary);
+          return `<details class="epic" data-epic="${escapeHtml(epic.Summary)}" ${index === 0 ? "open" : ""}>
+            <summary><span><span class="epic-title">${escapeHtml(epic.Summary)}</span><span class="epic-count">${epicTasks.length} tasks</span></span></summary>
+            <div class="task-grid">${epicTasks.map(renderTask).join("")}</div>
+          </details>`;
+        }).join("");
+        document.getElementById("task-board").innerHTML = html;
+      }
+
+      let mode = "all";
+      const memberSelect = document.getElementById("member-select");
+      const allButton = document.getElementById("all-plans");
+      const myButton = document.getElementById("my-plan");
+
+      function applyView() {
+        const selected = memberSelect.value;
+        let visible = 0;
+        document.querySelectorAll(".epic").forEach(epic => {
+          let epicVisible = 0;
+          epic.querySelectorAll(".task-card").forEach(card => {
+            const show = mode === "all" || card.dataset.assignee === selected;
+            card.hidden = !show;
+            if (show) { visible += 1; epicVisible += 1; }
+          });
+          epic.hidden = epicVisible === 0;
+          if (mode === "mine" && epicVisible > 0) epic.open = true;
+          const count = epic.querySelector(".epic-count");
+          count.textContent = `${epicVisible} ${epicVisible === 1 ? "task" : "tasks"}`;
+        });
+        allButton.setAttribute("aria-pressed", String(mode === "all"));
+        myButton.setAttribute("aria-pressed", String(mode === "mine"));
+        document.getElementById("board-caption").textContent = mode === "all" ? `All ${tasks.length} approved Phase 1 tasks, grouped by epic.` : `${visible} approved tasks assigned to ${selected}, grouped by epic.`;
+        document.getElementById("empty-state").style.display = visible ? "none" : "block";
+      }
+
+      allButton.addEventListener("click", () => { mode = "all"; applyView(); });
+      myButton.addEventListener("click", () => { mode = "mine"; applyView(); });
+      memberSelect.addEventListener("change", () => { if (mode === "all") mode = "mine"; applyView(); });
+
+      document.querySelectorAll(".copy-button").forEach(button => {
+        button.addEventListener("click", async () => {
+          const text = button.closest(".prompt-card").querySelector("p").textContent.trim();
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch (_) {
+            const area = document.createElement("textarea");
+            area.value = text;
+            area.style.position = "fixed";
+            area.style.opacity = "0";
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            area.remove();
+          }
+          const original = button.textContent;
+          button.textContent = "Copied";
+          window.setTimeout(() => { button.textContent = original; }, 1500);
+        });
+      });
+
+      renderSummary();
+      renderBoard();
+      applyView();
+    })();
+  </script>
+</body>
+</html>
