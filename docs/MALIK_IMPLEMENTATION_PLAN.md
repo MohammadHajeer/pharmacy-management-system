@@ -24,7 +24,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | ---: | --- | --- | --- |
 | 0 | `E1-T01` / work item `1100` | Coordinate the approved Phase 1 source of truth and dated delivery plan | Done |
 | 1 | `E1-T04` / work item `1400` | Complete core settings workflow logic over the existing models | Done |
-| 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Not started |
+| 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Done |
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Not started |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Not started |
 | 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Hala and Yasser dependencies |
@@ -186,14 +186,14 @@ git status --short
 
 Confirm literally:
 
-- [ ] `SAL-`, `PUR-`, `CRT-`, `SRT-`, and `CRF-` use the complete uppercase UUID hex.
-- [ ] Draft sales and purchase numbers may remain blank until completion/posting.
-- [ ] The helper contract assigns return/refund numbers at creation time when called by the owning creation service.
-- [ ] Output is deterministic and compatible with database uniqueness.
-- [ ] Focused tests cover every prefix and retry behavior.
-- [ ] No sequence infrastructure, unrelated file, model change, or migration drift exists.
+- [x] `SAL-`, `PUR-`, `CRT-`, `SRT-`, and `CRF-` use the complete uppercase UUID hex.
+- [x] Draft sales and purchase numbers may remain blank until completion/posting.
+- [x] The helper contract assigns return/refund numbers at creation time when called by the owning creation service.
+- [x] Output is deterministic and compatible with database uniqueness.
+- [x] Focused tests cover every prefix and retry behavior.
+- [x] No sequence infrastructure, unrelated file, model change, or migration drift exists.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -515,4 +515,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next milestone eligible to start is **Milestone 2 — Central UUID-derived document numbering (`E1-T06`)**. It remains **Not started** until Malik says **continue**.
+The next milestone eligible to start is **Milestone 3 — Lightweight prescription backend workflow (`E3-T01`)**. It remains **Not started** until Malik says **continue**.

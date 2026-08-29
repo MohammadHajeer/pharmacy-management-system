@@ -1,10 +1,20 @@
 from decimal import Decimal
+from uuid import UUID
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group, Permission
 from django.core.exceptions import PermissionDenied
 from django.test import SimpleTestCase, TestCase
 
+from .document_numbers import (
+    DocumentKind,
+    customer_refund_number_for_creation,
+    customer_return_number_for_creation,
+    generate_document_number,
+    purchase_invoice_number_for_posting,
+    sales_invoice_number_for_completion,
+    supplier_return_number_for_creation,
+)
 from .forms import PaymentMethodForm, PharmacySettingsForm, TaxRateForm
 from .models import PaymentMethod, PharmacySettings, TaxRate
 from .services import (
@@ -352,3 +362,119 @@ class CoreSettingsServiceTests(TestCase):
                     "is_active": "on",
                 },
             )
+
+
+class DocumentNumberTests(SimpleTestCase):
+    document_id = UUID("abcdefab-cdef-abcd-efab-cdefabcdefab")
+
+    def test_every_lifecycle_wrapper_uses_approved_full_uuid_format(self):
+        cases = (
+            (
+                DocumentKind.SALES_INVOICE,
+                sales_invoice_number_for_completion,
+                "SAL",
+            ),
+            (
+                DocumentKind.PURCHASE_INVOICE,
+                purchase_invoice_number_for_posting,
+                "PUR",
+            ),
+            (
+                DocumentKind.CUSTOMER_RETURN,
+                customer_return_number_for_creation,
+                "CRT",
+            ),
+            (
+                DocumentKind.SUPPLIER_RETURN,
+                supplier_return_number_for_creation,
+                "SRT",
+            ),
+            (
+                DocumentKind.CUSTOMER_REFUND,
+                customer_refund_number_for_creation,
+                "CRF",
+            ),
+        )
+
+        for kind, wrapper, prefix in cases:
+            with self.subTest(kind=kind):
+                expected = f"{prefix}-{self.document_id.hex.upper()}"
+                self.assertEqual(
+                    generate_document_number(self.document_id, kind),
+                    expected,
+                )
+                self.assertEqual(wrapper(self.document_id), expected)
+                self.assertEqual(len(expected), 36)
+                self.assertEqual(expected, expected.upper())
+
+    def test_generation_is_retry_safe_and_uuid_specific(self):
+        first = sales_invoice_number_for_completion(self.document_id)
+
+        self.assertEqual(
+            first,
+            sales_invoice_number_for_completion(self.document_id),
+        )
+        self.assertNotEqual(
+            first,
+            sales_invoice_number_for_completion(
+                UUID("00000000-0000-0000-0000-000000000001")
+            ),
+        )
+
+    def test_invalid_uuid_and_document_kind_are_rejected(self):
+        with self.assertRaisesRegex(TypeError, "document_id must be a UUID"):
+            generate_document_number(str(self.document_id), DocumentKind.SALES_INVOICE)
+
+        with self.assertRaisesRegex(TypeError, "kind must be a DocumentKind"):
+            generate_document_number(self.document_id, "sales_invoice")
+
+    def test_generated_numbers_fit_every_existing_document_field(self):
+        from apps.purchasing.models import PurchaseInvoice
+        from apps.returns.models import CustomerRefund, CustomerReturn, SupplierReturn
+        from apps.sales.models import SalesInvoice
+
+        document_fields = (
+            (SalesInvoice, "invoice_number"),
+            (PurchaseInvoice, "invoice_number"),
+            (CustomerReturn, "return_number"),
+            (SupplierReturn, "return_number"),
+            (CustomerRefund, "refund_number"),
+        )
+
+        for model, field_name in document_fields:
+            with self.subTest(model=model.__name__):
+                field = model._meta.get_field(field_name)
+                self.assertEqual(field.max_length, 40)
+                self.assertLessEqual(36, field.max_length)
+
+        self.assertIn(
+            "sales_completed_invoice_number_unique",
+            {constraint.name for constraint in SalesInvoice._meta.constraints},
+        )
+        self.assertIn(
+            "purchasing_posted_invoice_number_unique",
+            {constraint.name for constraint in PurchaseInvoice._meta.constraints},
+        )
+
+    def test_sales_and_purchase_numbers_remain_blank_for_new_drafts(self):
+        from apps.purchasing.models import PurchaseInvoice
+        from apps.sales.models import SalesInvoice
+
+        for model in (SalesInvoice, PurchaseInvoice):
+            with self.subTest(model=model.__name__):
+                field = model._meta.get_field("invoice_number")
+                self.assertTrue(field.blank)
+                self.assertEqual(field.get_default(), "")
+
+    def test_return_and_refund_numbers_are_required_and_unique(self):
+        from apps.returns.models import CustomerRefund, CustomerReturn, SupplierReturn
+
+        for model, field_name in (
+            (CustomerReturn, "return_number"),
+            (SupplierReturn, "return_number"),
+            (CustomerRefund, "refund_number"),
+        ):
+            with self.subTest(model=model.__name__):
+                field = model._meta.get_field(field_name)
+                self.assertFalse(field.blank)
+                self.assertTrue(field.unique)
