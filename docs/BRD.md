@@ -630,7 +630,7 @@ Suggested Phase 1 capability matrix:
 | User/group/permission administration |          Full |                              No |                   No |                    No |
 | Medicine catalog                     |          Full |                     View/search |                 Full |                  View |
 | Batch/inventory lookup               |          Full |                            View |                 Full |                  View |
-| Stock changes                        |          Full |        Through sale/return only |                 Full |                    No |
+| Stock changes                        |          Full |        Through sale/return only | Through purchase receiving and supplier returns only; no direct/manual adjustment workflow in Phase 1. |                    No |
 | Suppliers                            |          Full |                              No |                 Full |                  View |
 | Customers                            |          Full |              Create/view/select |                 View |                  View |
 | Prescriptions                        |          Full |                            Full |                   No |                    No |
