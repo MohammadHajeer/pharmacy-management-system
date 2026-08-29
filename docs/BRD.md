@@ -1,8 +1,6 @@
 # Pharmacy Management System — Business Requirements Document
 
 **Document status:** Phase 1 minimum scope baseline  
-**Delivery window:** 9 calendar days  
-**Product type:** Single-pharmacy, full-stack Django modular monolith  
 **Purpose:** Define only the minimum connected pharmacy workflow the team must complete for Phase 1.
 
 ---
@@ -32,28 +30,56 @@ Phase 1 must preserve:
 - Django Forms / ModelForms
 - Django ORM
 - PostgreSQL hosted on Neon
-- Django built-in `User`
-- username/password authentication
-- Django sessions
-- Django Groups and Permissions
-- the exact groups:
-  - `Owner / Admin`
-  - `Pharmacist`
-  - `Inventory Manager`
-  - `Accountant`
 - Tailwind CSS v4
 - vanilla JavaScript
 - `uv` for Python dependencies
 - npm for frontend tooling
 - feature apps under `apps/`
 - shared layouts/components under root `templates/`
-- the current login/logout flow
-- the current navigation/context-processor architecture
 - the current shared UI foundation
 
 The Pharmacist performs POS/cashier duties. There is no separate Cashier role.
 
-The existing authentication implementation must not be replaced with email login, JWT, DRF authentication, or a custom User model.
+---
+
+# Assumptions, Constraints & Non-Functional Requirements
+
+## Delivery and team constraints
+
+- Phase 1 is delivered within 9 calendar days by a four-person team.
+- The product is a single-pharmacy, full-stack Django modular monolith built by extending the existing repository rather than replacing its foundation.
+- The delivery priority is the connected end-to-end Phase 1 workflow, not an exhaustive enterprise ERP.
+
+Primary implementation ownership is:
+
+| Team member | Primary ownership |
+| --- | --- |
+| Mhmd Hajeer | Core/platform, authentication, shared design/UI, and final integration |
+| Hala | Catalog, parties, inventory, purchasing, and supplier returns |
+| Malik | POS, sales, prescriptions, and sales invoice/receipt output |
+| Yasser | Finance, payments, customer returns/refunds, and reporting |
+
+Ownership coordinates implementation work; it does not change the business permissions in section 6.
+
+## Security
+
+- Preserve the current username/password authentication built on Django's built-in `User`, `AuthenticationForm`, sessions, authentication middleware, and CSRF protection.
+- Preserve the current login flow and POST-only, CSRF-protected logout flow; do not replace them with email login, JWT, DRF authentication, a custom User model, or a separate authorization system.
+- Use Django Groups and Permissions with the exact groups `Owner / Admin`, `Pharmacist`, `Inventory Manager`, and `Accountant`.
+- `Owner / Admin` receives full business-system access through group permissions; other access follows the matrix in section 6.
+- Every protected view and business action enforces authentication and permission checks server-side. Preserve the current permission-aware navigation/context-processor architecture as a usability layer; it is never the security boundary.
+
+## Minimum audit and traceability
+
+- The domain-specific actor, timestamp, source-reference, stock-movement, transaction-snapshot, and payment-reversal records defined in this BRD and the approved ERD are the required Phase 1 audit trail.
+- Posted/completed financial and inventory history is retained; effective transactions are not silently rewritten or hard-deleted.
+- Phase 1 does not require a generic `AuditEvent` model, enterprise audit platform, or complex reversal state machine.
+
+## Practical performance expectations
+
+- Performance is scoped to normal small-scale, single-pharmacy Phase 1 use; no multi-branch or enterprise-load target is assumed.
+- Common catalog lookup, barcode/POS lookup, FEFO allocation, invoice/payment lookup, and minimum reports use the approved database indexes, direct query/services, and targeted transaction locks without adding duplicate summary tables.
+- Correct stock, financial, permission, and transaction behavior takes priority over caching or distributed infrastructure. Redis and formal enterprise performance targets are not required for Phase 1.
 
 ---
 
@@ -79,16 +105,10 @@ Return / Refund
 Basic Reports
 ```
 
-The priority is a working end-to-end pharmacy system, not an exhaustive enterprise ERP.
-
----
-
 # 4. Phase 1 Success Conditions
 
 Phase 1 is complete when:
 
-- staff can log in using the existing authentication flow;
-- each role sees and accesses only allowed functionality;
 - medicines, suppliers, customers, and prescriptions can be managed;
 - purchases create/receive medicine batches and increase stock;
 - inventory is batch-aware and prevents selling expired stock;
@@ -99,7 +119,6 @@ Phase 1 is complete when:
 - unpaid, partially paid, and paid balances are represented correctly;
 - customer and supplier returns affect the correct stock and financial balance;
 - basic reports use real stored transactions;
-- important protected views enforce Django permissions server-side;
 - the system works against the shared Neon PostgreSQL database.
 
 ---
@@ -108,32 +127,7 @@ Phase 1 is complete when:
 
 ## 5.1 Authentication and Authorization
 
-Phase 1 shall use the existing authentication system.
-
-Required:
-
-- username/password login;
-- logout;
-- Django sessions;
-- Django Groups;
-- Django model permissions;
-- custom business permissions only where necessary;
-- role-aware navigation;
-- server-side permission enforcement on protected views/actions;
-- `Owner / Admin` receives full business-system access through group permissions.
-
-Navigation visibility is UX only and must not replace server-side authorization.
-
-### Required groups
-
-Exactly:
-
-- `Owner / Admin`
-- `Pharmacist`
-- `Inventory Manager`
-- `Accountant`
-
-No custom `Role` model is required.
+Authentication, session handling, authorization, exact group names, and the prohibition on a custom `Role` model are governed by the consolidated security requirements above. Role capabilities are defined in section 6.
 
 ---
 
@@ -643,8 +637,6 @@ Suggested Phase 1 capability matrix:
 | Reports                              |          Full |                     Operational | Inventory/purchasing |             Financial |
 | Settings                             |          Full |                              No |                   No | View only if required |
 
-Every protected view/action must enforce permission on the server.
-
 ---
 
 # 7. Phase 1 Django App Boundaries
@@ -741,7 +733,6 @@ Every increase/decrease must create a corresponding `StockMovement` in the same 
 - Timestamps are timezone-aware and stored by Django in UTC (`USE_TZ = True`).
 - The repository's explicit Phase 1 business timezone is UTC (`TIME_ZONE = "UTC"`), so FEFO expiry eligibility uses `timezone.localdate()` under UTC. Changing to another pharmacy timezone later requires an explicit settings/code decision and regression tests around midnight; agents must not infer a timezone from a developer machine.
 - Master data with history is deactivated rather than hard-deleted.
-- Posted transactions remain traceable.
 - Payments remain separate from invoices.
 
 ### Document numbering
