@@ -27,7 +27,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Not started |
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Not started |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Not started |
-| 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Hala, Mhmd Hajeer, and Yasser dependencies |
+| 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Hala and Yasser dependencies |
 | 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
 | 7 | `E1-T09` / work item `1800` | Coordinate final documentation and operational handoff | Blocked — Mhmd Hajeer's final integration milestone |
 
@@ -350,7 +350,7 @@ Confirm literally:
 
 - Malik milestones 2, 3, and 4 are `Done`.
 - **Hala:** `E2-T02 — Implement authoritative inventory and FEFO services with row locking` is merged, tested, and exposes the approved public allocation/deduction service. This includes its prerequisite `E2-T03` uniqueness constraints.
-- **Mhmd Hajeer:** `E1-T08 — Review and apply pending Phase 1 follow-up migrations to Neon` is genuinely `Done`, with the finance/inventory/sales follow-up migrations confirmed applied. A status flag alone is insufficient; `showmigrations` evidence is required.
+- **Verified prerequisite:** Mhmd Hajeer's `E1-T08 — Review and apply pending Phase 1 follow-up migrations to Neon` is `Done`. On 2026-08-29, `showmigrations` confirmed the finance, inventory, returns, and sales follow-up migrations applied, and `migrate --plan` reported no planned operations.
 - **Yasser:** `E4-T01 — Post and reverse customer and supplier payments with invoice row locks` is merged and exposes the approved customer-payment operation needed for an optional initial payment.
 - An isolated PostgreSQL test database is available for real row-lock concurrency tests; SQLite is not accepted as proof of PostgreSQL locking behavior.
 
@@ -389,7 +389,7 @@ Confirm literally:
 - [ ] No inventory or finance logic was duplicated and no dependency file was edited.
 - [ ] Only milestone files changed and there is no migration drift.
 
-**Status:** Blocked — Hala owns unfinished `E2-T02` authoritative inventory/FEFO locking; Mhmd Hajeer owns unfinished `E1-T08` migration application/verification; Yasser owns unfinished `E4-T01` payment services. Do not start this milestone until all three dependencies are confirmed complete.
+**Status:** Blocked — Hala owns unfinished `E2-T02` authoritative inventory/FEFO locking, and Yasser owns unfinished `E4-T01` payment services. The former Mhmd Hajeer migration blocker (`E1-T08`) is verified complete. Do not start this milestone until the two remaining dependencies are confirmed complete.
 
 ---
 

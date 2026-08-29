@@ -12,7 +12,7 @@ This document records the current application foundation and Phase 1 schema scaf
 - Inspection date: 2026-08-29
 - Reconciliation date: 2026-08-29
 - Reconciliation scope: targeted Phase 1 unit economics, stock-traceability constraints, invoice-versus-statement balance rules, and finance-owned report permission
-- Database state: follow-up migrations were generated and verified against temporary SQLite but were not applied to Neon in this reconciliation
+- Database state: on 2026-08-29, read-only verification confirmed all repository migrations applied on Neon; `migrate --plan` reported no planned operations
 
 The implementation snapshot remains valid when a later commit changes only documentation. Secrets are not reproduced here. The tracked settings file currently contains development-only values; see the risks section.
 
@@ -225,7 +225,7 @@ All project-owned business models use UUID primary keys. Django auth/session/adm
 
 Established schema patterns include UUIDs, Decimal money/quantity fields, `PROTECT` for transaction relationships, `is_active` for deactivation, explicit status choices, model `clean()` validation, database checks/indexes, conditional uniqueness for posted/completed invoice numbers, and immutable-style stock history.
 
-Follow-up migrations now define uniqueness of `(sales_invoice_line, batch)` for sale allocations, uniqueness of non-null authoritative stock-movement source lines, and the finance-owned financial-report permission. They are normal migrations after the already-applied baseline and must be applied through the team's normal migration process; this reconciliation task did not apply them to Neon.
+Follow-up migrations define uniqueness of `(sales_invoice_line, batch)` for sale allocations, uniqueness of non-null authoritative stock-movement source lines, and the finance-owned financial-report permission. Read-only verification on 2026-08-29 confirmed these migrations applied on Neon; no migration was applied by the verification task.
 
 ## 9. Reusable utilities and patterns
 
@@ -309,7 +309,7 @@ Follow-up migrations now define uniqueness of `(sales_invoice_line, batch)` for 
 | -------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Permission provisioning    | Only the financial-report permission is assigned deterministically | Add the remaining tested group-permission matrix before feature authorization is considered complete |
 | Transaction races          | No posting/allocation/payment services exist yet           | Use the BRD/ERD targeted row-lock rules from the first implementation                                       |
-| Pending schema rollout     | Three reviewed follow-up migrations exist but were not applied by this task | Apply them through the coordinated Neon migration process before posting/return services depend on them |
+| Applied schema verification | All reviewed follow-up migrations were confirmed applied on Neon on 2026-08-29 | Continue using coordinated, additive migrations; never rewrite shared migration history |
 | Document numbers           | Models validate uniqueness but do not generate identifiers | Implement the approved UUID-derived service helper centrally                                                |
 | Dashboard truth            | Values are illustrative samples                            | Replace with permission-scoped queries; never present sample values as live data                            |
 | Navigation coverage        | Only catalog has a Phase 1 business route                  | Add routes incrementally within owning apps and preserve disabled-link behavior                             |
