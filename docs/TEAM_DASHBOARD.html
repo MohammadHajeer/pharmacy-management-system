@@ -216,6 +216,161 @@
     .empty-state { display: none; padding: 42px 20px; border: 1px dashed #bac9d5; border-radius: var(--radius); text-align: center; color: var(--muted); background: rgba(255,255,255,.65); }
     .source-note { margin: 28px 0 0; color: var(--muted); font-size: .78rem; text-align: center; }
 
+
+    /* Dynamic task-status controls */
+    .badge.done { color: #0d5f4b; background: #dff5eb; }
+    .task-card.status-done { border-color: #c9e9dc; background: #fbfffd; }
+    .task-card.status-blocked { border-color: #ead8b5; }
+    .task-id { color: var(--muted); font-size: .68rem; font-weight: 800; letter-spacing: .05em; }
+    .status-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 14px;
+    }
+    .status-control {
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      min-height: 44px;
+      color: #40566c;
+      font-size: .8rem;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+    .status-control input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .status-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex: 0 0 auto;
+      border: 1px solid #c7d3dd;
+      border-radius: 999px;
+      background: #e8eef3;
+      transition: background .16s ease, border-color .16s ease;
+    }
+    .status-switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(16,42,67,.24);
+      transition: transform .16s ease;
+    }
+    .status-control input:checked + .status-switch {
+      border-color: #138064;
+      background: #1c9a78;
+    }
+    .status-control input:checked + .status-switch::after { transform: translateX(20px); }
+    .status-control input:focus-visible + .status-switch {
+      outline: 3px solid rgba(23,107,135,.28);
+      outline-offset: 3px;
+    }
+    .status-control input:disabled + .status-switch { opacity: .48; cursor: not-allowed; }
+    .status-control.is-disabled { cursor: not-allowed; opacity: .72; }
+    .read-only-status { color: var(--muted); font-size: .76rem; font-weight: 750; }
+    .dependency-warning {
+      margin: 1px 0 13px;
+      padding: 10px 11px;
+      border-left: 3px solid #c66a27;
+      border-radius: 7px;
+      color: #743b16;
+      background: #fff3e8;
+      font-size: .79rem;
+    }
+    .dependency-warning strong { display: block; margin-bottom: 3px; }
+    .dependency-warning ul { margin: 0; padding-left: 18px; }
+    .status-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-left: auto;
+    }
+    .save-status-button {
+      min-height: 42px;
+      padding: 9px 13px;
+      border: 0;
+      border-radius: 10px;
+      color: #fff;
+      background: var(--blue);
+      cursor: pointer;
+      font-weight: 820;
+    }
+    .save-status-button:hover { background: #105974; }
+    .save-status-button:focus-visible {
+      outline: 3px solid rgba(23,107,135,.28);
+      outline-offset: 3px;
+    }
+    .unsaved-indicator {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      color: #8a5700;
+      font-size: .76rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .unsaved-indicator::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d58a12;
+    }
+    .unsaved-indicator[hidden] { display: none; }
+    .status-diagnostics {
+      display: none;
+      margin: -8px 0 20px;
+      padding: 12px 14px;
+      border: 1px solid #efcf9a;
+      border-radius: 12px;
+      color: #6f4708;
+      background: #fff9eb;
+      font-size: .8rem;
+    }
+    .status-diagnostics.visible { display: block; }
+    .status-diagnostics strong { display: block; margin-bottom: 4px; }
+    .status-diagnostics ul { margin: 0; padding-left: 18px; }
+    .dependency-dialog {
+      width: min(520px, calc(100% - 28px));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0;
+      color: var(--ink);
+      background: var(--panel);
+      box-shadow: 0 22px 60px rgba(16,42,67,.24);
+    }
+    .dependency-dialog::backdrop { background: rgba(11,31,54,.42); }
+    .dialog-body { padding: 22px; }
+    .dialog-body h3 { margin: 0; font-size: 1.08rem; }
+    .dialog-body p { margin: 8px 0 10px; color: var(--muted); font-size: .88rem; }
+    .dialog-body ul { margin: 0; padding-left: 20px; color: #465b70; font-size: .84rem; }
+    .dialog-actions { display: flex; gap: 9px; justify-content: flex-end; margin-top: 18px; }
+    .dialog-button {
+      min-height: 42px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .dialog-button.confirm { border-color: #b96125; color: #fff; background: #b96125; }
+
     @media (max-width: 980px) {
       .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .context-grid { grid-template-columns: 1fr; }
@@ -229,6 +384,8 @@
       .tabs { width: 100%; }
       .tab { flex: 1; }
       .member-control { justify-content: space-between; }
+      .status-actions { width: 100%; justify-content: space-between; margin-left: 0; }
+      .save-status-button { flex: 0 0 auto; }
       .onboarding-grid, .task-grid { grid-template-columns: 1fr; }
       .task-grid { padding-inline: 12px; }
       .task-top { flex-direction: column; }
@@ -239,6 +396,8 @@
       .panel { padding: 17px; }
       .onboarding-grid { grid-template-columns: 1fr; }
       .member-control { align-items: stretch; flex-direction: column; }
+      .status-actions { align-items: stretch; flex-direction: column; }
+      .save-status-button { width: 100%; }
       select { max-width: none; width: 100%; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -274,7 +433,12 @@
           <option>Yasser</option>
         </select>
       </label>
+      <div class="status-actions" aria-label="Task status file controls">
+        <span class="unsaved-indicator" id="unsaved-indicator" hidden>Unsaved status changes</span>
+        <button class="save-status-button" id="save-status-file" type="button">Save My Status File</button>
+      </div>
     </div>
+    <div class="status-diagnostics" id="status-diagnostics" role="status" aria-live="polite"></div>
 
     <section class="section" aria-labelledby="context-title">
       <div class="section-heading">
@@ -350,6 +514,18 @@
       <div class="empty-state" id="empty-state">No tasks match this view.</div>
     </section>
 
+      <dialog class="dependency-dialog" id="dependency-dialog" aria-labelledby="dependency-dialog-title">
+        <div class="dialog-body">
+          <h3 id="dependency-dialog-title">Reopen completed prerequisite?</h3>
+          <p id="dependency-dialog-message">Reopening this task will affect dependent work.</p>
+          <ul id="dependency-dialog-list"></ul>
+          <div class="dialog-actions">
+            <button class="dialog-button" id="dependency-dialog-cancel" type="button">Cancel</button>
+            <button class="dialog-button confirm" id="dependency-dialog-confirm" type="button">Reopen task</button>
+          </div>
+        </div>
+      </dialog>
+
     <p class="source-note">Built only from the current BRD, ERD, approved Jira backlog, and repository implementation context. Acceptance criteria and assignments are preserved from the backlog.</p>
   </main>
 
@@ -389,6 +565,11 @@
 "Story","Verify finance, returns, statements, and report behavior","Add focused tests for remaining finance/reporting logic, targeted-lock concurrency, permissions, reconciliation, and rollback; reuse baseline model tests. Estimate: 360m.","Finance / Returns / Reporting","Yasser","8","Highest","2026-09-06","1) Tests cover partial/multiple payments, overpayment rejection, reversals, return/refund caps, safe/unsafe restocking, statements, reports, COGS, permissions, and rollback; 2) concurrency tests prevent double payment and over-return; 3) report totals reconcile to source records; 4) tests use isolated data."
 "Story","Reconcile the end-to-end financial and inventory effects","Validate one representative cross-domain scenario from purchase receiving through sale, partial/full payment, customer return/refund, supplier return, balances, and reports. Estimate: 240m.","Finance / Returns / Reporting","Yasser","5","Highest","2026-09-06","1) Stock movements reconcile to batch changes; 2) original invoice balances reconcile to active posted payments only, while net customer/supplier statement balances separately reconcile returns and refunds; 3) COGS and gross profit use stored allocation costs; 4) statements reconcile to authoritative transaction events and may differ from original invoice balances because returns/refunds are separate entries; 5) no source transaction is silently rewritten; 6) discrepancies fail the acceptance run with traceable evidence; 7) no general ledger or credit-note subsystem is introduced."
   </script>
+
+  <script src="task-status/member-1.js"></script>
+  <script src="task-status/member-2.js"></script>
+  <script src="task-status/member-3.js"></script>
+  <script src="task-status/member-4.js"></script>
 
   <script>
     (() => {
@@ -456,93 +637,76 @@
         "Reconcile the end-to-end financial and inventory effects": ["integration", "purchasing", "sales", "finance", "customerReturn", "reports"]
       };
 
+      const TASK_IDS_BY_SUMMARY = {
+        "Coordinate the approved Phase 1 source of truth and dated delivery plan": "E1-T01",
+        "Provision the exact role permissions and enforce the existing authentication boundary": "E1-T02",
+        "Integrate the shared application UI and permission-aware navigation": "E1-T03",
+        "Complete core settings workflow logic over the existing models": "E1-T04",
+        "Deliver the core settings UI-UX": "E1-T05",
+        "Implement approved UUID-derived document numbering": "E1-T06",
+        "Integrate and verify the complete Phase 1 workflow": "E1-T07",
+        "Review and apply pending Phase 1 follow-up migrations to Neon": "E1-T08",
+        "Coordinate final documentation and operational handoff": "E1-T09",
+        "Expose catalog and party workflows over the existing models": "E2-T01",
+        "Implement authoritative inventory and FEFO services with row locking": "E2-T02",
+        "Add the two approved stock-traceability uniqueness constraints": "E2-T03",
+        "Post purchase invoices atomically with targeted locks": "E2-T04",
+        "Post supplier returns against exact batches with targeted row locks": "E2-T05",
+        "Deliver catalog, inventory, purchasing, and supplier-return UI-UX": "E2-T06",
+        "Verify catalog, inventory, purchasing, and supplier-return behavior": "E2-T07",
+        "Deliver lightweight prescription workflows over the existing models": "E3-T01",
+        "Build server-side POS search, barcode, cart, and totals logic": "E3-T02",
+        "Complete sales atomically with deterministic FEFO row locks": "E3-T03",
+        "Deliver keyboard-first POS, sales, and prescription UI-UX": "E3-T04",
+        "Deliver print-ready sales invoice and receipt output": "E3-T05",
+        "Verify prescription, POS, sale-completion, and invoice behavior": "E3-T06",
+        "Post and reverse customer and supplier payments with invoice row locks": "E4-T01",
+        "Process customer returns and refunds with targeted row locks": "E4-T02",
+        "Provide invoice search and derived customer/supplier statements": "E4-T03",
+        "Deliver the essential Phase 1 report queries": "E4-T04",
+        "Deliver finance, returns, statements, and reporting UI-UX": "E4-T05",
+        "Verify finance, returns, statements, and report behavior": "E4-T06",
+        "Reconcile the end-to-end financial and inventory effects": "E4-T07"
+      };
+
+      const MEMBER_KEYS = {
+        "Malik": "member-1",
+        "Mhmd Hajeer": "member-2",
+        "Hala": "member-3",
+        "Yasser": "member-4"
+      };
+
+      const MEMBER_FILES = {
+        "member-1": "member-1.js",
+        "member-2": "member-2.js",
+        "member-3": "member-3.js",
+        "member-4": "member-4.js"
+      };
+
+      const VALID_STATES = new Set(["not_started", "done"]);
+
       const DEPENDENCIES = {
-        "Deliver the core settings UI-UX": [
-          ["Complete core settings workflow logic over the existing models", "Malik"]
-        ],
-        "Implement authoritative inventory and FEFO services with row locking": [
-          ["Add the two approved stock-traceability uniqueness constraints", "Hala"]
-        ],
-        "Post purchase invoices atomically with targeted locks": [
-          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
-        ],
-        "Post supplier returns against exact batches with targeted row locks": [
-          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
-        ],
-        "Deliver catalog, inventory, purchasing, and supplier-return UI-UX": [
-          ["Expose catalog and party workflows over the existing models", "Hala"],
-          ["Post purchase invoices atomically with targeted locks", "Hala"],
-          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
-        ],
-        "Verify catalog, inventory, purchasing, and supplier-return behavior": [
-          ["Expose catalog and party workflows over the existing models", "Hala"],
-          ["Implement authoritative inventory and FEFO services with row locking", "Hala"],
-          ["Post purchase invoices atomically with targeted locks", "Hala"],
-          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
-        ],
-        "Complete sales atomically with deterministic FEFO row locks": [
-          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
-        ],
-        "Deliver keyboard-first POS, sales, and prescription UI-UX": [
-          ["Deliver lightweight prescription workflows over the existing models", "Malik"],
-          ["Build server-side POS search, barcode, cart, and totals logic", "Malik"],
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"]
-        ],
-        "Deliver print-ready sales invoice and receipt output": [
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"]
-        ],
-        "Verify prescription, POS, sale-completion, and invoice behavior": [
-          ["Deliver lightweight prescription workflows over the existing models", "Malik"],
-          ["Build server-side POS search, barcode, cart, and totals logic", "Malik"],
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
-          ["Deliver print-ready sales invoice and receipt output", "Mhmd Hajeer"]
-        ],
-        "Process customer returns and refunds with targeted row locks": [
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
-          ["Implement authoritative inventory and FEFO services with row locking", "Hala"]
-        ],
-        "Provide invoice search and derived customer/supplier statements": [
-          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
-          ["Process customer returns and refunds with targeted row locks", "Yasser"],
-          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
-        ],
-        "Deliver the essential Phase 1 report queries": [
-          ["Post purchase invoices atomically with targeted locks", "Hala"],
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
-          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
-          ["Process customer returns and refunds with targeted row locks", "Yasser"],
-          ["Post supplier returns against exact batches with targeted row locks", "Hala"]
-        ],
-        "Deliver finance, returns, statements, and reporting UI-UX": [
-          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
-          ["Process customer returns and refunds with targeted row locks", "Yasser"],
-          ["Provide invoice search and derived customer/supplier statements", "Yasser"],
-          ["Deliver the essential Phase 1 report queries", "Yasser"]
-        ],
-        "Verify finance, returns, statements, and report behavior": [
-          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
-          ["Process customer returns and refunds with targeted row locks", "Yasser"],
-          ["Provide invoice search and derived customer/supplier statements", "Yasser"],
-          ["Deliver the essential Phase 1 report queries", "Yasser"]
-        ],
-        "Reconcile the end-to-end financial and inventory effects": [
-          ["Post purchase invoices atomically with targeted locks", "Hala"],
-          ["Post supplier returns against exact batches with targeted row locks", "Hala"],
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
-          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
-          ["Process customer returns and refunds with targeted row locks", "Yasser"],
-          ["Deliver the essential Phase 1 report queries", "Yasser"]
-        ],
-        "Integrate and verify the complete Phase 1 workflow": [
-          ["Post purchase invoices atomically with targeted locks", "Hala"],
-          ["Complete sales atomically with deterministic FEFO row locks", "Malik"],
-          ["Post and reverse customer and supplier payments with invoice row locks", "Yasser"],
-          ["Process customer returns and refunds with targeted row locks", "Yasser"],
-          ["Deliver the essential Phase 1 report queries", "Yasser"]
-        ],
-        "Coordinate final documentation and operational handoff": [
-          ["Integrate and verify the complete Phase 1 workflow", "Mhmd Hajeer"]
-        ]
+        "E1-T05": ["E1-T04"],
+        "E1-T07": ["E2-T04", "E3-T03", "E4-T01", "E4-T02", "E4-T04", "E1-T08"],
+        "E1-T09": ["E1-T07"],
+
+        "E2-T02": ["E2-T03"],
+        "E2-T04": ["E2-T02"],
+        "E2-T05": ["E2-T02"],
+        "E2-T06": ["E2-T01", "E2-T04", "E2-T05"],
+        "E2-T07": ["E2-T01", "E2-T02", "E2-T04", "E2-T05"],
+
+        "E3-T03": ["E2-T02"],
+        "E3-T04": ["E3-T01", "E3-T02", "E3-T03"],
+        "E3-T05": ["E3-T03"],
+        "E3-T06": ["E3-T01", "E3-T02", "E3-T03", "E3-T05"],
+
+        "E4-T02": ["E3-T03", "E2-T02"],
+        "E4-T03": ["E4-T01", "E4-T02", "E2-T05"],
+        "E4-T04": ["E2-T04", "E3-T03", "E4-T01", "E4-T02", "E2-T05"],
+        "E4-T05": ["E4-T01", "E4-T02", "E4-T03", "E4-T04"],
+        "E4-T06": ["E4-T01", "E4-T02", "E4-T03", "E4-T04"],
+        "E4-T07": ["E2-T04", "E2-T05", "E3-T03", "E4-T01", "E4-T02", "E4-T04"]
       };
 
       function parseCsv(text) {
@@ -593,41 +757,235 @@
       const epics = data.filter(row => row["Issue Type"] === "Epic");
       const tasks = data.filter(row => row["Issue Type"] !== "Epic");
       const members = ["Malik", "Mhmd Hajeer", "Hala", "Yasser"];
+      const diagnostics = [];
+      const dirtyMembers = new Set();
+      const taskById = new Map();
+      const dependentsById = new Map();
+      const statusByMember = {};
+      const originalStatusRegistry = window.teamTaskStatus || {};
+
+      function assignStableTaskIds() {
+        const seen = new Set();
+        const seenSummaries = new Set();
+        tasks.forEach(task => {
+          const taskId = TASK_IDS_BY_SUMMARY[task.Summary];
+          if (!taskId) {
+            diagnostics.push(`No stable task ID is configured for: ${task.Summary || "(blank title)"}.`);
+            return;
+          }
+          if (seenSummaries.has(task.Summary)) diagnostics.push(`Duplicate task title prevents stable ID mapping: ${task.Summary}.`);
+          seenSummaries.add(task.Summary);
+          task.TaskId = taskId;
+          if (seen.has(task.TaskId)) diagnostics.push(`Duplicate stable task ID: ${task.TaskId}.`);
+          seen.add(task.TaskId);
+          taskById.set(task.TaskId, task);
+        });
+        Object.entries(TASK_IDS_BY_SUMMARY).forEach(([summary, taskId]) => {
+          if (!seenSummaries.has(summary)) diagnostics.push(`Stable task ID ${taskId} has no matching task in the backlog: ${summary}.`);
+        });
+        if (tasks.length !== 29) diagnostics.push(`Expected 29 tasks but parsed ${tasks.length}.`);
+      }
+
+      function validateDependencies() {
+        const edgeKeys = new Set();
+        Object.entries(DEPENDENCIES).forEach(([taskId, blockers]) => {
+          if (!taskById.has(taskId)) diagnostics.push(`Dependency target does not exist: ${taskId}.`);
+          const local = new Set();
+          blockers.forEach(blockerId => {
+            if (!taskById.has(blockerId)) diagnostics.push(`Dependency blocker does not exist: ${blockerId} → ${taskId}.`);
+            if (local.has(blockerId)) diagnostics.push(`Duplicate dependency edge: ${blockerId} → ${taskId}.`);
+            local.add(blockerId);
+            const edgeKey = `${blockerId}->${taskId}`;
+            if (edgeKeys.has(edgeKey)) diagnostics.push(`Duplicate dependency edge: ${blockerId} → ${taskId}.`);
+            edgeKeys.add(edgeKey);
+            if (!dependentsById.has(blockerId)) dependentsById.set(blockerId, []);
+            dependentsById.get(blockerId).push(taskId);
+          });
+        });
+
+        const visiting = new Set();
+        const visited = new Set();
+        function visit(id, path) {
+          if (visiting.has(id)) {
+            diagnostics.push(`Dependency cycle detected: ${[...path, id].join(" → ")}.`);
+            return;
+          }
+          if (visited.has(id)) return;
+          visiting.add(id);
+          (DEPENDENCIES[id] || []).forEach(blockerId => visit(blockerId, [...path, id]));
+          visiting.delete(id);
+          visited.add(id);
+        }
+        tasks.forEach(task => visit(task.TaskId, []));
+      }
+
+      function normalizeStatuses() {
+        members.forEach(member => {
+          const key = MEMBER_KEYS[member];
+          const raw = originalStatusRegistry[key];
+          const normalized = {};
+          const expected = tasks.filter(task => task.Assignee === member);
+          const expectedIds = new Set(expected.map(task => task.TaskId));
+          const seenIds = new Set();
+
+          const sourceIsValidList = Array.isArray(raw);
+          if (!sourceIsValidList) {
+            diagnostics.push(`${MEMBER_FILES[key]} is missing or malformed; its tasks are using safe in-memory not_started defaults.`);
+          }
+
+          const entries = sourceIsValidList ? raw : [];
+          entries.forEach((entry, index) => {
+            if (!Array.isArray(entry) || entry.length !== 2) {
+              diagnostics.push(`${MEMBER_FILES[key]} has a malformed status entry at position ${index + 1}; ignoring it.`);
+              return;
+            }
+            const [taskId, state] = entry;
+            if (typeof taskId !== "string") {
+              diagnostics.push(`${MEMBER_FILES[key]} has a non-string task ID at position ${index + 1}; ignoring it.`);
+              return;
+            }
+            if (seenIds.has(taskId)) {
+              diagnostics.push(`${MEMBER_FILES[key]} contains duplicate task ID ${taskId}; keeping the first valid occurrence.`);
+              return;
+            }
+            seenIds.add(taskId);
+            if (!taskById.has(taskId)) {
+              diagnostics.push(`${MEMBER_FILES[key]} contains unknown task ID ${taskId}.`);
+              return;
+            }
+            if (!expectedIds.has(taskId)) {
+              diagnostics.push(`${MEMBER_FILES[key]} contains ${taskId}, but that task belongs to another member.`);
+              return;
+            }
+            if (!VALID_STATES.has(state)) {
+              diagnostics.push(`${MEMBER_FILES[key]} has invalid state "${String(state)}" for ${taskId}; using not_started.`);
+              normalized[taskId] = "not_started";
+              return;
+            }
+            normalized[taskId] = state;
+          });
+
+          expected.forEach(task => {
+            if (!(task.TaskId in normalized)) {
+              if (sourceIsValidList) diagnostics.push(`${MEMBER_FILES[key]} is missing ${task.TaskId}; using not_started.`);
+              normalized[task.TaskId] = "not_started";
+            }
+          });
+          statusByMember[key] = normalized;
+        });
+      }
+
+      function renderDiagnostics() {
+        const box = document.getElementById("status-diagnostics");
+        if (!diagnostics.length) {
+          box.classList.remove("visible");
+          box.textContent = "";
+          return;
+        }
+        box.classList.add("visible");
+        box.replaceChildren();
+        const strong = document.createElement("strong");
+        strong.textContent = "Task-status diagnostic";
+        const list = document.createElement("ul");
+        diagnostics.forEach(message => {
+          const item = document.createElement("li");
+          item.textContent = message;
+          list.appendChild(item);
+        });
+        box.append(strong, list);
+      }
+
+      function memberKeyForTask(task) {
+        return MEMBER_KEYS[task.Assignee];
+      }
+
+      function storedState(taskId) {
+        const task = taskById.get(taskId);
+        if (!task) return "not_started";
+        return statusByMember[memberKeyForTask(task)]?.[taskId] || "not_started";
+      }
+
+      function unfinishedDependencies(taskId) {
+        return (DEPENDENCIES[taskId] || []).filter(blockerId => storedState(blockerId) !== "done");
+      }
+
+      function displayState(taskId) {
+        if (storedState(taskId) === "done") return "done";
+        return unfinishedDependencies(taskId).length ? "blocked" : "ready";
+      }
 
       function renderSummary() {
         const points = Object.fromEntries(members.map(member => [member, tasks.filter(task => task.Assignee === member).reduce((sum, task) => sum + Number(task["Story Points"] || 0), 0)]));
         const max = Math.max(...Object.values(points));
         const metrics = [
           `<article class="metric"><span class="metric-label">Approved tasks</span><span class="metric-value">${tasks.length}</span><span class="metric-note">${epics.length} delivery epics</span></article>`,
-          ...members.map(member => `<article class="metric"><span class="metric-label">${escapeHtml(member)}</span><span class="metric-value">${points[member]} pts</span><span class="metric-note">${tasks.filter(task => task.Assignee === member).length} assigned tasks</span><div class="balance-track" aria-hidden="true"><div class="balance-fill" style="width:${(points[member] / max) * 100}%"></div></div></article>`)
+          ...members.map(member => {
+            const assigned = tasks.filter(task => task.Assignee === member);
+            const done = assigned.filter(task => storedState(task.TaskId) === "done").length;
+            return `<article class="metric"><span class="metric-label">${escapeHtml(member)}</span><span class="metric-value">${points[member]} pts</span><span class="metric-note">${assigned.length} assigned tasks · ${done} done</span><div class="balance-track" aria-hidden="true"><div class="balance-fill" style="width:${(points[member] / max) * 100}%"></div></div></article>`;
+          })
         ];
         document.getElementById("summary").innerHTML = metrics.join("");
       }
 
+      function taskTitle(taskId) {
+        return taskById.get(taskId)?.Summary || taskId;
+      }
+
+      function blockerMarkupFor(taskId, state) {
+        const openBlockers = unfinishedDependencies(taskId);
+        if (!openBlockers.length) return "";
+        const items = openBlockers.map(blockerId => {
+          const blocker = taskById.get(blockerId);
+          return `<li>${escapeHtml(blocker?.Summary || blockerId)} — <b>${escapeHtml(blocker?.Assignee || "Unknown")}</b></li>`;
+        }).join("");
+        if (state === "done") {
+          return `<div class="dependency-warning"><strong>Dependency inconsistency</strong><div>This task remains marked Done, but the following prerequisite work is no longer Done:</div><ul>${items}</ul></div>`;
+        }
+        return `<div class="blocker"><strong>Blocked by</strong><ul>${items}</ul></div>`;
+      }
+
+      function renderStatusControl(task, state) {
+        const selected = memberSelect.value;
+        const editable = task.Assignee === selected;
+        if (!editable) return `<span class="read-only-status">Read-only</span>`;
+        const blocked = state === "blocked";
+        const checked = storedState(task.TaskId) === "done";
+        const label = checked ? "Done" : blocked ? "Blocked" : "Mark done";
+        return `<label class="status-control${blocked ? " is-disabled" : ""}">
+          <input class="task-complete-toggle" type="checkbox" data-task-id="${escapeHtml(task.TaskId)}" ${checked ? "checked" : ""} ${blocked ? "disabled" : ""} aria-label="${checked ? "Reopen" : "Mark done"} ${escapeHtml(task.Summary)}">
+          <span class="status-switch" aria-hidden="true"></span>
+          <span>${label}</span>
+        </label>`;
+      }
+
       function renderTask(task) {
-        const blockers = DEPENDENCIES[task.Summary] || [];
-        const blocked = blockers.length > 0;
-        const blockerMarkup = blocked ? `<div class="blocker"><strong>Blocked by</strong><ul>${blockers.map(([title, owner]) => `<li>${escapeHtml(title)} — <b>${escapeHtml(owner)}</b></li>`).join("")}</ul></div>` : "";
+        const state = displayState(task.TaskId);
+        const badgeText = state === "done" ? "Done" : state === "blocked" ? "Blocked" : "Ready to start";
+        const badgeClass = state === "done" ? "done" : state;
         const criteria = acceptanceItems(task["Acceptance Criteria"]);
         const files = filesFor(task.Summary);
-        return `<article class="task-card" data-assignee="${escapeHtml(task.Assignee)}">
-          <div class="task-top"><h3 class="task-title">${escapeHtml(task.Summary)}</h3><span class="badge ${blocked ? "blocked" : "ready"}">${blocked ? "Blocked" : "Ready to start"}</span></div>
+        return `<article class="task-card status-${badgeClass}" data-task-id="${escapeHtml(task.TaskId)}" data-assignee="${escapeHtml(task.Assignee)}">
+          <div class="task-top"><div><div class="task-id">${escapeHtml(task.TaskId)}</div><h3 class="task-title">${escapeHtml(task.Summary)}</h3></div><span class="badge ${badgeClass}">${badgeText}</span></div>
           <div class="task-meta">
             <span class="meta-chip">${escapeHtml(task.Assignee)}</span>
             <span class="meta-chip">${escapeHtml(hoursFor(task.Description))}</span>
             <span class="meta-chip">Due ${escapeHtml(formatDate(task["Sprint/Due Date"]))}</span>
             ${task["Story Points"] ? `<span class="meta-chip">${escapeHtml(task["Story Points"])} points</span>` : ""}
           </div>
-          ${blockerMarkup}
+          ${blockerMarkupFor(task.TaskId, state)}
           <details class="task-details"><summary>Acceptance criteria (${criteria.length})</summary><ol>${criteria.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ol></details>
           <details class="task-details"><summary>Files to attach for your AI assistant (${files.length})</summary><ul>${files.map(file => `<li><code>${escapeHtml(file)}</code></li>`).join("")}</ul></details>
+          <div class="status-row">${renderStatusControl(task, state)}</div>
         </article>`;
       }
 
-      function renderBoard() {
+      function renderBoard(preserveOpen = false) {
+        const openEpics = preserveOpen ? new Set([...document.querySelectorAll(".epic[open]")].map(epic => epic.dataset.epic)) : new Set();
         const html = epics.map((epic, index) => {
           const epicTasks = tasks.filter(task => task["Epic Link"] === epic.Summary);
-          return `<details class="epic" data-epic="${escapeHtml(epic.Summary)}" ${index === 0 ? "open" : ""}>
+          const shouldOpen = preserveOpen ? openEpics.has(epic.Summary) : index === 0;
+          return `<details class="epic" data-epic="${escapeHtml(epic.Summary)}" ${shouldOpen ? "open" : ""}>
             <summary><span><span class="epic-title">${escapeHtml(epic.Summary)}</span><span class="epic-count">${epicTasks.length} tasks</span></span></summary>
             <div class="task-grid">${epicTasks.map(renderTask).join("")}</div>
           </details>`;
@@ -639,6 +997,22 @@
       const memberSelect = document.getElementById("member-select");
       const allButton = document.getElementById("all-plans");
       const myButton = document.getElementById("my-plan");
+      const saveButton = document.getElementById("save-status-file");
+      const unsavedIndicator = document.getElementById("unsaved-indicator");
+      const dependencyDialog = document.getElementById("dependency-dialog");
+      const dependencyDialogMessage = document.getElementById("dependency-dialog-message");
+      const dependencyDialogList = document.getElementById("dependency-dialog-list");
+      const dependencyDialogCancel = document.getElementById("dependency-dialog-cancel");
+      const dependencyDialogConfirm = document.getElementById("dependency-dialog-confirm");
+      let pendingReopenTaskId = null;
+
+      function selectedMemberKey() {
+        return MEMBER_KEYS[memberSelect.value];
+      }
+
+      function updateUnsavedIndicator() {
+        unsavedIndicator.hidden = !dirtyMembers.has(selectedMemberKey());
+      }
 
       function applyView() {
         const selected = memberSelect.value;
@@ -659,11 +1033,132 @@
         myButton.setAttribute("aria-pressed", String(mode === "mine"));
         document.getElementById("board-caption").textContent = mode === "all" ? `All ${tasks.length} approved Phase 1 tasks, grouped by epic.` : `${visible} approved tasks assigned to ${selected}, grouped by epic.`;
         document.getElementById("empty-state").style.display = visible ? "none" : "block";
+        updateUnsavedIndicator();
       }
+
+      function refreshDashboard() {
+        renderSummary();
+        renderBoard(true);
+        applyView();
+      }
+
+      function directAffectedDependents(taskId) {
+        return (dependentsById.get(taskId) || []).filter(dependentId => {
+          const dependentState = storedState(dependentId);
+          if (dependentState === "done") return true;
+          return displayState(dependentId) === "ready";
+        });
+      }
+
+      function setTaskState(taskId, nextState) {
+        const task = taskById.get(taskId);
+        if (!task || !VALID_STATES.has(nextState)) return;
+        const key = memberKeyForTask(task);
+        statusByMember[key][taskId] = nextState;
+        dirtyMembers.add(key);
+        refreshDashboard();
+      }
+
+      function openReopenWarning(taskId, affectedIds) {
+        pendingReopenTaskId = taskId;
+        dependencyDialogMessage.textContent = "Reopening this completed prerequisite will block or flag dependent work until the prerequisite is completed again:";
+        dependencyDialogList.replaceChildren();
+        affectedIds.forEach(id => {
+          const item = document.createElement("li");
+          const task = taskById.get(id);
+          item.textContent = `${task?.Summary || id} — ${task?.Assignee || "Unknown"}`;
+          dependencyDialogList.appendChild(item);
+        });
+        if (typeof dependencyDialog.showModal === "function") dependencyDialog.showModal();
+        else if (window.confirm(`${dependencyDialogMessage.textContent}\n\n${affectedIds.map(taskTitle).join("\n")}`)) {
+          setTaskState(taskId, "not_started");
+          pendingReopenTaskId = null;
+        } else {
+          pendingReopenTaskId = null;
+          refreshDashboard();
+        }
+      }
+
+      document.getElementById("task-board").addEventListener("change", event => {
+        const toggle = event.target.closest(".task-complete-toggle");
+        if (!toggle) return;
+        event.stopPropagation();
+        const taskId = toggle.dataset.taskId;
+        const task = taskById.get(taskId);
+        if (!task || task.Assignee !== memberSelect.value) {
+          refreshDashboard();
+          return;
+        }
+
+        if (toggle.checked) {
+          if (unfinishedDependencies(taskId).length) {
+            refreshDashboard();
+            return;
+          }
+          setTaskState(taskId, "done");
+          return;
+        }
+
+        const affected = directAffectedDependents(taskId);
+        if (affected.length) openReopenWarning(taskId, affected);
+        else setTaskState(taskId, "not_started");
+      });
+
+      dependencyDialogCancel.addEventListener("click", () => {
+        pendingReopenTaskId = null;
+        dependencyDialog.close();
+        refreshDashboard();
+      });
+
+      dependencyDialogConfirm.addEventListener("click", () => {
+        const taskId = pendingReopenTaskId;
+        pendingReopenTaskId = null;
+        dependencyDialog.close();
+        if (taskId) setTaskState(taskId, "not_started");
+      });
+
+      dependencyDialog.addEventListener("cancel", () => {
+        pendingReopenTaskId = null;
+        window.setTimeout(refreshDashboard, 0);
+      });
+
+      function exportedStatusFile(memberKey) {
+        const member = members.find(name => MEMBER_KEYS[name] === memberKey);
+        const owned = tasks.filter(task => task.Assignee === member);
+        const lines = [
+          "window.teamTaskStatus = window.teamTaskStatus || {};",
+          `window.teamTaskStatus[${JSON.stringify(memberKey)}] = [`
+        ];
+        owned.forEach((task, index) => {
+          const comma = index < owned.length - 1 ? "," : "";
+          lines.push(`  [${JSON.stringify(task.TaskId)}, ${JSON.stringify(statusByMember[memberKey][task.TaskId])}]${comma}`);
+        });
+        lines.push("];", "");
+        return lines.join("\n");
+      }
+
+      saveButton.addEventListener("click", () => {
+        const key = selectedMemberKey();
+        const blob = new Blob([exportedStatusFile(key)], { type: "text/javascript;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = MEMBER_FILES[key];
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+        dirtyMembers.delete(key);
+        updateUnsavedIndicator();
+      });
 
       allButton.addEventListener("click", () => { mode = "all"; applyView(); });
       myButton.addEventListener("click", () => { mode = "mine"; applyView(); });
-      memberSelect.addEventListener("change", () => { if (mode === "all") mode = "mine"; applyView(); });
+      memberSelect.addEventListener("change", () => {
+        if (mode === "all") mode = "mine";
+        renderBoard(true);
+        applyView();
+      });
 
       document.querySelectorAll(".copy-button").forEach(button => {
         button.addEventListener("click", async () => {
@@ -686,6 +1181,10 @@
         });
       });
 
+      assignStableTaskIds();
+      validateDependencies();
+      normalizeStatuses();
+      renderDiagnostics();
       renderSummary();
       renderBoard();
       applyView();
