@@ -915,14 +915,14 @@
       }
 
       function renderSummary() {
-        const points = Object.fromEntries(members.map(member => [member, tasks.filter(task => task.Assignee === member).reduce((sum, task) => sum + Number(task["Story Points"] || 0), 0)]));
-        const max = Math.max(...Object.values(points));
         const metrics = [
           `<article class="metric"><span class="metric-label">Approved tasks</span><span class="metric-value">${tasks.length}</span><span class="metric-note">${epics.length} delivery epics</span></article>`,
           ...members.map(member => {
             const assigned = tasks.filter(task => task.Assignee === member);
-            const done = assigned.filter(task => storedState(task.TaskId) === "done").length;
-            return `<article class="metric"><span class="metric-label">${escapeHtml(member)}</span><span class="metric-value">${points[member]} pts</span><span class="metric-note">${assigned.length} assigned tasks · ${done} done</span><div class="balance-track" aria-hidden="true"><div class="balance-fill" style="width:${(points[member] / max) * 100}%"></div></div></article>`;
+            const totalPoints = assigned.reduce((sum, task) => sum + Number(task["Story Points"] || 0), 0);
+            const completedPoints = assigned.filter(task => storedState(task.TaskId) === "done").reduce((sum, task) => sum + Number(task["Story Points"] || 0), 0);
+            const completionPercent = totalPoints ? (completedPoints / totalPoints) * 100 : 0;
+            return `<article class="metric"><span class="metric-label">${escapeHtml(member)}</span><span class="metric-value">${completionPercent.toFixed(1)}%</span><span class="metric-note">${completedPoints} of ${totalPoints} points done</span><div class="balance-track" aria-hidden="true"><div class="balance-fill" style="width:${completionPercent}%"></div></div></article>`;
           })
         ];
         document.getElementById("summary").innerHTML = metrics.join("");
