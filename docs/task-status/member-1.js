@@ -1,3 +1,4 @@
+// Malik status synchronized with TEAM_DASHBOARD.html through E3-T01.
 window.teamTaskStatus = window.teamTaskStatus || {};
 window.teamTaskStatus["member-1"] = [
   ["E1-T01", "done"],
