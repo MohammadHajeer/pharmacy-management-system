@@ -25,7 +25,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 0 | `E1-T01` / work item `1100` | Coordinate the approved Phase 1 source of truth and dated delivery plan | Done |
 | 1 | `E1-T04` / work item `1400` | Complete core settings workflow logic over the existing models | Done |
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Done |
-| 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Not started |
+| 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Done |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Not started |
 | 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Hala and Yasser dependencies |
 | 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
@@ -249,14 +249,14 @@ git status --short
 
 Confirm literally:
 
-- [ ] Authorized callers can create and retrieve lightweight prescriptions with optional customer/prescriber and medicine items.
-- [ ] Required quantities and instructions validate according to the approved schema.
-- [ ] POS can consume non-clinical prescription-required warning data.
-- [ ] No clinical advice or complex prescription lifecycle was added.
-- [ ] File upload remains disabled because its prerequisites are not approved.
-- [ ] Only milestone files changed and there is no migration drift.
+- [x] Authorized callers can create and retrieve lightweight prescriptions with optional customer/prescriber and medicine items.
+- [x] Required quantities and instructions validate according to the approved schema.
+- [x] POS can consume non-clinical prescription-required warning data.
+- [x] No clinical advice or complex prescription lifecycle was added.
+- [x] File upload remains disabled because its prerequisites are not approved.
+- [x] Only milestone files changed and there is no migration drift.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -446,7 +446,7 @@ Confirm literally:
 - [ ] Tests create isolated data and do not depend on shared Neon state.
 - [ ] No production or unrelated file changed and there is no migration drift.
 
-**Status:** Blocked — Malik's `E3-T01`, `E3-T02`, and `E3-T03` are unfinished, and Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
+**Status:** Blocked — Malik's `E3-T02` and `E3-T03` are unfinished, and Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
 
 ---
 
@@ -515,4 +515,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next milestone eligible to start is **Milestone 3 — Lightweight prescription backend workflow (`E3-T01`)**. It remains **Not started** until Malik says **continue**.
+The next milestone eligible to start is **Milestone 4 — Server-authoritative draft POS logic (`E3-T02`)**. It remains **Not started** until Malik says **continue**.
