@@ -71,6 +71,7 @@ pharmacy-management-system/
 │   ├── layouts/{auth,dashboard}.html
 │   └── components/{badge,button,card,input,modal,select,sidebar,textarea,toast,topbar}.html
 └── docs/
+    ├── BACKUP_RUNBOOK.md
     ├── BRD.md
     ├── COMPONENTS.md
     ├── DEVELOPMENT_GUIDE.md
@@ -290,6 +291,7 @@ The approved ERD now requires two follow-up constraints before the related servi
 
 ### Before settings, database, or deployment changes
 
+- `docs/BACKUP_RUNBOOK.md`
 - `config/settings.py`
 - `pyproject.toml`
 - `uv.lock`
