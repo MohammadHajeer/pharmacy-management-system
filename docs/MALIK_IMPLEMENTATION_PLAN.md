@@ -23,7 +23,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | Order | Backlog ID | Malik-owned story | Current status |
 | ---: | --- | --- | --- |
 | 0 | `E1-T01` / work item `1100` | Coordinate the approved Phase 1 source of truth and dated delivery plan | Done |
-| 1 | `E1-T04` / work item `1400` | Complete core settings workflow logic over the existing models | Not started |
+| 1 | `E1-T04` / work item `1400` | Complete core settings workflow logic over the existing models | Done |
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Not started |
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Not started |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Not started |
@@ -129,13 +129,13 @@ git status --short
 
 Confirm literally:
 
-- [ ] Only Owner/Admin-authorized callers can change settings.
-- [ ] Singleton settings, one currency, tax ranges, low-stock/expiry defaults, and payment-method activation are validated.
-- [ ] No secret or environment setting is exposed.
-- [ ] Existing model and database constraints remain authoritative and unchanged.
-- [ ] Only the milestone files are changed and there is no migration drift.
+- [x] Only Owner/Admin-authorized callers can change settings.
+- [x] Singleton settings, one currency, tax ranges, low-stock/expiry defaults, and payment-method activation are validated.
+- [x] No secret or environment setting is exposed.
+- [x] Existing model and database constraints remain authoritative and unchanged.
+- [x] Only the milestone files are changed and there is no migration drift.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -515,4 +515,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next milestone eligible to start is **Milestone 1 — Core settings workflow logic (`E1-T04`)**. No implementation starts until Malik approves this plan and says **continue**.
+The next milestone eligible to start is **Milestone 2 — Central UUID-derived document numbering (`E1-T06`)**. It remains **Not started** until Malik says **continue**.
