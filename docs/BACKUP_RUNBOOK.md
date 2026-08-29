@@ -12,12 +12,12 @@ Use placeholders in commands and keep real URLs only in temporary environment va
 
 ## Choose the recovery method
 
-| Need | Use |
-| --- | --- |
-| Recover a recent accidental change | Neon instant restore within the configured history window |
-| Save a point before a migration or bulk change | Manual Neon snapshot |
-| Keep a portable/off-platform copy | `pg_dump` custom-format export |
-| Recover from a portable export | `pg_restore` into an empty isolated database, verify, then cut over |
+| Need                                           | Use                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| Recover a recent accidental change             | Neon instant restore within the configured history window           |
+| Save a point before a migration or bulk change | Manual Neon snapshot                                                |
+| Keep a portable/off-platform copy              | `pg_dump` custom-format export                                      |
+| Recover from a portable export                 | `pg_restore` into an empty isolated database, verify, then cut over |
 
 Neon history retention and snapshot limits depend on the current plan. Check **Settings → Instant restore** and **Postgres database → Backup & Restore** before relying on a particular recovery range. Instant restore and snapshot creation apply to **root branches**; confirm that the shared branch is a root branch.
 

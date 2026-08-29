@@ -10,7 +10,9 @@ This document records the current application foundation and Phase 1 schema scaf
 - Commit date: `2026-08-28T23:28:38+03:00`
 - Commit subject: `feat(auth): enhance login experience with toast notifications for errors`
 - Inspection date: 2026-08-29
-- Scope of this refresh: documentation only; no application code or migration was changed
+- Reconciliation date: 2026-08-29
+- Reconciliation scope: targeted Phase 1 unit economics, stock-traceability constraints, invoice-versus-statement balance rules, and finance-owned report permission
+- Database state: follow-up migrations were generated and verified against temporary SQLite but were not applied to Neon in this reconciliation
 
 The implementation snapshot remains valid when a later commit changes only documentation. Secrets are not reproduced here. The tracked settings file currently contains development-only values; see the risks section.
 
@@ -42,13 +44,13 @@ pharmacy-management-system/
 │   │   ├── urls.py
 │   │   └── views.py
 │   ├── core/                  # models, admin, tests, migrations/0001_initial.py
-│   ├── catalog/               # models/admin/tests/migration plus URLs/view/medicine-list template
+│   ├── catalog/               # models/admin/tests/unit-economics helper plus URLs/view/medicine-list template
 │   ├── parties/               # models, admin, tests, migrations/0001_initial.py
-│   ├── inventory/             # models, admin, tests, migrations/0001_initial.py
+│   ├── inventory/             # models, admin, tests, migrations/0001 and 0002 constraint
 │   ├── purchasing/            # models, admin, tests, migrations/0001_initial.py
 │   ├── prescriptions/         # models, admin, tests, migrations/0001_initial.py
-│   ├── sales/                 # models, admin, tests, migrations/0001_initial.py
-│   ├── finance/               # models, admin, tests, migrations/0001_initial.py
+│   ├── sales/                 # models, admin, tests, migrations/0001 and 0002 constraint
+│   ├── finance/               # models, admin, tests, migrations/0001 and 0002 permission
 │   ├── returns/               # models/admin/tests plus migrations/0001 and 0002
 │   └── reports/               # placeholder app; no business models
 ├── config/
@@ -84,20 +86,20 @@ Every listed app uses `name = "apps.<app>"`. Only `accounts`, `dashboard`, and `
 
 ## 3. Current stack and versions
 
-| Area | Repository evidence |
-| --- | --- |
-| Python | `requires-python = ">=3.13"` |
-| Django | `6.1` in `uv.lock`; `django>=6.1` in `pyproject.toml` |
-| Database URL parsing | `dj-database-url 3.1.2` |
-| PostgreSQL driver | `psycopg 3.3.4` with binary extra |
-| Environment loading | `python-dotenv 1.2.3` |
-| Development reload | `django-browser-reload 1.21.0` |
-| CSS | Tailwind CSS and `@tailwindcss/cli 4.3.3` |
-| Frontend process runner | `concurrently 10.0.5` |
-| Templates/forms/ORM | Django built-ins |
-| Browser behavior | Vanilla JavaScript only |
-| Python tooling | `uv` and `uv.lock` |
-| Frontend tooling | npm and `package-lock.json` |
+| Area                    | Repository evidence                                   |
+| ----------------------- | ----------------------------------------------------- |
+| Python                  | `requires-python = ">=3.13"`                          |
+| Django                  | `6.1` in `uv.lock`; `django>=6.1` in `pyproject.toml` |
+| Database URL parsing    | `dj-database-url 3.1.2`                               |
+| PostgreSQL driver       | `psycopg 3.3.4` with binary extra                     |
+| Environment loading     | `python-dotenv 1.2.3`                                 |
+| Development reload      | `django-browser-reload 1.21.0`                        |
+| CSS                     | Tailwind CSS and `@tailwindcss/cli 4.3.3`             |
+| Frontend process runner | `concurrently 10.0.5`                                 |
+| Templates/forms/ORM     | Django built-ins                                      |
+| Browser behavior        | Vanilla JavaScript only                               |
+| Python tooling          | `uv` and `uv.lock`                                    |
+| Frontend tooling        | npm and `package-lock.json`                           |
 
 No DRF, SPA framework, HTMX, Alpine.js, Bootstrap, task queue, Redis, or alternate authentication library is installed.
 
@@ -124,7 +126,7 @@ The exact groups are:
 3. `Inventory Manager`
 4. `Accountant`
 
-`seed_dev_auth` creates/fetches local users `owner`, `pharmacist`, `inventory`, and `accountant`, using `DEV_AUTH_PASSWORD`, and attaches each user to its group. It does not assign model/custom permissions and does not make `owner` a superuser.
+`seed_dev_auth` creates/fetches local users `owner`, `pharmacist`, `inventory`, and `accountant`, using `DEV_AUTH_PASSWORD`, and attaches each user to its group. It assigns only `finance.view_financial_reports` to Owner / Admin and Accountant, does not yet assign the remaining model/custom permissions, and does not make `owner` a superuser.
 
 The approved BRD chooses **full group permissions** for Owner/Admin, not reliance on `is_superuser`. Permission provisioning is therefore still an implementation task.
 
@@ -140,26 +142,27 @@ finance.post_supplierpayment
 returns.post_customerreturn
 returns.post_supplierreturn
 returns.process_refund
+finance.view_financial_reports
 ```
 
-The reports permission is documented for implementation as `reports.view_financial_reports`; `apps.reports` currently has no business model declaring it.
+`finance.view_financial_reports` is declared on `CustomerPayment`, avoiding a fake persistent reports model. The Reports navigation item uses this permission. Approved group provisioning grants it to Owner / Admin and Accountant only; deterministic provisioning of the complete role matrix remains an implementation task.
 
 ## 5. App and module boundaries
 
-| App | Current implementation boundary |
-| --- | --- |
-| `accounts` | Login/logout, auth tests, and development user/group seed command; no project-owned model |
-| `dashboard` | Authenticated dashboard shell with permission-filtered illustrative data; no project-owned model |
-| `core` | `PharmacySettings`, `TaxRate`, `PaymentMethod` models and initial migration |
-| `catalog` | Medicine master-data models plus the implemented medicine-list route/view/template |
-| `parties` | `Supplier`, `Customer`, `Prescriber` models and initial migration |
-| `inventory` | `MedicineBatch`, append-style `StockMovement`, constraints/indexes; transactional services not yet implemented |
-| `purchasing` | `PurchaseInvoice`, `PurchaseInvoiceLine`, custom posting permission; posting service/UI not yet implemented |
-| `prescriptions` | `Prescription`, `PrescriptionItem`; routed workflows not yet implemented |
-| `sales` | `SalesInvoice`, `SalesInvoiceLine`, `SaleBatchAllocation`, completion permission; POS/completion services not yet implemented |
-| `finance` | Customer/supplier payment models and posting permissions; balance services not yet implemented |
-| `returns` | Customer/supplier returns and customer refund models; posting/refund services not yet implemented |
-| `reports` | Placeholder app with no transaction models; report queries/views not yet implemented |
+| App             | Current implementation boundary                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `accounts`      | Login/logout, auth tests, and development user/group seed command; no project-owned model                                     |
+| `dashboard`     | Authenticated dashboard shell with permission-filtered illustrative data; no project-owned model                              |
+| `core`          | `PharmacySettings`, `TaxRate`, `PaymentMethod` models and initial migration                                                   |
+| `catalog`       | Medicine master-data models plus the implemented medicine-list route/view/template                                            |
+| `parties`       | `Supplier`, `Customer`, `Prescriber` models and initial migration                                                             |
+| `inventory`     | `MedicineBatch`, append-style `StockMovement`, constraints/indexes; transactional services not yet implemented                |
+| `purchasing`    | `PurchaseInvoice`, `PurchaseInvoiceLine`, custom posting permission; posting service/UI not yet implemented                   |
+| `prescriptions` | `Prescription`, `PrescriptionItem`; routed workflows not yet implemented                                                      |
+| `sales`         | `SalesInvoice`, `SalesInvoiceLine`, `SaleBatchAllocation`, completion permission; POS/completion services not yet implemented |
+| `finance`       | Customer/supplier payment models and posting permissions; balance services not yet implemented                                |
+| `returns`       | Customer/supplier returns and customer refund models; posting/refund services not yet implemented                             |
+| `reports`       | Placeholder app with no transaction models; report queries/views not yet implemented                                          |
 
 Do not create duplicate apps named after navigation labels. `catalog` owns Medicines; `parties` owns Suppliers and Customers; `sales`/`purchasing` own invoices; `finance` owns Payments; and `core` owns Settings.
 
@@ -175,21 +178,21 @@ Do not create duplicate apps named after navigation labels. `catalog` owns Medic
 
 Current navigation mapping:
 
-| Label | Namespace | Permission currently configured |
-| --- | --- | --- |
-| Dashboard | `dashboard` | none beyond login |
-| Sales | `sales` | `sales.view_salesinvoice` |
-| Medicines | `catalog` | `catalog.view_medicine` |
-| Inventory | `inventory` | `inventory.view_medicinebatch` |
-| Suppliers | `parties` | `parties.view_supplier` |
-| Customers | `parties` | `parties.view_customer` |
-| Prescriptions | `prescriptions` | `prescriptions.view_prescription` |
-| Purchases | `purchasing` | `purchasing.view_purchaseinvoice` |
-| Invoices | `sales` | `sales.view_salesinvoice` |
-| Payments | `finance` | `finance.view_customerpayment` |
-| Returns & Refunds | `returns` | `returns.view_customerreturn` |
-| Reports | `reports` | not yet configured |
-| Settings | `core` | `core.change_pharmacysettings` |
+| Label             | Namespace       | Permission currently configured   |
+| ----------------- | --------------- | --------------------------------- |
+| Dashboard         | `dashboard`     | none beyond login                 |
+| Sales             | `sales`         | `sales.view_salesinvoice`         |
+| Medicines         | `catalog`       | `catalog.view_medicine`           |
+| Inventory         | `inventory`     | `inventory.view_medicinebatch`    |
+| Suppliers         | `parties`       | `parties.view_supplier`           |
+| Customers         | `parties`       | `parties.view_customer`           |
+| Prescriptions     | `prescriptions` | `prescriptions.view_prescription` |
+| Purchases         | `purchasing`    | `purchasing.view_purchaseinvoice` |
+| Invoices          | `sales`         | `sales.view_salesinvoice`         |
+| Payments          | `finance`       | `finance.view_customerpayment`    |
+| Returns & Refunds | `returns`       | `returns.view_customerreturn`     |
+| Reports           | `reports`       | `finance.view_financial_reports`  |
+| Settings          | `core`          | `core.change_pharmacysettings`    |
 
 Most non-catalog business links remain disabled because their `url_name` is `None`.
 
@@ -207,22 +210,22 @@ Most non-catalog business links remain disabled because their `url_name` is `Non
 
 All project-owned business models use UUID primary keys. Django auth/session/admin tables retain Django identifiers.
 
-| App | Existing models | Existing schema migrations |
-| --- | --- | --- |
-| `core` | PharmacySettings, TaxRate, PaymentMethod | `0001_initial` |
-| `catalog` | Category, Manufacturer, Medicine, MedicineUnit, MedicineBarcode | `0001_initial` |
-| `parties` | Supplier, Customer, Prescriber | `0001_initial` |
-| `inventory` | MedicineBatch, StockMovement | `0001_initial` |
-| `purchasing` | PurchaseInvoice, PurchaseInvoiceLine | `0001_initial` |
-| `prescriptions` | Prescription, PrescriptionItem | `0001_initial` |
-| `sales` | SalesInvoice, SalesInvoiceLine, SaleBatchAllocation | `0001_initial` |
-| `finance` | CustomerPayment, SupplierPayment | `0001_initial` |
-| `returns` | CustomerReturn, CustomerReturnLine, CustomerRefund, SupplierReturn, SupplierReturnLine | `0001_initial`, `0002_...resalable...` |
-| `reports` | none | none beyond package marker |
+| App             | Existing models                                                                        | Existing schema migrations             |
+| --------------- | -------------------------------------------------------------------------------------- | -------------------------------------- |
+| `core`          | PharmacySettings, TaxRate, PaymentMethod                                               | `0001_initial`                         |
+| `catalog`       | Category, Manufacturer, Medicine, MedicineUnit, MedicineBarcode                        | `0001_initial`                         |
+| `parties`       | Supplier, Customer, Prescriber                                                         | `0001_initial`                         |
+| `inventory`     | MedicineBatch, StockMovement                                                           | `0001_initial`, `0002_...source_line_unique` |
+| `purchasing`    | PurchaseInvoice, PurchaseInvoiceLine                                                   | `0001_initial`                         |
+| `prescriptions` | Prescription, PrescriptionItem                                                         | `0001_initial`                         |
+| `sales`         | SalesInvoice, SalesInvoiceLine, SaleBatchAllocation                                    | `0001_initial`, `0002_...line_batch_unique` |
+| `finance`       | CustomerPayment, SupplierPayment                                                       | `0001_initial`, `0002_alter_customerpayment_options` |
+| `returns`       | CustomerReturn, CustomerReturnLine, CustomerRefund, SupplierReturn, SupplierReturnLine | `0001_initial`, `0002_...resalable...` |
+| `reports`       | none                                                                                   | none beyond package marker             |
 
 Established schema patterns include UUIDs, Decimal money/quantity fields, `PROTECT` for transaction relationships, `is_active` for deactivation, explicit status choices, model `clean()` validation, database checks/indexes, conditional uniqueness for posted/completed invoice numbers, and immutable-style stock history.
 
-The approved ERD now requires two follow-up constraints before the related services are completed: uniqueness of `(sales_invoice_line, batch)` for sale allocations and uniqueness of a non-null stock-movement source line. They are not present at the inspected implementation commit.
+Follow-up migrations now define uniqueness of `(sales_invoice_line, batch)` for sale allocations, uniqueness of non-null authoritative stock-movement source lines, and the finance-owned financial-report permission. They are normal migrations after the already-applied baseline and must be applied through the team's normal migration process; this reconciliation task did not apply them to Neon.
 
 ## 9. Reusable utilities and patterns
 
@@ -245,7 +248,7 @@ The approved ERD now requires two follow-up constraints before the related servi
 6. Purchase posting, sale completion, returns, and payments use `transaction.atomic()` plus the targeted `select_for_update()` locks defined in the BRD/ERD.
 7. Stock movements use the documented source mapping for purchase lines, sale allocations, customer-return lines, and supplier-return lines.
 8. Document numbers use the approved deterministic full-UUID formats; do not add a sequence model in Phase 1.
-9. Use Decimal/`ROUND_HALF_UP` calculations and stored transaction snapshots; never use float for authoritative money.
+9. Use `apps.catalog.unit_economics` for three-decimal base quantities, selected-unit selling prices, and four-decimal base acquisition costs. Use Decimal/`ROUND_HALF_UP` calculations and stored transaction snapshots; never use float for authoritative money.
 10. Preserve posted/completed history; cancellation of an effective transaction requires a compensating workflow and is deferred.
 11. `MANUAL_ADJUSTMENT_*` values are reserved and do not authorize a Phase 1 adjustment workflow.
 12. No uploaded prescription attachment should be enabled until media storage, access control, and retention behavior are explicitly configured.
@@ -302,18 +305,17 @@ The approved ERD now requires two follow-up constraints before the related servi
 
 ## 12. Current risks and implementation gaps
 
-| Risk/gap | Current fact | Required handling |
-| --- | --- | --- |
-| Permission provisioning | Groups are seeded without permissions | Add deterministic, tested group-permission provisioning before feature authorization is considered complete |
-| Transaction races | No posting/allocation/payment services exist yet | Use the BRD/ERD targeted row-lock rules from the first implementation |
-| Allocation/return identity | Baseline allocation schema lacks line/batch uniqueness | Add a reviewed migration before customer-return services depend on the pair |
-| Movement idempotence | Generic source fields lack source-line uniqueness | Add the documented conditional uniqueness constraint before posting services |
-| Document numbers | Models validate uniqueness but do not generate identifiers | Implement the approved UUID-derived service helper centrally |
-| Dashboard truth | Values are illustrative samples | Replace with permission-scoped queries; never present sample values as live data |
-| Navigation coverage | Only catalog has a Phase 1 business route | Add routes incrementally within owning apps and preserve disabled-link behavior |
-| Upload security | No media configuration exists | Keep prescription attachments disabled unless storage/access/retention are approved |
-| Development security | Hard-coded development secret, `DEBUG=True`, empty hosts | Move deployment values to environment configuration before production |
-| Shared Neon coordination | Baseline migrations now exist | Never rewrite applied migration history; coordinate and review every new migration |
+| Risk/gap                   | Current fact                                               | Required handling                                                                                           |
+| -------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Permission provisioning    | Only the financial-report permission is assigned deterministically | Add the remaining tested group-permission matrix before feature authorization is considered complete |
+| Transaction races          | No posting/allocation/payment services exist yet           | Use the BRD/ERD targeted row-lock rules from the first implementation                                       |
+| Pending schema rollout     | Three reviewed follow-up migrations exist but were not applied by this task | Apply them through the coordinated Neon migration process before posting/return services depend on them |
+| Document numbers           | Models validate uniqueness but do not generate identifiers | Implement the approved UUID-derived service helper centrally                                                |
+| Dashboard truth            | Values are illustrative samples                            | Replace with permission-scoped queries; never present sample values as live data                            |
+| Navigation coverage        | Only catalog has a Phase 1 business route                  | Add routes incrementally within owning apps and preserve disabled-link behavior                             |
+| Upload security            | No media configuration exists                              | Keep prescription attachments disabled unless storage/access/retention are approved                         |
+| Development security       | Hard-coded development secret, `DEBUG=True`, empty hosts   | Move deployment values to environment configuration before production                                       |
+| Shared Neon coordination   | Baseline migrations now exist                              | Never rewrite applied migration history; coordinate and review every new migration                          |
 
 ## 13. Do Not Break checklist
 

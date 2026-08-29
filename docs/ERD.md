@@ -40,6 +40,29 @@ The project must not replace Django's built-in User model merely to force UUIDs.
 
 Never use float for authoritative financial calculations.
 
+### Unit economics and quantization
+
+The base unit is the inventory unit. `MedicineUnit.conversion_to_base` expresses how many base units are contained in one selected unit.
+
+```python
+quantity_quantum = Decimal("0.001")
+unit_value_quantum = Decimal("0.0001")
+
+base_quantity = (selected_quantity * conversion_to_base).quantize(
+    quantity_quantum,
+    rounding=ROUND_HALF_UP,
+)
+selected_unit_price = (base_unit_price * conversion_to_base).quantize(
+    unit_value_quantum,
+    rounding=ROUND_HALF_UP,
+)
+acquisition_cost_per_base_unit = (
+    selected_purchase_unit_cost / conversion_to_base
+).quantize(unit_value_quantum, rounding=ROUND_HALF_UP)
+```
+
+`Medicine.default_selling_price` is the tax-exclusive base-unit price. `SalesInvoiceLine.unit_price` is the selected-unit price snapshot. `PurchaseInvoiceLine.unit_cost` is the tax-exclusive selected purchase-unit cost. `MedicineBatch.acquisition_cost_per_base_unit` is the converted four-decimal base-unit cost. Phase 1 discounts and tax affect invoice totals but not the acquisition-cost layer. Inventory quantities, allocations, and stock movements use the quantized three-decimal base quantity; the result must be greater than zero.
+
 ### Financial calculation and rounding policy
 
 All authoritative calculations use `Decimal` and `ROUND_HALF_UP`. Prices and costs are tax-exclusive, and tax is calculated after the line discount:
@@ -126,21 +149,21 @@ apps/
 
 Stable navigation labels map to these namespaces/owning apps:
 
-| Navigation label | Namespace / owning app |
-| --- | --- |
-| Dashboard | `dashboard` |
-| Sales | `sales` |
-| Medicines | `catalog` |
-| Inventory | `inventory` |
-| Suppliers | `parties` |
-| Customers | `parties` |
-| Prescriptions | `prescriptions` |
-| Purchases | `purchasing` |
-| Invoices | `sales` |
-| Payments | `finance` |
-| Returns & Refunds | `returns` |
-| Reports | `reports` |
-| Settings | `core` |
+| Navigation label  | Namespace / owning app |
+| ----------------- | ---------------------- |
+| Dashboard         | `dashboard`            |
+| Sales             | `sales`                |
+| Medicines         | `catalog`              |
+| Inventory         | `inventory`            |
+| Suppliers         | `parties`              |
+| Customers         | `parties`              |
+| Prescriptions     | `prescriptions`        |
+| Purchases         | `purchasing`           |
+| Invoices          | `sales`                |
+| Payments          | `finance`              |
+| Returns & Refunds | `returns`              |
+| Reports           | `reports`              |
+| Settings          | `core`                 |
 
 Navigation labels are not additional model-owning apps.
 
@@ -336,7 +359,7 @@ Fields:
 | `dosage_form`              | CharField(100), blank      |
 | `prescription_required`    | Boolean                    |
 | `low_stock_threshold_base` | Decimal(14,3), nullable    |
-| `default_selling_price`    | Decimal(14,4)              |
+| `default_selling_price`    | Decimal(14,4), base-unit tax-exclusive price |
 | `is_active`                | Boolean                    |
 | `created_at`               | DateTime                   |
 | `updated_at`               | DateTime                   |
@@ -515,14 +538,14 @@ Phase 1 does not require stock counts/write-off workflow models. `MANUAL_ADJUSTM
 
 Authoritative source mapping:
 
-| `movement_type` / `source_type` | `source_id` | `source_line_id` | `reference_number` |
-| --- | --- | --- | --- |
-| `PURCHASE_RECEIPT` | `PurchaseInvoice.id` | `PurchaseInvoiceLine.id` | `PurchaseInvoice.invoice_number` |
-| `SALE` | `SalesInvoice.id` | `SaleBatchAllocation.id` | `SalesInvoice.invoice_number` |
-| `CUSTOMER_RETURN_RESTOCK` | `CustomerReturn.id` | `CustomerReturnLine.id` | `CustomerReturn.return_number` |
-| `SUPPLIER_RETURN` | `SupplierReturn.id` | `SupplierReturnLine.id` | `SupplierReturn.return_number` |
+| `movement_type` / `source_type` | `source_id`          | `source_line_id`         | `reference_number`               |
+| ------------------------------- | -------------------- | ------------------------ | -------------------------------- |
+| `PURCHASE_RECEIPT`              | `PurchaseInvoice.id` | `PurchaseInvoiceLine.id` | `PurchaseInvoice.invoice_number` |
+| `SALE`                          | `SalesInvoice.id`    | `SaleBatchAllocation.id` | `SalesInvoice.invoice_number`    |
+| `CUSTOMER_RETURN_RESTOCK`       | `CustomerReturn.id`  | `CustomerReturnLine.id`  | `CustomerReturn.return_number`   |
+| `SUPPLIER_RETURN`               | `SupplierReturn.id`  | `SupplierReturnLine.id`  | `SupplierReturn.return_number`   |
 
-For these four workflows, `source_type` equals the uppercase value in the first column. Exactly one stock movement is allowed for each non-null source line. Enforce this with a conditional unique constraint on `(movement_type, source_type, source_id, source_line_id)` where `source_line_id IS NOT NULL`; service-level validation must also confirm that the movement medicine, batch, direction, quantity, and cost snapshot match the source line/allocation.
+For these four workflows, `source_type` equals the uppercase value in the first column. Exactly one stock movement is allowed for each non-null source line. Constraint `inventory_movement_source_line_unique` enforces uniqueness on `(movement_type, source_type, source_id, source_line_id)` where `source_line_id IS NOT NULL`; null `source_line_id` values remain available for reserved source-less/manual history. Service-level validation must also confirm that the movement medicine, batch, direction, quantity, and cost snapshot match the source line/allocation.
 
 Rules:
 
@@ -586,8 +609,8 @@ Rules:
 | `unit_name_snapshot`            | CharField(80)                              |
 | `quantity`                      | Decimal(14,3)                              |
 | `conversion_to_base_snapshot`   | Decimal(14,6)                              |
-| `received_quantity_base`        | Decimal(14,3)                              |
-| `unit_cost`                     | Decimal(14,4)                              |
+| `received_quantity_base`        | Decimal(14,3), quantized base quantity     |
+| `unit_cost`                     | Decimal(14,4), selected-unit cost snapshot |
 | `discount_amount`               | Decimal(14,2)                              |
 | `tax_rate_percent`              | Decimal(7,4)                               |
 | `tax_amount`                    | Decimal(14,2)                              |
@@ -600,8 +623,10 @@ Rules:
 
 Rules:
 
-- quantity > 0;
+- quantity is the selected purchase-unit quantity and must be > 0;
 - unit belongs to medicine and is purchase-allowed;
+- `received_quantity_base` is `quantity × conversion_to_base_snapshot`, quantized to three decimals with `ROUND_HALF_UP`;
+- the posting service derives `MedicineBatch.acquisition_cost_per_base_unit` as `unit_cost / conversion_to_base_snapshot`, quantized to four decimals with `ROUND_HALF_UP`;
 - cost/discount/tax >= 0;
 - expiry date must be valid at posting;
 - posted line identifies its resulting batch/cost layer.
@@ -697,8 +722,8 @@ Rules:
 | `unit_name_snapshot`                | CharField(80)              |
 | `quantity`                          | Decimal(14,3)              |
 | `conversion_to_base_snapshot`       | Decimal(14,6)              |
-| `requested_quantity_base`           | Decimal(14,3)              |
-| `unit_price`                        | Decimal(14,4)              |
+| `requested_quantity_base`           | Decimal(14,3), quantized base quantity |
+| `unit_price`                        | Decimal(14,4), selected-unit price snapshot |
 | `discount_amount`                   | Decimal(14,2)              |
 | `tax_rate_percent`                  | Decimal(7,4)               |
 | `tax_amount`                        | Decimal(14,2)              |
@@ -710,9 +735,10 @@ Rules:
 
 Rules:
 
-- quantity > 0;
+- quantity is the selected sale-unit quantity and must be > 0;
 - unit belongs to medicine and is sale-allowed;
-- requested base quantity = quantity × conversion snapshot;
+- requested base quantity is `quantity × conversion_to_base_snapshot`, quantized to three decimals with `ROUND_HALF_UP`;
+- unit price is `Medicine.default_selling_price × conversion_to_base_snapshot`, quantized to four decimals with `ROUND_HALF_UP` when the sale snapshot is created;
 - if prescription-required, warning acknowledgment is required before completion.
 
 ## 11.3 SaleBatchAllocation
@@ -736,7 +762,7 @@ Rules:
 - batch belongs to the line medicine;
 - batch is non-expired at completion;
 - total allocations for the line equal requested base quantity;
-- `(sales_invoice_line, batch)` is unique; the allocation service aggregates a line's quantity for the same batch instead of creating duplicates;
+- `(sales_invoice_line, batch)` is unique through `sales_allocation_line_batch_unique`; the allocation service aggregates a line's quantity for the same batch instead of creating duplicates;
 - allocations are created by the sales/inventory service during completion.
 
 COGS for a line is derived from:
@@ -931,6 +957,10 @@ Posting decreases the exact batch through inventory service and creates a negati
 
 No report transaction tables are required.
 
+Invoice balances are historical payment-only values. For sales, `paid_total` sums active posted customer payments and `balance_due = grand_total - paid_total`. For purchases, `paid_total` sums active posted supplier payments and `remaining_balance = grand_total - paid_total`. Later returns, refunds, and supplier returns do not rewrite invoice totals, paid totals, payment status, or balance fields.
+
+Party statements derive a separate net position from invoices, active payments, returns, and refunds. From the pharmacy's perspective, positive means the party owes the pharmacy and negative means the pharmacy owes the party: sales invoices are positive; customer payments and posted return credits are negative; customer refund payouts are positive settlements of return credits; purchase invoices are negative; supplier payments and posted supplier returns are positive. Each event is applied once, with no mutable balance table or general ledger.
+
 Derived queries/services calculate:
 
 - current inventory;
@@ -979,11 +1009,13 @@ purchasing.post_purchaseinvoice
 sales.complete_sale
 finance.post_customerpayment
 finance.post_supplierpayment
+finance.view_financial_reports
 returns.post_customerreturn
 returns.post_supplierreturn
 returns.process_refund
-reports.view_financial_reports
 ```
+
+`finance.view_financial_reports` is declared on `CustomerPayment`, so Django creates it under the existing finance content type without a fake reports model. Owner/Admin and Accountant receive this permission. Pharmacist and Inventory Manager use their owning-app permissions for operational and inventory/purchasing reports; they do not receive the financial-report permission.
 
 Protected views/actions must enforce permissions server-side.
 
@@ -1159,4 +1191,4 @@ To keep the schema implementable within the delivery window:
 7. Purchase posting, sale completion, payments, and returns must use `transaction.atomic()` plus the targeted row locks defined in section 16.
 8. Posted records preserve snapshots and traceability.
 9. Do not reintroduce removed Phase 2 entities during implementation without explicit approval.
-10. Before return services are implemented, add and migrate the required uniqueness constraints for sale-line/batch allocations and stock-movement source lines if they are not yet present in the baseline schema.
+10. Sale-line/batch allocations and non-null authoritative stock-movement source lines must retain their documented uniqueness constraints; never weaken them in posting services or later migrations.

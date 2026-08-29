@@ -1,7 +1,8 @@
 from django.conf import settings
+from django.contrib.auth.models import Permission
 from django.db import models
 from django.db.models import NOT_PROVIDED
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 
 from .models import PaymentStatus, SupplierPayment
 
@@ -38,3 +39,13 @@ class PaymentStatusTests(SimpleTestCase):
         self.assertFalse(reversal_reason.null)
         self.assertTrue(reversal_reason.blank)
         self.assertIs(reversal_reason.default, NOT_PROVIDED)
+
+
+class FinancialReportPermissionTests(TestCase):
+    def test_permission_is_attached_to_customer_payment_content_type(self):
+        permission = Permission.objects.get(
+            content_type__app_label="finance",
+            codename="view_financial_reports",
+        )
+
+        self.assertEqual(permission.content_type.model, "customerpayment")

@@ -105,6 +105,16 @@ class StockMovement(models.Model):
     class Meta:
         db_table = "inventory_stock_movement"
         constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "movement_type",
+                    "source_type",
+                    "source_id",
+                    "source_line_id",
+                ],
+                condition=Q(source_line_id__isnull=False),
+                name="inventory_movement_source_line_unique",
+            ),
             models.CheckConstraint(
                 condition=~Q(quantity_delta_base=0),
                 name="inventory_movement_delta_nonzero",

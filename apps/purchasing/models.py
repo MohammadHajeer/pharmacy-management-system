@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
+from apps.catalog.unit_economics import base_quantity
+
 
 class PurchaseInvoice(models.Model):
     class Status(models.TextChoices):
@@ -192,11 +194,13 @@ class PurchaseInvoiceLine(models.Model):
         if (
             self.quantity is not None
             and self.conversion_to_base_snapshot is not None
+            and self.conversion_to_base_snapshot > 0
             and self.received_quantity_base
-            != self.quantity * self.conversion_to_base_snapshot
+            != base_quantity(self.quantity, self.conversion_to_base_snapshot)
         ):
             errors["received_quantity_base"] = (
-                "Received base quantity must equal quantity multiplied by the conversion snapshot."
+                "Received base quantity must equal the selected quantity multiplied by "
+                "the conversion snapshot and rounded to three decimal places."
             )
         if self.medicine_batch_id:
             if self.medicine_batch.medicine_id != self.medicine_id:

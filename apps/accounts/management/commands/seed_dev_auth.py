@@ -1,7 +1,7 @@
 import os
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand, CommandError
 
 ROLES = {
@@ -10,6 +10,8 @@ ROLES = {
     "inventory": "Inventory Manager",
     "accountant": "Accountant",
 }
+
+FINANCIAL_REPORT_ROLES = {"Owner / Admin", "Accountant"}
 
 
 class Command(BaseCommand):
@@ -23,8 +25,24 @@ class Command(BaseCommand):
 
         User = get_user_model()
 
+        try:
+            financial_report_permission = Permission.objects.get(
+                content_type__app_label="finance",
+                content_type__model="customerpayment",
+                codename="view_financial_reports",
+            )
+        except Permission.DoesNotExist as error:
+            raise CommandError(
+                "finance.view_financial_reports is unavailable. Apply the current migrations first."
+            ) from error
+
         for username, group_name in ROLES.items():
             group, _ = Group.objects.get_or_create(name=group_name)
+
+            if group_name in FINANCIAL_REPORT_ROLES:
+                group.permissions.add(financial_report_permission)
+            else:
+                group.permissions.remove(financial_report_permission)
 
             user, created = User.objects.get_or_create(
                 username=username,

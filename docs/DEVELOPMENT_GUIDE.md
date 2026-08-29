@@ -46,20 +46,22 @@ Keep feature behavior inside its owning app. Project-wide configuration belongs 
 
 The approved Phase 1 business models have one authoritative owning app:
 
-| App | Models owned |
-| --- | --- |
-| `core` | `PharmacySettings`, `TaxRate`, `PaymentMethod` |
-| `catalog` | `Category`, `Manufacturer`, `Medicine`, `MedicineUnit`, `MedicineBarcode` |
-| `parties` | `Supplier`, `Customer`, `Prescriber` |
-| `inventory` | `MedicineBatch`, `StockMovement` |
-| `purchasing` | `PurchaseInvoice`, `PurchaseInvoiceLine` |
-| `prescriptions` | `Prescription`, `PrescriptionItem` |
-| `sales` | `SalesInvoice`, `SalesInvoiceLine`, `SaleBatchAllocation` |
-| `finance` | `CustomerPayment`, `SupplierPayment` |
-| `returns` | `CustomerReturn`, `CustomerReturnLine`, `CustomerRefund`, `SupplierReturn`, `SupplierReturnLine` |
-| `reports` | No database models; reports are derived queries/services |
+| App             | Models owned                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `core`          | `PharmacySettings`, `TaxRate`, `PaymentMethod`                                                   |
+| `catalog`       | `Category`, `Manufacturer`, `Medicine`, `MedicineUnit`, `MedicineBarcode`                        |
+| `parties`       | `Supplier`, `Customer`, `Prescriber`                                                             |
+| `inventory`     | `MedicineBatch`, `StockMovement`                                                                 |
+| `purchasing`    | `PurchaseInvoice`, `PurchaseInvoiceLine`                                                         |
+| `prescriptions` | `Prescription`, `PrescriptionItem`                                                               |
+| `sales`         | `SalesInvoice`, `SalesInvoiceLine`, `SaleBatchAllocation`                                        |
+| `finance`       | `CustomerPayment`, `SupplierPayment`                                                             |
+| `returns`       | `CustomerReturn`, `CustomerReturnLine`, `CustomerRefund`, `SupplierReturn`, `SupplierReturnLine` |
+| `reports`       | No database models; reports are derived queries/services                                         |
 
 Keep the inventory boundary explicit: `Medicine` is the product definition and is not physical inventory. `MedicineBatch` is physical stock and its acquisition-cost layer. `StockMovement` is append-style stock-change history. Future stock-changing workflows must update `MedicineBatch.quantity_available_base` only through `apps.inventory` services and create the corresponding `StockMovement` in the same database transaction.
+
+Unit conversion follows one shared Phase 1 rule: selected quantity × the six-decimal conversion snapshot is quantized to a three-decimal base quantity with `ROUND_HALF_UP`. `Medicine.default_selling_price` is the base-unit price; sales snapshot the derived selected-unit price. Purchase lines snapshot selected-unit cost, while batches store the cost divided by the conversion snapshot and quantized to four decimals. Use `apps.catalog.unit_economics` rather than duplicating these calculations.
 
 ## Extending the existing feature apps
 
@@ -131,6 +133,8 @@ Configure sidebar items once in `config/navigation.py`. `config/context_processo
 
 Do not pass duplicate link lists from views or hardcode them in feature templates. When a feature becomes available, set its `url_name`, preserve its `namespace`, and set its Django permission when the model permission exists.
 
+The financial Reports navigation item uses `finance.view_financial_reports`. The permission is declared on `CustomerPayment` because `apps.reports` intentionally has no persistent model. Financial report views must enforce the same permission server-side. Deterministic group provisioning must grant it to Owner / Admin and Accountant only; Pharmacist and Inventory Manager retain scoped operational or inventory-report access through permissions in their owning apps.
+
 ## Authentication, groups, and permissions
 
 The project uses Django's built-in user model, sessions, groups, and permissions. Do not add a custom role model or another authentication system.
@@ -146,6 +150,8 @@ Groups describe job responsibilities and collect permissions. The sidebar checks
 
 For example, use `permission_required(..., raise_exception=True)` for function views or `PermissionRequiredMixin` for class-based views. Add tests proving that anonymous and unauthorized users cannot reach protected actions. Superuser behavior should remain compatible with Django defaults.
 
+Do not create a reports table solely for permissions. Use `finance.view_financial_reports` for financial reports and keep report data as derived queries/services.
+
 ## Development accounts
 
 The repository does not provide or track shared credentials. For the four standard local users/groups, set a local-only password and run:
@@ -155,7 +161,7 @@ $env:DEV_AUTH_PASSWORD = "use-a-unique-local-password"
 uv run manage.py seed_dev_auth
 ```
 
-The command creates/fetches the four users/groups but intentionally does not assign business permissions. Use the local admin at `http://127.0.0.1:8000/admin/` to attach the permissions needed for the feature under test until deterministic permission provisioning is implemented. Test Owner/Admin as a normal group member, not only as a superuser, because the approved design grants full business access through group permissions.
+The command creates/fetches the four users/groups and assigns `finance.view_financial_reports` only to Owner / Admin and Accountant. It intentionally does not yet assign the remaining business permissions. Use the local admin at `http://127.0.0.1:8000/admin/` to attach the other permissions needed for the feature under test until deterministic permission provisioning is implemented. Test Owner/Admin as a normal group member, not only as a superuser, because the approved design grants full business access through group permissions.
 
 Use clearly fake data and unique local passwords. Never commit credentials, `.env` files, or `db.sqlite3`, and do not depend on another developer's local database. Automated tests must create their own users, groups, permissions, and records.
 

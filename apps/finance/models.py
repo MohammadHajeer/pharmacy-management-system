@@ -52,7 +52,10 @@ class CustomerPayment(models.Model):
 
     class Meta:
         db_table = "finance_customer_payment"
-        permissions = [("post_customerpayment", "Can post customer payment")]
+        permissions = [
+            ("post_customerpayment", "Can post customer payment"),
+            ("view_financial_reports", "Can view financial reports"),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=Q(amount__gt=0),

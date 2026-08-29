@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
+from apps.catalog.unit_economics import base_quantity
+
 
 class SalesInvoice(models.Model):
     class Status(models.TextChoices):
@@ -187,11 +189,13 @@ class SalesInvoiceLine(models.Model):
         if (
             self.quantity is not None
             and self.conversion_to_base_snapshot is not None
+            and self.conversion_to_base_snapshot > 0
             and self.requested_quantity_base
-            != self.quantity * self.conversion_to_base_snapshot
+            != base_quantity(self.quantity, self.conversion_to_base_snapshot)
         ):
             errors["requested_quantity_base"] = (
-                "Requested base quantity must equal quantity multiplied by the conversion snapshot."
+                "Requested base quantity must equal the selected quantity multiplied by "
+                "the conversion snapshot and rounded to three decimal places."
             )
         if (
             self.sales_invoice_id
@@ -228,6 +232,10 @@ class SaleBatchAllocation(models.Model):
     class Meta:
         db_table = "sales_sale_batch_allocation"
         constraints = [
+            models.UniqueConstraint(
+                fields=["sales_invoice_line", "batch"],
+                name="sales_allocation_line_batch_unique",
+            ),
             models.CheckConstraint(
                 condition=Q(allocated_quantity_base__gt=0),
                 name="sales_allocation_quantity_positive",

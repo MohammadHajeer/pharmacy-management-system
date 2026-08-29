@@ -1,4 +1,10 @@
+import os
+from io import StringIO
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -120,3 +126,18 @@ class LogoutViewTests(TestCase):
         self.assertContains(response, 'name="csrfmiddlewaretoken"')
         self.assertContains(response, "Sign out")
         self.assertContains(response, "Signing out...")
+
+
+class SeedDevAuthPermissionTests(TestCase):
+    @patch.dict(os.environ, {"DEV_AUTH_PASSWORD": "local-test-password"})
+    def test_financial_report_permission_is_limited_to_approved_groups(self):
+        call_command("seed_dev_auth", verbosity=0, stdout=StringIO())
+
+        permitted_groups = set(
+            Group.objects.filter(
+                permissions__content_type__app_label="finance",
+                permissions__codename="view_financial_reports",
+            ).values_list("name", flat=True)
+        )
+
+        self.assertEqual(permitted_groups, {"Owner / Admin", "Accountant"})

@@ -102,6 +102,7 @@ class DashboardNavigationTests(TestCase):
             "purchasing.view_purchaseinvoice",
         },
         "Accountant": {
+            "finance.view_financial_reports",
             "finance.view_customerpayment",
             "sales.view_salesinvoice",
         },
@@ -132,7 +133,6 @@ class DashboardNavigationTests(TestCase):
             "Prescriptions",
             "Invoices",
             "Returns & Refunds",
-            "Reports",
             "Logout",
         },
         "Inventory Manager": {
@@ -141,7 +141,6 @@ class DashboardNavigationTests(TestCase):
             "Inventory",
             "Suppliers",
             "Purchases",
-            "Reports",
             "Logout",
         },
         "Accountant": {
@@ -186,6 +185,13 @@ class DashboardNavigationTests(TestCase):
             with self.subTest(role=role_name):
                 items = self.navigation_for(role_name)
                 self.assertEqual({item["label"] for item in items}, expected_labels)
+
+    def test_reports_navigation_requires_financial_report_permission(self):
+        pharmacist_items = self.navigation_for("Pharmacist")
+        accountant_items = self.navigation_for("Accountant")
+
+        self.assertNotIn("Reports", {item["label"] for item in pharmacist_items})
+        self.assertIn("Reports", {item["label"] for item in accountant_items})
 
     def test_dashboard_is_active_and_future_modules_are_disabled(self):
         items = self.navigation_for("Owner / Admin")

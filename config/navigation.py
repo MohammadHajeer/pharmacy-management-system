@@ -102,7 +102,7 @@ DASHBOARD_NAVIGATION = (
         "icon": "reports",
         "url_name": None,
         "namespace": "reports",
-        "permission": None,
+        "permission": "finance.view_financial_reports",
     },
     {
         "section": "System",

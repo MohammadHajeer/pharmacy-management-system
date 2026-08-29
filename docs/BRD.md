@@ -52,12 +52,12 @@ The Pharmacist performs POS/cashier duties. There is no separate Cashier role.
 
 Primary implementation ownership is:
 
-| Team member | Primary ownership |
-| --- | --- |
+| Team member | Primary ownership                                                      |
+| ----------- | ---------------------------------------------------------------------- |
 | Mhmd Hajeer | Core/platform, authentication, shared design/UI, and final integration |
-| Hala | Catalog, parties, inventory, purchasing, and supplier returns |
-| Malik | POS, sales, prescriptions, and sales invoice/receipt output |
-| Yasser | Finance, payments, customer returns/refunds, and reporting |
+| Hala        | Catalog, parties, inventory, purchasing, and supplier returns          |
+| Malik       | POS, sales, prescriptions, and sales invoice/receipt output            |
+| Yasser      | Finance, payments, customer returns/refunds, and reporting             |
 
 Ownership coordinates implementation work; it does not change the business permissions in section 6.
 
@@ -154,6 +154,17 @@ Rules:
 - barcodes are unique;
 - medicine records with transaction history are deactivated instead of hard-deleted;
 - posted sales/purchases preserve the unit and price/cost actually used.
+
+### Phase 1 unit economics
+
+All unit economics use `Decimal`; float arithmetic is prohibited.
+
+- `Medicine.default_selling_price` is the tax-exclusive selling price of one base unit.
+- A selected quantity is expressed in the chosen `MedicineUnit`. Inventory and stock movements are always expressed in base units.
+- `base_quantity = selected_quantity × conversion_to_base`, quantized to `Decimal("0.001")` with `ROUND_HALF_UP`. The quantized result must be greater than zero.
+- For sales, `selected_unit_price = default_selling_price × conversion_to_base`, quantized to `Decimal("0.0001")` with `ROUND_HALF_UP`. `SalesInvoiceLine.unit_price` is this selected-unit price snapshot, while `quantity`, `conversion_to_base_snapshot`, and `requested_quantity_base` preserve the selected quantity, conversion, and quantized base quantity.
+- For purchases, `PurchaseInvoiceLine.unit_cost` is the tax-exclusive cost of one selected purchase unit. `received_quantity_base` is the quantized base quantity, and `acquisition_cost_per_base_unit = unit_cost / conversion_to_base_snapshot`, quantized to `Decimal("0.0001")` with `ROUND_HALF_UP`.
+- Phase 1 line discounts and tax affect invoice totals but do not alter the batch acquisition-cost layer; `MedicineBatch.acquisition_cost_per_base_unit` stores the selected-unit cost conversion above. Posted lines preserve all snapshots so later master-data changes do not alter history.
 
 ---
 
@@ -491,7 +502,13 @@ Rules:
 
 Customer and supplier payment reversals use the same minimal metadata: `status` changes from `POSTED` to `REVERSED`, `reversed_by` identifies the user, `reversed_at` records the timestamp, and `reversal_reason` may contain explanatory text. Reversal preserves the original payment and is performed by the finance service; it is not a generic reversal state machine.
 
-Customer and supplier statements are derived from invoices, payments, and returns; no separate mutable balance table is required.
+Original invoice balances remain payment-only historical values:
+
+- `SalesInvoice.paid_total` is the sum of its active `POSTED` customer payments, and `balance_due = grand_total - paid_total`;
+- `PurchaseInvoice.paid_total` is the sum of its active `POSTED` supplier payments, and `remaining_balance = grand_total - paid_total`;
+- returns, refunds, and supplier returns never rewrite invoice grand totals, line snapshots, paid totals, payment statuses, or invoice balances.
+
+Customer and supplier statements are derived from invoices, active payments, returns, and refunds; no separate mutable balance table is required. Statements use the pharmacy's perspective: positive amounts are owed to the pharmacy and negative amounts are owed by the pharmacy. A sales invoice is positive, a customer payment is negative, a posted customer return credit is negative, and a customer refund paid is positive because it settles that credit. A purchase invoice is negative, a supplier payment is positive, and a posted supplier return is positive because it reduces the payable. Statement/net balances must apply each event once and must not be substituted for the original invoice balance fields.
 
 ---
 
@@ -546,7 +563,7 @@ Posting a supplier return must:
 - reduce the exact batch through the inventory service;
 - create stock movement history;
 - preserve traceability;
-- affect supplier balance/statement where applicable.
+- affect the supplier statement/net balance separately without rewriting the purchase invoice balance.
 
 Each posted `SupplierReturnLine` maps to exactly one negative `SUPPLIER_RETURN` `StockMovement`: `source_type = "SUPPLIER_RETURN"`, `source_id = SupplierReturn.id`, and `source_line_id = SupplierReturnLine.id`.
 
@@ -614,28 +631,30 @@ Custom permissions may be created for non-CRUD business actions such as:
 - `returns.post_customerreturn`
 - `returns.post_supplierreturn`
 - `returns.process_refund`
-- `reports.view_financial_reports`
+- `finance.view_financial_reports`
+
+`finance.view_financial_reports` is declared on `CustomerPayment`, not on a fake reports model. It is assigned only to Owner / Admin and Accountant. Pharmacist and Inventory Manager use owning-app permissions for their scoped operational and inventory/purchasing reports.
 
 Suggested Phase 1 capability matrix:
 
-| Capability                           | Owner / Admin |                      Pharmacist |    Inventory Manager |            Accountant |
-| ------------------------------------ | ------------: | ------------------------------: | -------------------: | --------------------: |
-| Dashboard                            |          Full |                             Yes |                  Yes |                   Yes |
-| User/group/permission administration |          Full |                              No |                   No |                    No |
-| Medicine catalog                     |          Full |                     View/search |                 Full |                  View |
-| Batch/inventory lookup               |          Full |                            View |                 Full |                  View |
+| Capability                           | Owner / Admin |                      Pharmacist |                                                                                      Inventory Manager |            Accountant |
+| ------------------------------------ | ------------: | ------------------------------: | -----------------------------------------------------------------------------------------------------: | --------------------: |
+| Dashboard                            |          Full |                             Yes |                                                                                                    Yes |                   Yes |
+| User/group/permission administration |          Full |                              No |                                                                                                     No |                    No |
+| Medicine catalog                     |          Full |                     View/search |                                                                                                   Full |                  View |
+| Batch/inventory lookup               |          Full |                            View |                                                                                                   Full |                  View |
 | Stock changes                        |          Full |        Through sale/return only | Through purchase receiving and supplier returns only; no direct/manual adjustment workflow in Phase 1. |                    No |
-| Suppliers                            |          Full |                              No |                 Full |                  View |
-| Customers                            |          Full |              Create/view/select |                 View |                  View |
-| Prescriptions                        |          Full |                            Full |                   No |                    No |
-| Purchases                            |          Full |                              No |                 Full |                  View |
-| POS/sales                            |          Full |                            Full |  View only if needed |                  View |
-| Customer payments                    |          Full | Permitted POS/customer payments |                   No |                  Full |
-| Supplier payments                    |          Full |                              No |                   No |                  Full |
-| Customer returns/refunds             |          Full |              Operational access | Inventory visibility |  Financial visibility |
-| Supplier returns                     |          Full |                              No |                 Full |  Financial visibility |
-| Reports                              |          Full |                     Operational | Inventory/purchasing |             Financial |
-| Settings                             |          Full |                              No |                   No | View only if required |
+| Suppliers                            |          Full |                              No |                                                                                                   Full |                  View |
+| Customers                            |          Full |              Create/view/select |                                                                                                   View |                  View |
+| Prescriptions                        |          Full |                            Full |                                                                                                     No |                    No |
+| Purchases                            |          Full |                              No |                                                                                                   Full |                  View |
+| POS/sales                            |          Full |                            Full |                                                                                    View only if needed |                  View |
+| Customer payments                    |          Full | Permitted POS/customer payments |                                                                                                     No |                  Full |
+| Supplier payments                    |          Full |                              No |                                                                                                     No |                  Full |
+| Customer returns/refunds             |          Full |              Operational access |                                                                                   Inventory visibility |  Financial visibility |
+| Supplier returns                     |          Full |                              No |                                                                                                   Full |  Financial visibility |
+| Reports                              |          Full | Operational through owning-app permissions | Inventory/purchasing through owning-app permissions | Financial through `finance.view_financial_reports` |
+| Settings                             |          Full |                              No |                                                                                                     No | View only if required |
 
 ---
 
@@ -665,21 +684,21 @@ Other apps may use its public services/queries but must not duplicate its data m
 
 The stable navigation labels map to the implemented owning-app namespaces as follows:
 
-| Navigation label | Namespace / owning app |
-| --- | --- |
-| Dashboard | `dashboard` |
-| Sales | `sales` |
-| Medicines | `catalog` |
-| Inventory | `inventory` |
-| Suppliers | `parties` |
-| Customers | `parties` |
-| Prescriptions | `prescriptions` |
-| Purchases | `purchasing` |
-| Invoices | `sales` |
-| Payments | `finance` |
-| Returns & Refunds | `returns` |
-| Reports | `reports` |
-| Settings | `core` |
+| Navigation label  | Namespace / owning app |
+| ----------------- | ---------------------- |
+| Dashboard         | `dashboard`            |
+| Sales             | `sales`                |
+| Medicines         | `catalog`              |
+| Inventory         | `inventory`            |
+| Suppliers         | `parties`              |
+| Customers         | `parties`              |
+| Prescriptions     | `prescriptions`        |
+| Purchases         | `purchasing`           |
+| Invoices          | `sales`                |
+| Payments          | `finance`              |
+| Returns & Refunds | `returns`              |
+| Reports           | `reports`              |
+| Settings          | `core`                 |
 
 Labels such as Medicines, Invoices, Payments, and Settings are presentation concepts; they do not authorize duplicate Django apps with those names.
 
