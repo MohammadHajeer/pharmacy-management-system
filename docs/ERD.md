@@ -1,8 +1,8 @@
 # Pharmacy Management System — Entity Relationship Design
 
-**Status:** Proposed Phase 1 minimum ERD  
+**Status:** Approved Phase 1 schema baseline<br>
 **Source:** `docs/BRD.md` Phase 1 minimum scope  
-**Scope:** Documentation only. This file does not authorize creating Django models or migrations.
+**Scope:** Baseline business models and migrations exist in the repository as of commit `5ce85db`; future schema changes must follow this approved baseline and use new migrations.
 
 ---
 

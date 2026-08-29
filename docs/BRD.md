@@ -861,13 +861,6 @@ At minimum test:
 
 This BRD defines the approved minimum Phase 1 business scope.
 
-It does **not** authorize model implementation by itself.
-
-Before business models/migrations are created:
-
-1. the team must approve the Phase 1 ERD;
-2. the repository must be inspected;
-3. app ownership must match the ERD;
-4. migrations must be created in a coordinated initial schema pass.
+`docs/ERD.md` is the approved Phase 1 schema baseline. Baseline business models and migrations exist in the repository as of commit `5ce85db`. Future schema changes must preserve documented app ownership, be reviewed against the approved BRD/ERD, and use new migrations rather than rewriting shared migration history.
 
 No agent may silently reintroduce deferred Phase 2 features.
