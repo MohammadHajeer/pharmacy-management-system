@@ -1,20 +1,91 @@
 {% firstof page_context request.resolver_match.url_name "Workspace" as current_page_context %}
-<header class="sticky top-0 z-20 flex h-16 items-center border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
-  <button type="button" class="-ml-2 mr-3 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 lg:hidden" data-sidebar-open aria-controls="dashboard-sidebar" aria-expanded="false" aria-label="Open navigation menu">
-    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" /></svg>
-  </button>
-  <div class="min-w-0 flex-1">
-    <p class="truncate text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">Pharmacy management</p>
-    <p class="mt-0.5 truncate text-base font-semibold leading-none text-slate-900">{{ current_page_context|title }}</p>
-  </div>
-  <div class="ml-4 flex items-center gap-3 border-l border-slate-200 pl-4">
-    <div class="hidden text-right sm:block">
-      <p class="max-w-40 truncate text-sm font-medium text-slate-900">{% if request.user.is_authenticated %}{{ request.user.get_full_name|default:request.user.username }}{% else %}Guest user{% endif %}</p>
-      <p class="mt-0.5 text-xs text-slate-500">{% if request.user.is_authenticated %}Team member{% else %}Development preview{% endif %}</p>
-    </div>
-    <div class="flex size-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 ring-1 ring-inset ring-primary-200" aria-hidden="true">{% if request.user.is_authenticated %}{{ request.user.username|first|upper }}{% else %}G{% endif %}</div>
-    <button type="button" disabled title="Profile and logout actions will be added with authentication" class="inline-flex size-9 items-center justify-center rounded-lg text-slate-300 disabled:cursor-not-allowed" aria-label="Profile and logout actions are not available yet">
-      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+
+<header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+  <div class="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
+
+    {# Mobile sidebar trigger #}
+    <button
+      type="button"
+      class="-ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 lg:hidden"
+      data-sidebar-open
+      aria-controls="dashboard-sidebar"
+      aria-expanded="false"
+      aria-label="Open navigation menu"
+    >
+      <svg
+        class="size-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path
+          d="M4 7h16M4 12h16M4 17h16"
+          stroke-linecap="round"
+        />
+      </svg>
     </button>
+
+    {# Current page #}
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-2 text-xs font-medium text-slate-400">
+        <span>Pharmanex</span>
+
+        <svg
+          class="size-3.5 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path
+            d="m9 18 6-6-6-6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+        <span class="truncate">
+          Pharmacy Management
+        </span>
+      </div>
+
+      <h1 class="mt-0.5 truncate text-base font-semibold tracking-tight text-slate-950">
+        {{ current_page_context|title }}
+      </h1>
+    </div>
+
+    {# User area #}
+    {% if request.user.is_authenticated %}
+      {% with role=request.user.groups.first %}
+        <div class="flex shrink-0 items-center gap-2">
+
+          <div class="hidden text-right sm:block">
+            <p class="max-w-44 truncate text-sm font-semibold text-slate-900">
+              {{ request.user.get_full_name|default:request.user.username }}
+            </p>
+
+            <p class="mt-0.5 max-w-44 truncate text-xs text-slate-500">
+              {% if role %}
+                {{ role.name }}
+              {% else %}
+                Staff member
+              {% endif %}
+            </p>
+          </div>
+
+          <div
+            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 ring-1 ring-inset ring-primary-200"
+            aria-hidden="true"
+          >
+            {{ request.user.get_full_name|default:request.user.username|first|upper }}
+          </div>
+
+        </div>
+      {% endwith %}
+    {% endif %}
+
   </div>
 </header>

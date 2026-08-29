@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @source "../../templates";
 @source "../../static/js";
 
@@ -33,11 +34,24 @@
   --color-chart-5: #d97706;
 }
 
+@layer base {
+  ::selection {
+    background-color: var(--color-primary-600);
+    color: white;
+  }
+
+  ::-moz-selection {
+    background-color: var(--color-primary-600);
+    color: white;
+  }
+}
+
 @layer components {
   .app-toast {
     @apply pointer-events-none absolute inset-x-0 bottom-0 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 pr-10 shadow-[0_4px_12px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)];
     touch-action: pan-y;
     will-change: transform, opacity;
+
     transition:
       transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 400ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -50,12 +64,15 @@
   .app-toast[data-level="success"] .app-toast__icon {
     @apply text-success;
   }
+
   .app-toast[data-level="error"] .app-toast__icon {
     @apply text-danger;
   }
+
   .app-toast[data-level="warning"] .app-toast__icon {
     @apply text-warning;
   }
+
   .app-toast[data-level="info"] .app-toast__icon {
     @apply text-info;
   }
