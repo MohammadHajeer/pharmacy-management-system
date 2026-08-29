@@ -234,6 +234,8 @@ Rules:
 - other apps must not independently mutate batch quantity;
 - stock history must remain traceable to its source transaction.
 
+The existing `MANUAL_ADJUSTMENT_IN` and `MANUAL_ADJUSTMENT_OUT` movement codes are reserved for a future approved workflow. Phase 1 provides no manual-adjustment page, endpoint, or general-purpose stock-editing service. They must not be used to bypass purchase, sale, or return workflows.
+
 ### FEFO
 
 Sales use **First Expired, First Out**.
@@ -242,7 +244,7 @@ Eligible batches:
 
 1. belong to the selected medicine;
 2. are active;
-3. are not expired on the configured local date;
+3. are not expired on the current UTC date, which is the repository's explicit Phase 1 business date;
 4. have available quantity greater than zero.
 
 Allocation order:
@@ -312,6 +314,8 @@ Posting/receiving a purchase must:
 - preserve transaction snapshots;
 - update the purchase invoice status.
 
+Each posted `PurchaseInvoiceLine` maps to exactly one positive `PURCHASE_RECEIPT` `StockMovement`: `source_type = "PURCHASE_RECEIPT"`, `source_id = PurchaseInvoice.id`, and `source_line_id = PurchaseInvoiceLine.id`.
+
 ### Explicit Phase 1 simplification
 
 A separate Purchase Order and Goods Receipt workflow is not required in Phase 1.
@@ -352,6 +356,8 @@ The server remains authoritative for:
 - totals;
 - permissions;
 - final transaction state.
+
+Phase 1 prices are tax-exclusive. Owner/Admin and Pharmacist may apply a sales-line discount; Owner/Admin and Inventory Manager may apply a purchase-line discount. The server accepts a discount amount from zero through the rounded line subtotal. Phase 1 has no percentage-based approval tiers or additional discount-limit workflow.
 
 Completing a sale must:
 
@@ -503,6 +509,7 @@ Required:
 
 - original sales invoice;
 - original sales line;
+- exact originally allocated batch;
 - returned quantity;
 - reason;
 - return condition;
@@ -513,11 +520,14 @@ Required:
 Rules:
 
 - cumulative returned quantity cannot exceed the quantity originally sold;
+- each sales line/batch pair has at most one `SaleBatchAllocation`, so the original allocation is identified unambiguously by the original sales line and batch;
 - a resellable, non-expired returned medicine may be restored to its original batch;
 - damaged, unsafe, or expired medicine must not return to sellable inventory;
 - inventory restoration must use the inventory service and create a stock movement;
 - refund remains linked to the return and original invoice;
 - refund cannot exceed the eligible refundable amount.
+
+Each restocked `CustomerReturnLine` maps to exactly one positive `CUSTOMER_RETURN_RESTOCK` `StockMovement`: `source_type = "CUSTOMER_RETURN_RESTOCK"`, `source_id = CustomerReturn.id`, and `source_line_id = CustomerReturnLine.id`.
 
 Customer refunds are posted-only in Phase 1. Reversing an already-posted refund is deferred because no refund-reversal workflow or metadata is approved; a refund must not be assigned a `REVERSED` state.
 
@@ -543,6 +553,8 @@ Posting a supplier return must:
 - create stock movement history;
 - preserve traceability;
 - affect supplier balance/statement where applicable.
+
+Each posted `SupplierReturnLine` maps to exactly one negative `SUPPLIER_RETURN` `StockMovement`: `source_type = "SUPPLIER_RETURN"`, `source_id = SupplierReturn.id`, and `source_line_id = SupplierReturnLine.id`.
 
 ---
 
@@ -602,11 +614,12 @@ Django-generated model permissions should be used where they map cleanly to CRUD
 Custom permissions may be created for non-CRUD business actions such as:
 
 - `sales.complete_sale`
-- `purchasing.post_purchase`
-- `finance.post_customer_payment`
-- `finance.post_supplier_payment`
-- `returns.process_customer_return`
-- `returns.process_supplier_return`
+- `purchasing.post_purchaseinvoice`
+- `finance.post_customerpayment`
+- `finance.post_supplierpayment`
+- `returns.post_customerreturn`
+- `returns.post_supplierreturn`
+- `returns.process_refund`
 - `reports.view_financial_reports`
 
 Suggested Phase 1 capability matrix:
@@ -658,6 +671,26 @@ Each business model has one authoritative owning app.
 
 Other apps may use its public services/queries but must not duplicate its data model or business rule.
 
+The stable navigation labels map to the implemented owning-app namespaces as follows:
+
+| Navigation label | Namespace / owning app |
+| --- | --- |
+| Dashboard | `dashboard` |
+| Sales | `sales` |
+| Medicines | `catalog` |
+| Inventory | `inventory` |
+| Suppliers | `parties` |
+| Customers | `parties` |
+| Prescriptions | `prescriptions` |
+| Purchases | `purchasing` |
+| Invoices | `sales` |
+| Payments | `finance` |
+| Returns & Refunds | `returns` |
+| Reports | `reports` |
+| Settings | `core` |
+
+Labels such as Medicines, Invoices, Payments, and Settings are presentation concepts; they do not authorize duplicate Django apps with those names.
+
 ---
 
 # 8. Transaction and Service Rules
@@ -675,6 +708,15 @@ Use explicit service functions for multi-record business operations such as:
 - processing a supplier return.
 
 Use `transaction.atomic()` where several related writes must succeed or fail together.
+
+`transaction.atomic()` must be combined with targeted `select_for_update()` locking for the rows whose current values determine whether a transaction may post:
+
+- purchase posting locks the purchase invoice and any existing batch cost-layer row that will be increased;
+- sale completion locks the sales invoice and eligible `MedicineBatch` rows in deterministic FEFO order (`expiry_date`, `first_received_at`, `id`) before availability is revalidated and decremented;
+- customer and supplier return posting locks the return plus every affected batch before quantity validation and mutation;
+- customer/supplier payment posting or reversal locks the affected invoice before its outstanding balance is checked and recalculated.
+
+Services must re-check status, stock, and balance after acquiring locks. This is the minimum concurrency protection for Phase 1; a generic locking framework is not required.
 
 For Phase 1 transaction statuses, `VOID` means only that an unposted/uncompleted `DRAFT` was cancelled and retained for traceability. A void draft has no stock movements, batch allocations, payments, refunds, or balance effect. Phase 1 services may allow only `DRAFT → VOID`; they must not expose `POSTED → VOID` or `COMPLETED → VOID`. Reversing an effective transaction requires compensating inventory and financial behavior and remains deferred.
 
@@ -696,15 +738,27 @@ Every increase/decrease must create a corresponding `StockMovement` in the same 
 - Posted totals/payments use Decimal fields with two decimal places.
 - Tax rates use Decimal fields.
 - Do not use floating-point arithmetic for money.
-- Timestamps are timezone-aware.
-- FEFO uses the configured Django/pharmacy local date.
+- Timestamps are timezone-aware and stored by Django in UTC (`USE_TZ = True`).
+- The repository's explicit Phase 1 business timezone is UTC (`TIME_ZONE = "UTC"`), so FEFO expiry eligibility uses `timezone.localdate()` under UTC. Changing to another pharmacy timezone later requires an explicit settings/code decision and regression tests around midnight; agents must not infer a timezone from a developer machine.
 - Master data with history is deactivated rather than hard-deleted.
 - Posted transactions remain traceable.
 - Payments remain separate from invoices.
 
+### Document numbering
+
+Phase 1 does not use a mutable sequence table. Services generate concurrency-safe, human-readable identifiers deterministically from the record's UUID, using the complete uppercase 32-character UUID hex value:
+
+- sales invoice: `SAL-{uuid_hex}`;
+- purchase invoice: `PUR-{uuid_hex}`;
+- customer return: `CRT-{uuid_hex}`;
+- supplier return: `SRT-{uuid_hex}`;
+- customer refund: `CRF-{uuid_hex}`.
+
+All formats fit the existing `CharField(max_length=40)` fields. Draft sales and purchase invoices may keep an empty number until completion/posting; the service assigns the deterministic number before changing status. Return/refund numbers are assigned when their records are created. Database uniqueness constraints remain mandatory. User-entered internal document numbers and sequential numbering are not part of Phase 1; supplier-provided invoice references remain separate.
+
 ## 9.1 Financial calculation and rounding policy
 
-All authoritative calculations use `Decimal`; float arithmetic is prohibited. Tax is calculated after the line discount. Sales lines use:
+All authoritative calculations use `Decimal`; float arithmetic is prohibited. Prices/costs are tax-exclusive, and tax is calculated after the line discount. Sales lines use:
 
 ```python
 money_quantum = Decimal("0.01")
@@ -743,7 +797,7 @@ The following are **not required for Phase 1**:
 - enterprise audit-event infrastructure;
 - document-sequence infrastructure;
 - complex reversal state machines;
-- complex row-locking architecture everywhere;
+- complex row-locking architecture everywhere (the targeted locks required by section 8 are not deferred);
 - Redis;
 - JWT;
 - DRF;

@@ -61,26 +61,19 @@ The approved Phase 1 business models have one authoritative owning app:
 
 Keep the inventory boundary explicit: `Medicine` is the product definition and is not physical inventory. `MedicineBatch` is physical stock and its acquisition-cost layer. `StockMovement` is append-style stock-change history. Future stock-changing workflows must update `MedicineBatch.quantity_available_base` only through `apps.inventory` services and create the corresponding `StockMovement` in the same database transaction.
 
-## Creating a feature app
+## Extending the existing feature apps
 
-Use a short, plural feature name where practical. The following example creates `medicines` under `apps/`:
+All approved Phase 1 owning apps already exist and are registered. Do not create duplicate apps such as `apps.medicines`, `apps.suppliers`, `apps.customers`, `apps.invoices`, `apps.payments`, or `apps.settings`; those navigation concepts belong to `catalog`, `parties`, `sales`/`purchasing`, `finance`, and `core` respectively.
 
-```bash
-mkdir apps/medicines
-uv run manage.py startapp medicines apps/medicines
-```
+For work in an existing app:
 
-Then:
+1. confirm ownership in the table above and in `docs/ERD.md`;
+2. add forms, services, queries, views, URLs, templates, and tests inside that owning app;
+3. include a URLconf from `config/urls.py` only when the app exposes a routed feature;
+4. update the existing item in `config/navigation.py` rather than adding a duplicate label;
+5. coordinate schema changes and generate a new migration without rewriting existing migration history.
 
-1. Change `MedicinesConfig.name` in `apps/medicines/apps.py` to `"apps.medicines"`.
-2. Add `"apps.medicines"` to `INSTALLED_APPS` in `config/settings.py`.
-3. Create `apps/medicines/urls.py` with `app_name = "medicines"`.
-4. Include it from `config/urls.py`, for example `path("medicines/", include("apps.medicines.urls"))`.
-5. Create feature templates under `apps/medicines/templates/medicines/`.
-6. Add the feature to `config/navigation.py` when it should appear in the sidebar.
-7. Add focused tests in `apps/medicines/tests.py` or an app-local `tests/` package.
-
-Create `forms.py`, service modules, or query modules only when the feature needs them. Avoid empty layers or new architectural patterns without a concrete use.
+A new Django app requires explicit architecture approval and an update to the BRD/ERD ownership tables first. Create `forms.py`, service modules, or query modules only when the feature needs them; avoid empty layers or new architectural patterns without a concrete use.
 
 ## Models, forms, views, URLs, templates, and tests
 
@@ -116,14 +109,16 @@ If a UI pattern is used only by one feature, keep it in that feature. Move it to
 Every feature URLconf must set an application namespace:
 
 ```python
-app_name = "medicines"
+app_name = "catalog"
 
 urlpatterns = [
-    path("", views.medicine_list, name="index"),
+    path("medicines/", views.medicine_list, name="medicine-list"),
 ]
 ```
 
-Refer to it as `medicines:index` in Python, templates, redirects, tests, and navigation. Namespaces prevent collisions and power the sidebar's active-state handling.
+Refer to it as `catalog:medicine-list` in Python, templates, redirects, tests, and navigation. Namespaces prevent collisions and power the sidebar's active-state handling.
+
+The stable mapping is: Medicines → `catalog`; Suppliers/Customers → `parties`; Invoices → `sales` or `purchasing` according to document type; Payments → `finance`; Settings → `core`. Keep the mappings in `config/navigation.py`, `docs/BRD.md`, and `docs/ERD.md` synchronized.
 
 ## Sidebar navigation
 
@@ -131,7 +126,7 @@ Configure sidebar items once in `config/navigation.py`. `config/context_processo
 
 - resolves each namespaced URL;
 - leaves not-yet-implemented routes disabled;
-- filters items by group or permission; and
+- filters items by Django permission; and
 - marks the current namespace active.
 
 Do not pass duplicate link lists from views or hardcode them in feature templates. When a feature becomes available, set its `url_name`, preserve its `namespace`, and set its Django permission when the model permission exists.
@@ -147,19 +142,20 @@ Current group names are exact:
 - Inventory Manager
 - Accountant
 
-Groups describe job responsibilities and collect permissions. They also control current sidebar visibility, but a hidden link is not an authorization boundary. Protected views must enforce access, preferably with Django model permissions such as `medicines.view_medicine`, `medicines.add_medicine`, `medicines.change_medicine`, and `medicines.delete_medicine`.
+Groups describe job responsibilities and collect permissions. The sidebar checks the resulting Django permissions, but a hidden link is not an authorization boundary. Protected views must enforce access, preferably with Django model permissions such as `catalog.view_medicine`, `catalog.add_medicine`, `catalog.change_medicine`, and `catalog.delete_medicine`.
 
 For example, use `permission_required(..., raise_exception=True)` for function views or `PermissionRequiredMixin` for class-based views. Add tests proving that anonymous and unauthorized users cannot reach protected actions. Superuser behavior should remain compatible with Django defaults.
 
 ## Development accounts
 
-The repository does not provide or track shared credentials. Each teammate should create local-only accounts:
+The repository does not provide or track shared credentials. For the four standard local users/groups, set a local-only password and run:
 
 ```bash
-uv run manage.py createsuperuser
+$env:DEV_AUTH_PASSWORD = "use-a-unique-local-password"
+uv run manage.py seed_dev_auth
 ```
 
-Use the local admin at `http://127.0.0.1:8000/admin/` to create regular test users, create the four groups with the exact names above if they are not present, assign users to groups, and attach the permissions needed for the feature under test. Sign in to the application at `/accounts/login/`.
+The command creates/fetches the four users/groups but intentionally does not assign business permissions. Use the local admin at `http://127.0.0.1:8000/admin/` to attach the permissions needed for the feature under test until deterministic permission provisioning is implemented. Test Owner/Admin as a normal group member, not only as a superuser, because the approved design grants full business access through group permissions.
 
 Use clearly fake data and unique local passwords. Never commit credentials, `.env` files, or `db.sqlite3`, and do not depend on another developer's local database. Automated tests must create their own users, groups, permissions, and records.
 
@@ -192,6 +188,7 @@ Match the existing accessibility patterns: keyboard operation, focus handling, A
 - Do not edit generated migrations manually unless Django cannot express the required data/schema operation.
 - Do not rewrite already-shared migrations without team agreement; add a new migration instead.
 - Consider data integrity, indexes, deletion behavior, defaults, nullability, and backward compatibility.
+- Transactional stock and payment services must follow the targeted `select_for_update()` and `transaction.atomic()` rules in the BRD/ERD; `transaction.atomic()` alone does not prevent stale availability/balance decisions.
 - Never commit `db.sqlite3` or use production data for development or tests.
 
 ## Git workflow

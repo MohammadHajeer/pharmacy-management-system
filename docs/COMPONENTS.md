@@ -114,6 +114,6 @@ When a server-rendered message needs a separate title or a non-default display t
 
 ## Sidebar navigation
 
-Navigation is configured once in `config/navigation.py`; views do not pass link lists. When a feature app is added, set its namespaced `url_name` (for example, `medicines:index`) and optionally its Django permission (for example, `medicines.view_medicine`).
+Navigation is configured once in `config/navigation.py`; views do not pass link lists. When a routed feature is enabled, update its existing namespaced `url_name` (for example, `catalog:medicine-list`) and Django permission (for example, `catalog.view_medicine`). Do not create a duplicate app from a navigation label.
 
 `config/context_processors.py` hides links the current user cannot access, safely disables links whose URL does not exist yet, and marks items active by comparing the configured namespace with `request.resolver_match.namespace`. Use Django Groups and Permissions for roles—do not add a separate authorization system.

@@ -42,7 +42,7 @@ Never use float for authoritative financial calculations.
 
 ### Financial calculation and rounding policy
 
-All authoritative calculations use `Decimal` and `ROUND_HALF_UP`. Tax is calculated after the line discount:
+All authoritative calculations use `Decimal` and `ROUND_HALF_UP`. Prices and costs are tax-exclusive, and tax is calculated after the line discount:
 
 ```python
 money_quantum = Decimal("0.01")
@@ -74,6 +74,8 @@ updated_at = models.DateTimeField(auto_now=True)
 ```
 
 Append-style stock movements do not require `updated_at`.
+
+Django stores aware timestamps in UTC because `USE_TZ = True`. For Phase 1, `TIME_ZONE = "UTC"` is also the explicit business timezone, and expiry eligibility uses `timezone.localdate()` under UTC. No separate timezone entity or inferred developer-machine timezone is permitted.
 
 ## 1.4 Deletion convention
 
@@ -121,6 +123,26 @@ apps/
 | `finance`       | CustomerPayment, SupplierPayment                                                       |
 | `returns`       | CustomerReturn, CustomerReturnLine, CustomerRefund, SupplierReturn, SupplierReturnLine |
 | `reports`       | Query/report services only; no transaction tables                                      |
+
+Stable navigation labels map to these namespaces/owning apps:
+
+| Navigation label | Namespace / owning app |
+| --- | --- |
+| Dashboard | `dashboard` |
+| Sales | `sales` |
+| Medicines | `catalog` |
+| Inventory | `inventory` |
+| Suppliers | `parties` |
+| Customers | `parties` |
+| Prescriptions | `prescriptions` |
+| Purchases | `purchasing` |
+| Invoices | `sales` |
+| Payments | `finance` |
+| Returns & Refunds | `returns` |
+| Reports | `reports` |
+| Settings | `core` |
+
+Navigation labels are not additional model-owning apps.
 
 ---
 
@@ -489,7 +511,18 @@ Movement types:
 - `MANUAL_ADJUSTMENT_IN`
 - `MANUAL_ADJUSTMENT_OUT`
 
-Phase 1 does not require stock counts/write-off workflow models. Manual adjustments may use the two adjustment movement types when authorized.
+Phase 1 does not require stock counts/write-off workflow models. `MANUAL_ADJUSTMENT_IN` and `MANUAL_ADJUSTMENT_OUT` are reserved values already present in the repository schema; Phase 1 exposes no manual-adjustment UI, endpoint, or general stock-editing service, and those values must not be used to bypass an approved purchase, sale, or return workflow.
+
+Authoritative source mapping:
+
+| `movement_type` / `source_type` | `source_id` | `source_line_id` | `reference_number` |
+| --- | --- | --- | --- |
+| `PURCHASE_RECEIPT` | `PurchaseInvoice.id` | `PurchaseInvoiceLine.id` | `PurchaseInvoice.invoice_number` |
+| `SALE` | `SalesInvoice.id` | `SaleBatchAllocation.id` | `SalesInvoice.invoice_number` |
+| `CUSTOMER_RETURN_RESTOCK` | `CustomerReturn.id` | `CustomerReturnLine.id` | `CustomerReturn.return_number` |
+| `SUPPLIER_RETURN` | `SupplierReturn.id` | `SupplierReturnLine.id` | `SupplierReturn.return_number` |
+
+For these four workflows, `source_type` equals the uppercase value in the first column. Exactly one stock movement is allowed for each non-null source line. Enforce this with a conditional unique constraint on `(movement_type, source_type, source_id, source_line_id)` where `source_line_id IS NOT NULL`; service-level validation must also confirm that the movement medicine, batch, direction, quantity, and cost snapshot match the source line/allocation.
 
 Rules:
 
@@ -703,6 +736,7 @@ Rules:
 - batch belongs to the line medicine;
 - batch is non-expired at completion;
 - total allocations for the line equal requested base quantity;
+- `(sales_invoice_line, batch)` is unique; the allocation service aggregates a line's quantity for the same batch instead of creating duplicates;
 - allocations are created by the sales/inventory service during completion.
 
 COGS for a line is derived from:
@@ -824,8 +858,12 @@ Fields:
 Rules:
 
 - return quantity > 0;
-- cumulative returned quantity cannot exceed quantity sold from the referenced allocation/line;
+- `sales_invoice_line` belongs to `customer_return.sales_invoice`;
+- `batch` identifies the one `SaleBatchAllocation` for `(sales_invoice_line, batch)`, whose uniqueness is required in section 11.3;
+- cumulative returned quantity for that sales-line/batch pair cannot exceed the allocated quantity;
 - `restock=True` requires a non-expired resellable item and restores the original batch through inventory service.
+
+The line-and-batch structure matches the implemented repository model while remaining unambiguous because of the required allocation uniqueness constraint. A separate duplicate allocation foreign key is not added.
 
 ## 13.3 CustomerRefund
 
@@ -961,8 +999,9 @@ Protected views/actions must enforce permissions server-side.
 - FEFO eligible-batch queries;
 - safe customer-return restocking;
 - supplier-return deduction;
-- manual authorized adjustment;
 - stock movement creation.
+
+Manual-adjustment movement codes are reserved only; there is no Phase 1 manual-adjustment operation.
 
 Other apps must not do this directly:
 
@@ -973,6 +1012,15 @@ batch.quantity_available_base -= quantity
 They must call inventory services.
 
 Every stock mutation and corresponding `StockMovement` must occur in the same `transaction.atomic()` block.
+
+Minimum Phase 1 concurrency rules:
+
+- purchase posting locks the `PurchaseInvoice` and any existing `MedicineBatch` cost layer it will increase;
+- sale completion locks the `SalesInvoice` and eligible `MedicineBatch` rows in deterministic FEFO order (`expiry_date`, `first_received_at`, `id`) before revalidating availability;
+- customer/supplier return posting locks the return and affected batches before checking or changing quantities;
+- customer/supplier payment posting or reversal locks the affected sales/purchase invoice before checking or recalculating its balance.
+
+Use `select_for_update()` inside `transaction.atomic()` and re-check status, quantities, and balances after acquiring the locks. A generic locking framework is not required.
 
 ---
 
@@ -1086,9 +1134,9 @@ They may be designed later as Phase 2 features after explicit team approval.
 To keep the schema implementable within the delivery window:
 
 1. **Batch cost layers:** same medicine + batch number + expiry + cost may reuse a batch row; a different cost creates another cost-layer row.
-2. **Timezone:** use Django's configured project/pharmacy timezone; do not add a separate timezone model requirement.
-3. **Document numbering:** only require a unique human-readable number; no Phase 1 `DocumentSequence` model.
-4. **Discounts:** store authoritative discount amount on transaction lines; percentage UI may calculate an amount before server validation.
+2. **Timezone:** UTC is the explicit Phase 1 business timezone because the repository uses `TIME_ZONE = "UTC"` and `USE_TZ = True`; FEFO uses `timezone.localdate()` under UTC.
+3. **Document numbering:** no `DocumentSequence` is required. Generate identifiers deterministically from the complete uppercase UUID hex value: `SAL-{uuid_hex}`, `PUR-{uuid_hex}`, `CRT-{uuid_hex}`, `SRT-{uuid_hex}`, and `CRF-{uuid_hex}`. Draft sales/purchase numbers may remain blank until completion/posting; return/refund numbers are assigned at creation. Database uniqueness remains mandatory.
+4. **Discounts:** prices/costs are tax-exclusive. Owner/Admin and Pharmacist may set sales-line discounts; Owner/Admin and Inventory Manager may set purchase-line discounts. Store the authoritative amount, constrained from zero through the rounded line subtotal. Percentage UI may calculate the amount before server validation; Phase 1 has no approval tiers.
 5. **Tax:** tax is server-calculated after discount using Decimal arithmetic and the financial rounding policy in section 1.2.
 6. **Prescription association:** one optional prescription per sale is sufficient for Phase 1.
 7. **Purchase invoice receiving:** the purchase invoice itself is the receiving document; no PO/receipt consolidation question exists.
@@ -1102,13 +1150,13 @@ To keep the schema implementable within the delivery window:
 
 # 20. Implementation Guardrails
 
-1. Do not create models/migrations until the team approves this ERD.
+1. This ERD is approved and baseline Phase 1 models/migrations now exist. Any schema change must be coordinated, reviewed against this document, and represented by a new migration; do not rewrite applied migration history.
 2. Preserve existing Django User/Group/session/login/logout behavior.
 3. Use UUID/Decimal conventions consistently.
 4. Each business entity has exactly one owning app.
 5. Reports/dashboard must not create duplicate source-of-truth models.
 6. Inventory quantity may only be changed through `apps.inventory`.
-7. Purchase posting, sale completion, payments, and returns must use `transaction.atomic()` where they write multiple related records.
+7. Purchase posting, sale completion, payments, and returns must use `transaction.atomic()` plus the targeted row locks defined in section 16.
 8. Posted records preserve snapshots and traceability.
 9. Do not reintroduce removed Phase 2 entities during implementation without explicit approval.
-10. Initial migrations should be generated in one coordinated schema pass after all model relationships are implemented.
+10. Before return services are implemented, add and migrate the required uniqueness constraints for sale-line/batch allocations and stock-movement source lines if they are not yet present in the baseline schema.

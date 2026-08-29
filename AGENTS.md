@@ -55,8 +55,8 @@ Keep feature-specific models, forms, views, URLs, templates, and tests inside th
 - Sidebar configuration lives in `config/navigation.py`.
 - Navigation processing lives in `config/context_processors.py`.
 - Do not hardcode duplicate navigation lists in feature templates or views.
-- Preserve namespace-based active states, group visibility, unavailable-link handling, and future permission handling.
-- Use namespaced URL names such as `medicines:index`.
+- Preserve namespace-based active states, permission filtering, and unavailable-link handling.
+- Use the established owning-app namespaces, such as `catalog:medicine-list`; do not create duplicate apps from navigation labels.
 
 ## Authentication
 
