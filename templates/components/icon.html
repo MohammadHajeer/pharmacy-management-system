@@ -1,0 +1,23 @@
+{% if name == "dashboard" or name == "sales" or name == "medicines" or name == "inventory" or name == "suppliers" or name == "customers" or name == "prescriptions" or name == "purchases" or name == "invoices" or name == "payments" or name == "returns" or name == "reports" or name == "settings" or name == "logout" or name == "close" or name == "menu" or name == "chevron-right" or name == "chevron-down" %}
+<svg{% if class %} class="{{ class }}"{% endif %} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+  {% if name == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
+  {% elif name == "sales" %}<path d="M4 7h16v10H4zM8 7V5h8v2M7 12h2m3 0h5m-10 3h4" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "medicines" %}<path d="m7.8 16.2 8.4-8.4a3.4 3.4 0 0 1 4.8 4.8L12.6 21a3.4 3.4 0 0 1-4.8-4.8ZM11 13l4.8 4.8" stroke-linecap="round" />
+  {% elif name == "inventory" %}<path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10" stroke-linejoin="round" />
+  {% elif name == "suppliers" %}<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7zM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm10 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke-linejoin="round" />
+  {% elif name == "customers" %}<path d="M15 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 3 18.5V20M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3 3 0 1 0 0-6m4 17v-1.5a4.5 4.5 0 0 0-3-4.2" stroke-linecap="round" />
+  {% elif name == "prescriptions" %}<path d="M7 3h10v18H7zM9.5 7h5M9.5 11h5M9.5 15H12m2.5 0 3 3m0-3-3 3" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "purchases" %}<path d="M6 6h15l-2 8H8L6 3H3M9 20h.01M18 20h.01" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "invoices" %}<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6m-6 4h3" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "payments" %}<path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "returns" %}<path d="m8 7-4 4 4 4M4 11h10a5 5 0 0 1 5 5v2" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "reports" %}<path d="M4 19V9m5 10V5m5 14v-7m5 7V3M3 21h18" stroke-linecap="round" />
+  {% elif name == "settings" %}<path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-4v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3.1 14H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1.5 1Z" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "logout" %}<path d="M10 5H5v14h5m5-4 4-3-4-3m4 3H9" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "close" %}<path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" />
+  {% elif name == "menu" %}<path d="M4 7h16M4 12h16M4 17h16" stroke-width="2" stroke-linecap="round" />
+  {% elif name == "chevron-right" %}<path d="m9 18 6-6-6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  {% elif name == "chevron-down" %}<path d="m8 10 4 4 4-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  {% endif %}
+</svg>
+{% endif %}

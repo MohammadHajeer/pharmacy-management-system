@@ -8,6 +8,29 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_icon_selects_named_path_and_applies_shared_svg_attributes(self):
+        rendered = render_to_string(
+            "components/icon.html",
+            {"name": "dashboard", "class": "size-5 text-slate-500"},
+        )
+
+        self.assertIn('class="size-5 text-slate-500"', rendered)
+        self.assertIn('viewBox="0 0 24 24"', rendered)
+        self.assertIn('fill="none"', rendered)
+        self.assertIn('stroke="currentColor"', rendered)
+        self.assertIn('stroke-width="1.8"', rendered)
+        self.assertIn('aria-hidden="true"', rendered)
+        self.assertIn("M4 4h6v6H4z", rendered)
+        self.assertNotIn("M4 7h16M4 12h16M4 17h16", rendered)
+
+    def test_icon_renders_nothing_for_an_unknown_name(self):
+        rendered = render_to_string(
+            "components/icon.html",
+            {"name": "not-registered", "class": "size-5"},
+        )
+
+        self.assertEqual(rendered.strip(), "")
+
     def test_button_supports_new_variants_and_sizes_with_legacy_danger_alias(self):
         destructive = render_to_string(
             "components/button.html",

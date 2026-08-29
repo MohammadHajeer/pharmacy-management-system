@@ -1,24 +1,78 @@
-<div id="{{ modal_id }}" class="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6" data-modal role="dialog" aria-modal="true" aria-labelledby="{{ modal_id }}-title" {% if description %}aria-describedby="{{ modal_id }}-description"{% endif %} data-state="closed" hidden>
-  <div class="absolute inset-0 bg-black/80" data-modal-backdrop></div>
-
+<div
+  id="{{ modal_id }}"
+  class="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6"
+  data-modal
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="{{ modal_id }}-title"
+  {% if description %}aria-describedby="{{ modal_id }}-description"{% endif %}
+  data-state="closed"
+  hidden
+>
+  {# Backdrop #}
   <div
-    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg outline-none"
+    class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+    data-modal-backdrop
+  ></div>
+
+  {# Dialog #}
+  <div
+    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_24px_70px_-20px_rgba(15,23,42,0.35)] outline-none"
     data-modal-panel
     tabindex="-1"
   >
-    <header class="flex shrink-0 flex-col gap-1.5 p-6 pb-0 text-center sm:text-left">
-      <h2 id="{{ modal_id }}-title" class="text-lg font-semibold leading-none tracking-tight text-slate-900">{{ title }}</h2>
-      {% if description %}<p id="{{ modal_id }}-description" class="text-sm text-slate-500">{{ description }}</p>{% endif %}
+    {# Header #}
+    <header class="relative shrink-0 px-6 pb-4 pt-6 sm:px-7 sm:pt-7">
+      <div class="pr-10">
+        <h2
+          id="{{ modal_id }}-title"
+          class="text-lg font-semibold tracking-tight text-slate-950"
+        >
+          {{ title }}
+        </h2>
+
+        {% if description %}
+          <p
+            id="{{ modal_id }}-description"
+            class="mt-1.5 text-sm leading-6 text-slate-500"
+          >
+            {{ description }}
+          </p>
+        {% endif %}
+      </div>
+
+      <button
+        type="button"
+        class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
+        data-modal-close
+        aria-label="Close dialog"
+      >
+        {% include "components/icon.html" with name="close" class="size-4 stroke-2" only %}
+        <span class="sr-only">Close</span>
+      </button>
     </header>
 
-    <div class="overflow-y-auto p-6 text-sm leading-6 text-slate-600">{{ body }}</div>
+    {# Content #}
+    {% if body %}
+      <div class="min-h-0 overflow-y-auto border-t border-slate-100 px-6 py-5 text-sm leading-6 text-slate-600 sm:px-7">
+        {{ body }}
+      </div>
+    {% endif %}
 
-    <footer class="flex shrink-0 flex-col-reverse gap-2 p-6 pt-0 sm:flex-row sm:justify-end">
+    {# Actions #}
+    <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
       {% include "components/button.html" with text=close_text|default:"Close" variant="outline" modal_close=True only %}
+
       {% if confirm_text %}
         {% if confirm_action %}
-          <form method="post" action="{{ confirm_action }}" class="contents" data-submit-form>
+          <form
+            method="post"
+            action="{{ confirm_action }}"
+            class="contents"
+            data-submit-form
+          >
             {% csrf_token %}
+
             {% include "components/button.html" with text=confirm_text loading_text=confirm_loading_text|default:"Working..." variant=confirm_variant|default:"primary" type="submit" only %}
           </form>
         {% else %}
@@ -26,10 +80,5 @@
         {% endif %}
       {% endif %}
     </footer>
-
-    <button type="button" class="absolute right-4 top-4 rounded-sm text-slate-500 opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2" data-modal-close aria-label="Close dialog">
-      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" /></svg>
-      <span class="sr-only">Close</span>
-    </button>
   </div>
 </div>

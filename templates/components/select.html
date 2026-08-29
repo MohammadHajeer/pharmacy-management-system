@@ -10,9 +10,7 @@
       {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
       {% for option in options %}<option value="{{ option.value }}" {% if option.value == value %}selected{% endif %} {% if option.disabled %}disabled{% endif %}>{{ option.label }}</option>{% endfor %}
     </select>
-    <svg class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <path d="m8 10 4 4 4-4" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
+    {% include "components/icon.html" with name="chevron-down" class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" only %}
   </div>
   {% if help_text %}<p id="{{ field_id }}-help" class="mt-1.5 text-sm leading-5 text-slate-500">{{ help_text }}</p>{% endif %}
   {% if error %}<p id="{{ field_id }}-error" class="mt-1.5 text-sm leading-5 text-red-600" role="alert">{{ error|striptags }}</p>{% endif %}

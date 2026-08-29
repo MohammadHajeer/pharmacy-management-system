@@ -80,6 +80,18 @@ Variants are `default`, `secondary`, `success`, `warning`, `destructive`, and `o
 
 The optional values are `eyebrow`, `title`, `description`, `metric`, `content`, `text`, and `footer`. Header, content, and footer regions are rendered only when their values are supplied.
 
+## Icon
+
+Render a decorative interface icon by its centralized name and pass complete Tailwind classes for its size, color, and layout:
+
+```django
+{% include "components/icon.html" with name="dashboard" class="size-5" only %}
+{% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0" only %}
+{% include "components/icon.html" with name="chevron-right" class="size-4 text-slate-400" only %}
+```
+
+The component supplies the shared `24 × 24` view box, current-color stroke, no fill, `1.8` stroke width, and `aria-hidden="true"`. It intentionally renders nothing for an unknown name. To register an icon, add its name to the supported-name condition and add one matching path branch in `templates/components/icon.html`; call sites then only reference that name.
+
 ## Modal
 
 Render a modal once, then open it from any button whose `data-modal-open` matches its ID:
