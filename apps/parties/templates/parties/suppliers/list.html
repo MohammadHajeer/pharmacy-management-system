@@ -1,0 +1,63 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>Suppliers</h1>
+
+    <form method="get">
+        {% include "components/input.html" with name="q" label="Search" value=query %}
+        {% include "components/button.html" with text="Filter" variant="secondary" type="submit" %}
+    </form>
+
+    <p>
+        <a href="?status=active">Active</a> ·
+        <a href="?status=inactive">Inactive</a> ·
+        <a href="?status=all">All</a>
+    </p>
+
+    {% url "parties:supplier-create" as create_url %}
+    {% include "components/button.html" with text="Add supplier" variant="primary" href=create_url %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ supplier.code }}</td>
+                    <td>{{ supplier.name }}</td>
+                    <td>{{ supplier.contact_person }}</td>
+                    <td>{{ supplier.phone }}</td>
+                    <td>
+                        {% if supplier.is_active %}
+                            {% include "components/badge.html" with text="Active" variant="success" %}
+                        {% else %}
+                            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% url "parties:supplier-update" supplier.pk as edit_url %}
+                        {% include "components/button.html" with text="Edit" variant="ghost" size="sm" href=edit_url %}
+                        <form method="post" action="{% url 'parties:supplier-toggle-active' supplier.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            {% if supplier.is_active %}
+                                {% include "components/button.html" with text="Deactivate" variant="ghost" size="sm" type="submit" %}
+                            {% else %}
+                                {% include "components/button.html" with text="Reactivate" variant="ghost" size="sm" type="submit" %}
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No suppliers found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

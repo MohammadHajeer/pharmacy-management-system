@@ -1,0 +1,39 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>New purchase invoice</h1>
+
+    <form method="post" data-submit-form>
+        {% csrf_token %}
+
+        <h2>Header</h2>
+        {% include "components/select.html" with name="supplier" label="Supplier" options=supplier_options value=header_form.supplier.value|stringformat:"s" error=header_form.supplier.errors required=True %}
+        {% include "components/input.html" with name="supplier_invoice_reference" label="Supplier invoice reference" value=header_form.supplier_invoice_reference.value error=header_form.supplier_invoice_reference.errors %}
+        {% include "components/input.html" with name="invoice_date" label="Invoice date" type="date" value=header_form.invoice_date.value error=header_form.invoice_date.errors required=True %}
+        {% include "components/input.html" with name="due_date" label="Due date" type="date" value=header_form.due_date.value error=header_form.due_date.errors %}
+        {% include "components/input.html" with name="currency_code" label="Currency code" value=header_form.currency_code.value error=header_form.currency_code.errors required=True %}
+
+        <h2>Lines</h2>
+        {{ formset.management_form }}
+        {% for line_form in formset %}
+            <fieldset>
+                {% include "components/select.html" with name=line_form.medicine.html_name label="Medicine" options=medicine_options value=line_form.medicine.value|stringformat:"s" error=line_form.medicine.errors required=True %}
+                {% include "components/select.html" with name=line_form.medicine_unit.html_name label="Unit" options=unit_options value=line_form.medicine_unit.value|stringformat:"s" error=line_form.medicine_unit.errors required=True %}
+                {% include "components/input.html" with name=line_form.quantity.html_name label="Quantity" value=line_form.quantity.value error=line_form.quantity.errors required=True %}
+                {% include "components/input.html" with name=line_form.unit_cost.html_name label="Unit cost" value=line_form.unit_cost.value error=line_form.unit_cost.errors required=True %}
+                {% include "components/input.html" with name=line_form.discount_amount.html_name label="Discount amount" value=line_form.discount_amount.value error=line_form.discount_amount.errors %}
+                {% include "components/input.html" with name=line_form.tax_rate_percent.html_name label="Tax rate %" value=line_form.tax_rate_percent.value error=line_form.tax_rate_percent.errors %}
+                {% include "components/input.html" with name=line_form.batch_number.html_name label="Batch number" value=line_form.batch_number.value error=line_form.batch_number.errors required=True %}
+                {% include "components/input.html" with name=line_form.expiry_date.html_name label="Expiry date" type="date" value=line_form.expiry_date.value error=line_form.expiry_date.errors required=True %}
+                {% if formset.can_delete %}
+                    <label>
+                        <input type="checkbox" name="{{ line_form.DELETE.html_name }}"> Remove this line
+                    </label>
+                {% endif %}
+            </fieldset>
+        {% endfor %}
+        <p>Add more lines by resubmitting with a higher TOTAL_FORMS count, or extend this page with client-side row cloning.</p>
+
+        {% include "components/button.html" with text="Save draft" loading_text="Saving..." variant="primary" type="submit" %}
+    </form>
+{% endblock %}

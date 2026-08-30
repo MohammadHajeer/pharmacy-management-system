@@ -1,0 +1,15 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>{% if unit %}Edit unit{% else %}Add unit{% endif %} for {{ medicine.name }}</h1>
+
+    <form method="post" data-submit-form>
+        {% csrf_token %}
+        {% include "components/input.html" with name="name" label="Unit name" value=form.name.value error=form.name.errors required=True %}
+        {% include "components/input.html" with name="conversion_to_base" label="Conversion to base unit" value=form.conversion_to_base.value error=form.conversion_to_base.errors required=True %}
+        <label><input type="checkbox" name="is_base_unit" {% if form.is_base_unit.value %}checked{% endif %}> Is base unit</label>
+        <label><input type="checkbox" name="purchase_allowed" {% if form.purchase_allowed.value|default:True %}checked{% endif %}> Purchase allowed</label>
+        <label><input type="checkbox" name="sale_allowed" {% if form.sale_allowed.value|default:True %}checked{% endif %}> Sale allowed</label>
+        {% include "components/button.html" with text="Save unit" loading_text="Saving..." variant="primary" type="submit" %}
+    </form>
+{% endblock %}

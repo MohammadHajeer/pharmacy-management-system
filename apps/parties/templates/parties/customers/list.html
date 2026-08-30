@@ -1,0 +1,61 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>Customers</h1>
+
+    <form method="get">
+        {% include "components/input.html" with name="q" label="Search" value=query %}
+        {% include "components/button.html" with text="Filter" variant="secondary" type="submit" %}
+    </form>
+
+    <p>
+        <a href="?status=active">Active</a> ·
+        <a href="?status=inactive">Inactive</a> ·
+        <a href="?status=all">All</a>
+    </p>
+
+    {% url "parties:customer-create" as create_url %}
+    {% include "components/button.html" with text="Add customer" variant="primary" href=create_url %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+                <tr>
+                    <td>{{ customer.code }}</td>
+                    <td>{{ customer.name }}</td>
+                    <td>{{ customer.phone }}</td>
+                    <td>
+                        {% if customer.is_active %}
+                            {% include "components/badge.html" with text="Active" variant="success" %}
+                        {% else %}
+                            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% url "parties:customer-update" customer.pk as edit_url %}
+                        {% include "components/button.html" with text="Edit" variant="ghost" size="sm" href=edit_url %}
+                        <form method="post" action="{% url 'parties:customer-toggle-active' customer.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            {% if customer.is_active %}
+                                {% include "components/button.html" with text="Deactivate" variant="ghost" size="sm" type="submit" %}
+                            {% else %}
+                                {% include "components/button.html" with text="Reactivate" variant="ghost" size="sm" type="submit" %}
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No customers found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

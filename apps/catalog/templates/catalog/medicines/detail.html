@@ -1,0 +1,101 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>{{ medicine.name }}</h1>
+
+    <p>Category: {{ medicine.category }} · Manufacturer: {{ medicine.manufacturer }}</p>
+    <p>Default selling price (per base unit): {{ medicine.default_selling_price }}</p>
+    <p>
+        {% if medicine.is_active %}
+            {% include "components/badge.html" with text="Active" variant="success" %}
+        {% else %}
+            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+        {% endif %}
+    </p>
+
+    {% url "catalog:medicine-update" medicine.pk as edit_url %}
+    {% include "components/button.html" with text="Edit medicine" variant="secondary" href=edit_url %}
+    <form method="post" action="{% url 'catalog:medicine-toggle-active' medicine.pk %}" style="display:inline">
+        {% csrf_token %}
+        {% if medicine.is_active %}
+            {% include "components/button.html" with text="Deactivate" variant="ghost" type="submit" %}
+        {% else %}
+            {% include "components/button.html" with text="Reactivate" variant="ghost" type="submit" %}
+        {% endif %}
+    </form>
+
+    <h2>Units</h2>
+    {% url "catalog:medicine-unit-create" medicine.pk as unit_create_url %}
+    {% include "components/button.html" with text="Add unit" variant="primary" size="sm" href=unit_create_url %}
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Conversion to base</th><th>Base?</th><th>Purchase</th><th>Sale</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for unit in units %}
+                <tr>
+                    <td>{{ unit.name }}</td>
+                    <td>{{ unit.conversion_to_base }}</td>
+                    <td>{{ unit.is_base_unit|yesno:"Yes,No" }}</td>
+                    <td>{{ unit.purchase_allowed|yesno:"Yes,No" }}</td>
+                    <td>{{ unit.sale_allowed|yesno:"Yes,No" }}</td>
+                    <td>
+                        {% if unit.is_active %}
+                            {% include "components/badge.html" with text="Active" variant="success" %}
+                        {% else %}
+                            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% url "catalog:medicine-unit-update" medicine.pk unit.pk as unit_edit_url %}
+                        {% include "components/button.html" with text="Edit" variant="ghost" size="sm" href=unit_edit_url %}
+                        <form method="post" action="{% url 'catalog:medicine-unit-toggle-active' medicine.pk unit.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            {% if unit.is_active %}
+                                {% include "components/button.html" with text="Deactivate" variant="ghost" size="sm" type="submit" %}
+                            {% else %}
+                                {% include "components/button.html" with text="Reactivate" variant="ghost" size="sm" type="submit" %}
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7">No units yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Barcodes</h2>
+    {% url "catalog:medicine-barcode-create" medicine.pk as barcode_create_url %}
+    {% include "components/button.html" with text="Add barcode" variant="primary" size="sm" href=barcode_create_url %}
+    <table>
+        <thead><tr><th>Barcode</th><th>Unit</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+            {% for barcode in barcodes %}
+                <tr>
+                    <td>{{ barcode.barcode }}</td>
+                    <td>{{ barcode.medicine_unit.name }}</td>
+                    <td>
+                        {% if barcode.is_active %}
+                            {% include "components/badge.html" with text="Active" variant="success" %}
+                        {% else %}
+                            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{% url 'catalog:medicine-barcode-toggle-active' medicine.pk barcode.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            {% if barcode.is_active %}
+                                {% include "components/button.html" with text="Deactivate" variant="ghost" size="sm" type="submit" %}
+                            {% else %}
+                                {% include "components/button.html" with text="Reactivate" variant="ghost" size="sm" type="submit" %}
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4">No barcodes yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
