@@ -38,12 +38,17 @@ def medicine_list(request):
             | Q(generic_name__icontains=query)
             | Q(barcodes__barcode__iexact=query)
         ).distinct()
-    medicines = _status_filter(medicines, status)
+        medicines = _status_filter(medicines, status)
 
     return render(
         request,
         "catalog/medicines/list.html",
-        {"medicines": medicines, "query": query, "status": status},
+        {
+            "medicines": medicines,
+            "query": query,
+            "status": status,
+            "breadcrumbs": [{"label": "Catalog"}, {"label": "Medicines"}],
+        },
     )
 
 
