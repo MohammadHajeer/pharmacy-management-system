@@ -108,7 +108,7 @@ DASHBOARD_NAVIGATION = (
         "section": "System",
         "label": "Settings",
         "icon": "settings",
-        "url_name": None,
+        "url_name": "core:settings",
         "namespace": "core",
         "permission": "core.change_pharmacysettings",
     },

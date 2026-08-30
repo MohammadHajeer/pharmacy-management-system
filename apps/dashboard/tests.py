@@ -220,15 +220,18 @@ class DashboardNavigationTests(TestCase):
         items = self.navigation_for("Owner / Admin")
         dashboard = next(item for item in items if item["label"] == "Dashboard")
         medicines = next(item for item in items if item["label"] == "Medicines")
+        settings = next(item for item in items if item["label"] == "Settings")
         future_items = [
             item
             for item in items
-            if item["label"] not in {"Dashboard", "Medicines", "Logout"}
+            if item["label"]
+            not in {"Dashboard", "Medicines", "Settings", "Logout"}
         ]
 
         self.assertTrue(dashboard["is_active"])
         self.assertEqual(dashboard["url"], "/dashboard/")
         self.assertEqual(medicines["url"], "/catalog/medicines/")
+        self.assertEqual(settings["url"], "/settings/")
         self.assertTrue(all(item["url"] is None for item in future_items))
 
     def test_sections_and_post_logout_are_exposed_to_the_template(self):

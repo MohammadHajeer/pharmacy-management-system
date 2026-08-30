@@ -1,10 +1,14 @@
 from decimal import Decimal
+from unittest.mock import patch
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group, Permission
 from django.core.exceptions import PermissionDenied
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
+
+from config.navigation import DASHBOARD_NAVIGATION
 
 from .document_numbers import (
     DocumentKind,
@@ -362,6 +366,184 @@ class CoreSettingsServiceTests(TestCase):
                     "is_active": "on",
                 },
             )
+
+
+class CoreSettingsViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        user_model = get_user_model()
+        cls.owner = user_model.objects.create_user(username="settings-ui-owner")
+        cls.unauthorized_user = user_model.objects.create_user(
+            username="settings-ui-accountant"
+        )
+        cls.add_only_user = user_model.objects.create_user(
+            username="settings-ui-add-only"
+        )
+
+        owner_group = Group.objects.create(name="Owner / Admin")
+        owner_group.permissions.set(
+            Permission.objects.filter(
+                content_type__app_label="core",
+                codename__in={
+                    "change_pharmacysettings",
+                    "add_taxrate",
+                    "change_taxrate",
+                    "add_paymentmethod",
+                    "change_paymentmethod",
+                },
+            )
+        )
+        cls.owner.groups.add(owner_group)
+        cls.add_only_user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="core",
+                codename="add_taxrate",
+            )
+        )
+
+    def setUp(self):
+        self.client.force_login(self.owner)
+
+    def test_authorized_user_can_view_operational_settings(self):
+        TaxRate.objects.create(code="VAT", name="VAT", rate_percent="11.0000")
+        PaymentMethod.objects.create(code="CASH", name="Cash")
+
+        response = self.client.get(reverse("core:settings"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pharmacy information")
+        self.assertContains(response, "Business configuration")
+        self.assertContains(response, "Tax rates")
+        self.assertContains(response, "Payment methods")
+        self.assertContains(response, "Invoice and receipt text")
+        self.assertContains(response, "VAT")
+        self.assertContains(response, "Cash")
+
+    def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
+        self.client.logout()
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response.url)
+
+        self.client.force_login(self.unauthorized_user)
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_valid_settings_post_uses_service_and_redirects(self):
+        with patch(
+            "apps.core.views.process_pharmacy_settings_form",
+            wraps=process_pharmacy_settings_form,
+        ) as service:
+            response = self.client.post(
+                reverse("core:settings"),
+                pharmacy_settings_data(pharmacy_name="PHARMANEX Central"),
+            )
+
+        self.assertRedirects(response, reverse("core:settings"))
+        self.assertEqual(service.call_count, 1)
+        self.assertEqual(
+            PharmacySettings.objects.get(singleton_key=1).pharmacy_name,
+            "PHARMANEX Central",
+        )
+
+    def test_invalid_settings_post_preserves_values_and_errors(self):
+        response = self.client.post(
+            reverse("core:settings"),
+            pharmacy_settings_data(
+                pharmacy_name="Entered Pharmacy",
+                currency_code="US1",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].is_bound)
+        self.assertIn("currency_code", response.context["form"].errors)
+        self.assertContains(response, 'value="Entered Pharmacy"', html=False)
+        self.assertContains(response, 'value="US1"', html=False)
+        self.assertFalse(PharmacySettings.objects.exists())
+
+    @override_settings(SECRET_KEY="ui-test-secret-that-must-never-render")
+    def test_settings_page_does_not_render_deployment_secrets(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse("core:settings"))
+
+        self.assertNotContains(response, "ui-test-secret-that-must-never-render")
+        self.assertNotContains(response, "DATABASE_URL")
+        self.assertNotContains(response, "SECRET_KEY")
+        self.assertNotContains(response, "API_KEY")
+
+    def test_tax_rate_create_and_edit_use_permission_specific_routes(self):
+        create_response = self.client.post(
+            reverse("core:tax-rate-create"),
+            {
+                "code": "vat",
+                "name": "VAT",
+                "rate_percent": "11.0000",
+                "is_active": "on",
+            },
+        )
+        tax_rate = TaxRate.objects.get(code="VAT")
+        self.assertRedirects(create_response, reverse("core:settings"))
+
+        self.client.force_login(self.add_only_user)
+        edit_response = self.client.post(
+            reverse("core:tax-rate-edit", args=[tax_rate.pk]),
+            {
+                "code": "VAT",
+                "name": "Changed without permission",
+                "rate_percent": "10.0000",
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(edit_response.status_code, 403)
+        tax_rate.refresh_from_db()
+        self.assertEqual(tax_rate.name, "VAT")
+
+    def test_invalid_payment_method_post_preserves_values(self):
+        PaymentMethod.objects.create(code="CASH", name="Cash")
+
+        response = self.client.post(
+            reverse("core:payment-method-create"),
+            {
+                "code": "CASH",
+                "name": "Entered duplicate",
+                "requires_reference": "on",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("code", response.context["form"].errors)
+        self.assertContains(response, 'value="Entered duplicate"', html=False)
+        self.assertContains(response, "Payment method with this Code already exists")
+
+    def test_payment_method_actions_require_their_existing_permissions(self):
+        payment_method = PaymentMethod.objects.create(code="CASH", name="Cash")
+        self.client.force_login(self.unauthorized_user)
+
+        create_response = self.client.post(
+            reverse("core:payment-method-create"),
+            {"code": "CARD", "name": "Card", "is_active": "on"},
+        )
+        edit_response = self.client.post(
+            reverse("core:payment-method-edit", args=[payment_method.pk]),
+            {"code": "CASH", "name": "Changed", "is_active": "on"},
+        )
+
+        self.assertEqual(create_response.status_code, 403)
+        self.assertEqual(edit_response.status_code, 403)
+        self.assertFalse(PaymentMethod.objects.filter(code="CARD").exists())
+        payment_method.refresh_from_db()
+        self.assertEqual(payment_method.name, "Cash")
+
+    def test_navigation_uses_the_core_settings_route_and_permission(self):
+        settings_item = next(
+            item for item in DASHBOARD_NAVIGATION if item["label"] == "Settings"
+        )
+
+        self.assertEqual(settings_item["url_name"], "core:settings")
+        self.assertEqual(settings_item["namespace"], "core")
+        self.assertEqual(settings_item["permission"], "core.change_pharmacysettings")
 
 
 class DocumentNumberTests(SimpleTestCase):
