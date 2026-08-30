@@ -1,0 +1,11 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>{% if manufacturer %}Edit manufacturer{% else %}Add manufacturer{% endif %}</h1>
+
+    <form method="post" data-submit-form>
+        {% csrf_token %}
+        {% include "components/input.html" with name="name" label="Name" value=form.name.value error=form.name.errors required=True %}
+        {% include "components/button.html" with text="Save manufacturer" loading_text="Saving..." variant="primary" type="submit" %}
+    </form>
+{% endblock %}

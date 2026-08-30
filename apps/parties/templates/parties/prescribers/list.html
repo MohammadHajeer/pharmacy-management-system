@@ -1,0 +1,61 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>Prescribers</h1>
+
+    <form method="get">
+        {% include "components/input.html" with name="q" label="Search" value=query %}
+        {% include "components/button.html" with text="Filter" variant="secondary" type="submit" %}
+    </form>
+
+    <p>
+        <a href="?status=active">Active</a> ·
+        <a href="?status=inactive">Inactive</a> ·
+        <a href="?status=all">All</a>
+    </p>
+
+    {% url "parties:prescriber-create" as create_url %}
+    {% include "components/button.html" with text="Add prescriber" variant="primary" href=create_url %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Identifier</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prescriber in prescribers %}
+                <tr>
+                    <td>{{ prescriber.name }}</td>
+                    <td>{{ prescriber.phone }}</td>
+                    <td>{{ prescriber.professional_identifier }}</td>
+                    <td>
+                        {% if prescriber.is_active %}
+                            {% include "components/badge.html" with text="Active" variant="success" %}
+                        {% else %}
+                            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% url "parties:prescriber-update" prescriber.pk as edit_url %}
+                        {% include "components/button.html" with text="Edit" variant="ghost" size="sm" href=edit_url %}
+                        <form method="post" action="{% url 'parties:prescriber-toggle-active' prescriber.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            {% if prescriber.is_active %}
+                                {% include "components/button.html" with text="Deactivate" variant="ghost" size="sm" type="submit" %}
+                            {% else %}
+                                {% include "components/button.html" with text="Reactivate" variant="ghost" size="sm" type="submit" %}
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No prescribers found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

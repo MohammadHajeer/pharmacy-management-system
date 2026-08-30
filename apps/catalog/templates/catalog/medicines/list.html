@@ -3,9 +3,53 @@
 {% block content %}
     <h1>Medicines</h1>
 
-    {% for medicine in medicines %}
-        <p>{{ medicine }}</p>
-    {% empty %}
-        <p>No medicines found.</p>
-    {% endfor %}
+    <form method="get">
+        {% include "components/input.html" with name="q" label="Search" value=query %}
+        {% include "components/button.html" with text="Filter" variant="secondary" type="submit" %}
+    </form>
+
+    <p>
+        <a href="?status=active">Active</a> ·
+        <a href="?status=inactive">Inactive</a> ·
+        <a href="?status=all">All</a>
+    </p>
+
+    {% url "catalog:medicine-create" as create_url %}
+    {% include "components/button.html" with text="Add medicine" variant="primary" href=create_url %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Manufacturer</th>
+                <th>Selling price</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for medicine in medicines %}
+                <tr>
+                    <td>{{ medicine.name }}</td>
+                    <td>{{ medicine.category }}</td>
+                    <td>{{ medicine.manufacturer }}</td>
+                    <td>{{ medicine.default_selling_price }}</td>
+                    <td>
+                        {% if medicine.is_active %}
+                            {% include "components/badge.html" with text="Active" variant="success" %}
+                        {% else %}
+                            {% include "components/badge.html" with text="Inactive" variant="secondary" %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% url "catalog:medicine-detail" medicine.pk as detail_url %}
+                        {% include "components/button.html" with text="View" variant="ghost" size="sm" href=detail_url %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No medicines found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

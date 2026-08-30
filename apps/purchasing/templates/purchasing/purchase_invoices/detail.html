@@ -1,0 +1,60 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>Purchase invoice {{ invoice.invoice_number|default:"(draft)" }}</h1>
+
+    <p>Supplier: {{ invoice.supplier_name_snapshot }}</p>
+    <p>Invoice date: {{ invoice.invoice_date }} · Due date: {{ invoice.due_date|default:"—" }}</p>
+    <p>
+        {% if invoice.status == "POSTED" %}
+            {% include "components/badge.html" with text="Posted" variant="success" %}
+        {% elif invoice.status == "VOID" %}
+            {% include "components/badge.html" with text="Void" variant="danger" %}
+        {% else %}
+            {% include "components/badge.html" with text="Draft" variant="secondary" %}
+        {% endif %}
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Medicine</th>
+                <th>Unit</th>
+                <th>Qty</th>
+                <th>Unit cost</th>
+                <th>Discount</th>
+                <th>Tax</th>
+                <th>Line total</th>
+                <th>Batch</th>
+                <th>Expiry</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>{{ line.medicine_description_snapshot }}</td>
+                    <td>{{ line.unit_name_snapshot }}</td>
+                    <td>{{ line.quantity }}</td>
+                    <td>{{ line.unit_cost }}</td>
+                    <td>{{ line.discount_amount }}</td>
+                    <td>{{ line.tax_amount }}</td>
+                    <td>{{ line.line_total }}</td>
+                    <td>{{ line.batch_number }}</td>
+                    <td>{{ line.expiry_date }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p>
+        Subtotal: {{ invoice.subtotal }} · Discount: {{ invoice.discount_total }} ·
+        Tax: {{ invoice.tax_total }} · <strong>Grand total: {{ invoice.grand_total }} {{ invoice.currency_code }}</strong>
+    </p>
+
+    {% if invoice.status == "DRAFT" %}
+        <form method="post" action="{% url 'purchasing:purchase-invoice-post' invoice.pk %}">
+            {% csrf_token %}
+            {% include "components/button.html" with text="Post invoice" loading_text="Posting..." variant="primary" type="submit" %}
+        </form>
+    {% endif %}
+{% endblock %}

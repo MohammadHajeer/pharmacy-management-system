@@ -1,0 +1,14 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>{% if prescriber %}Edit prescriber{% else %}Add prescriber{% endif %}</h1>
+
+    <form method="post" data-submit-form>
+        {% csrf_token %}
+        {% include "components/input.html" with name="name" label="Name" value=form.name.value error=form.name.errors required=True %}
+        {% include "components/input.html" with name="phone" label="Phone" value=form.phone.value error=form.phone.errors %}
+        {% include "components/input.html" with name="professional_identifier" label="Professional identifier" value=form.professional_identifier.value error=form.professional_identifier.errors %}
+        {% include "components/textarea.html" with name="notes" label="Notes" value=form.notes.value error=form.notes.errors %}
+        {% include "components/button.html" with text="Save prescriber" loading_text="Saving..." variant="primary" type="submit" %}
+    </form>
+{% endblock %}

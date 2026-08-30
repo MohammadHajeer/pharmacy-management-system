@@ -1,0 +1,12 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block content %}
+    <h1>Add barcode for {{ medicine.name }}</h1>
+
+    <form method="post" data-submit-form>
+        {% csrf_token %}
+        {% include "components/select.html" with name="medicine_unit" label="Unit" options=unit_options value=form.medicine_unit.value|stringformat:"s" error=form.medicine_unit.errors required=True %}
+        {% include "components/input.html" with name="barcode" label="Barcode" value=form.barcode.value error=form.barcode.errors required=True %}
+        {% include "components/button.html" with text="Save barcode" loading_text="Saving..." variant="primary" type="submit" %}
+    </form>
+{% endblock %}

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from .models import MedicineUnit
+from .models import Category, Manufacturer, Medicine, MedicineUnit
 from .unit_economics import (
     acquisition_cost_per_base_unit,
     base_quantity,
@@ -58,6 +58,72 @@ class MedicineUnitValidationTests(SimpleTestCase):
 
         with self.assertRaises(ValidationError):
             unit.clean()
+
+
+class MedicineBaseUnitWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.category = Category.objects.create(name="Workflow category")
+        cls.manufacturer = Manufacturer.objects.create(name="Workflow manufacturer")
+        cls.user = get_user_model().objects.create_user(username="medicine-workflow-user")
+        cls.user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="add_medicine",
+            ),
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="change_medicineunit",
+            ),
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="view_medicine",
+            ),
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def create_medicine(self):
+        response = self.client.post(
+            reverse("catalog:medicine-create"),
+            {
+                "name": "Workflow medicine",
+                "generic_name": "",
+                "category": self.category.pk,
+                "manufacturer": self.manufacturer.pk,
+                "strength": "",
+                "dosage_form": "",
+                "low_stock_threshold_base": "0.000",
+                "default_selling_price": "1.0000",
+                "base_unit_name": "Tablet",
+            },
+        )
+        return response, Medicine.objects.get(name="Workflow medicine")
+
+    def test_create_medicine_also_creates_its_single_active_base_unit(self):
+        response, medicine = self.create_medicine()
+
+        self.assertEqual(response.status_code, 302)
+        base_units = medicine.units.filter(is_active=True, is_base_unit=True)
+        self.assertEqual(base_units.count(), 1)
+        self.assertEqual(base_units.get().conversion_to_base, Decimal("1.000000"))
+
+    def test_active_base_unit_cannot_be_deactivated(self):
+        _, medicine = self.create_medicine()
+        base_unit = medicine.units.get(is_active=True, is_base_unit=True)
+
+        response = self.client.post(
+            reverse(
+                "catalog:medicine-unit-toggle-active",
+                args=[medicine.pk, base_unit.pk],
+            ),
+            follow=True,
+        )
+
+        base_unit.refresh_from_db()
+        self.assertTrue(base_unit.is_active)
+        self.assertContains(response, "The active base unit cannot be deactivated.")
 
 
 class UnitEconomicsTests(SimpleTestCase):
