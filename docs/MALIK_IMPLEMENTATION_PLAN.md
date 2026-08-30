@@ -26,7 +26,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 1 | `E1-T04` / work item `1400` | Complete core settings workflow logic over the existing models | Done |
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Done |
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Done |
-| 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Not started |
+| 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Done |
 | 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Hala and Yasser dependencies |
 | 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
 | 7 | `E1-T09` / work item `1800` | Coordinate final documentation and operational handoff | Blocked — Mhmd Hajeer's final integration milestone |
@@ -278,6 +278,7 @@ Confirm literally:
   - `config/urls.py` only for the `apps.sales.urls` include
   - `docs/MALIK_IMPLEMENTATION_PLAN.md`
   - `docs/task-status/member-1.js` only after the gate passes
+  - `docs/TEAM_DASHBOARD.html` only for Malik's status-file cache marker after the gate passes
 - Read-only references: `apps/sales/models.py`, `apps/catalog/models.py`, `apps/catalog/unit_economics.py`, `apps/parties/models.py`, `apps/prescriptions` public contracts, `apps/inventory/models.py`, and core tax/settings models.
 - Must not touch any model/migration, `MedicineBatch.quantity_available_base`, `StockMovement`, inventory services, payment posting, shared navigation, templates/components, CSS/JavaScript, or Mhmd Hajeer's POS UI-UX task.
 
@@ -313,18 +314,18 @@ git status --short
 
 Confirm literally:
 
-- [ ] Known barcodes resolve to the correct active medicine/unit and unknown barcodes write nothing.
-- [ ] Saved-customer and walk-in draft flows work.
-- [ ] Quantities, discounts, tax, and totals are recalculated server-side using the approved rounding sequence.
-- [ ] Tampered totals are rejected.
-- [ ] Stock/expiry information remains query-only until completion.
-- [ ] `Medicine.default_selling_price` is treated as the base-unit price.
-- [ ] Selected-unit price equals base-unit price times conversion, quantized to four decimals with `ROUND_HALF_UP`.
-- [ ] `SalesInvoiceLine.unit_price` stores the selected-unit price snapshot.
-- [ ] Inventory quantities remain in base units.
-- [ ] Only milestone files changed and there is no migration drift.
+- [x] Known barcodes resolve to the correct active medicine/unit and unknown barcodes write nothing.
+- [x] Saved-customer and walk-in draft flows work.
+- [x] Quantities, discounts, tax, and totals are recalculated server-side using the approved rounding sequence.
+- [x] Tampered totals are rejected.
+- [x] Stock/expiry information remains query-only until completion.
+- [x] `Medicine.default_selling_price` is treated as the base-unit price.
+- [x] Selected-unit price equals base-unit price times conversion, quantized to four decimals with `ROUND_HALF_UP`.
+- [x] `SalesInvoiceLine.unit_price` stores the selected-unit price snapshot.
+- [x] Inventory quantities remain in base units.
+- [x] Only milestone files changed and there is no migration drift.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -515,4 +516,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next milestone eligible to start is **Milestone 4 — Server-authoritative draft POS logic (`E3-T02`)**. It remains **Not started** until Malik says **continue**.
+The next dependency-ordered milestone is **Milestone 5 — Atomic sale completion with FEFO locking (`E3-T03`)**, but it remains **Blocked** by Hala's unfinished `E2-T02` authoritative inventory/FEFO locking service and Yasser's unfinished `E4-T01` customer-payment service. Do not start or bypass either dependency.
