@@ -439,6 +439,21 @@ class CoreSettingsViewTests(TestCase):
         )
         self.assertContains(response, 'data-modal-open="tax-rate-create"')
         self.assertContains(response, 'data-modal-open="payment-method-create"')
+        self.assertContains(
+            response,
+            'id="tax-rate-create-is-active"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="payment-method-create-requires-reference"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="payment-method-create-is-active"',
+            html=False,
+        )
 
     def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
         self.client.logout()

@@ -79,6 +79,56 @@ class SharedComponentTests(SimpleTestCase):
         self.assertIn('id="id_reference-help"', rendered)
         self.assertIn('id="id_reference-error"', rendered)
 
+    def test_checkbox_preserves_native_semantics_and_shared_visual_states(self):
+        rendered = render_to_string(
+            "components/checkbox.html",
+            {
+                "id": "id_is_active",
+                "name": "is_active",
+                "value": "yes",
+                "checked": True,
+                "required": True,
+                "label": "Active",
+                "description": "Available for new work.",
+                "error": "Review this setting.",
+                "aria_describedby": "options-help",
+            },
+        )
+
+        self.assertIn('for="id_is_active"', rendered)
+        self.assertIn('name="is_active"', rendered)
+        self.assertIn('type="checkbox"', rendered)
+        self.assertIn('value="yes"', rendered)
+        self.assertIn("checked", rendered)
+        self.assertIn("required", rendered)
+        self.assertIn('aria-invalid="true"', rendered)
+        self.assertIn(
+            'aria-describedby="options-help id_is_active-help id_is_active-error"',
+            rendered,
+        )
+        self.assertIn("appearance-none", rendered)
+        self.assertIn("ring-red-500", rendered)
+        self.assertIn("peer-checked:bg-primary-600", rendered)
+        self.assertIn("peer-focus-visible:ring-primary-600", rendered)
+        self.assertIn('id="id_is_active-help"', rendered)
+        self.assertIn('id="id_is_active-error"', rendered)
+
+    def test_checkbox_supports_disabled_checked_state(self):
+        rendered = render_to_string(
+            "components/checkbox.html",
+            {
+                "name": "is_active",
+                "checked": True,
+                "disabled": True,
+                "label": "Active",
+            },
+        )
+
+        self.assertIn("disabled", rendered)
+        self.assertIn("cursor-not-allowed", rendered)
+        self.assertIn("border-slate-300 bg-slate-300", rendered)
+        self.assertIn("opacity-100", rendered)
+
     def test_textarea_and_select_share_accessible_supporting_text(self):
         textarea = render_to_string(
             "components/textarea.html",

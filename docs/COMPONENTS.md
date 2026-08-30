@@ -50,6 +50,14 @@ Select options are dictionaries with `value`, `label`, and an optional `disabled
 
 Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `placeholder`, `autocomplete`, `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `placeholder`, `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
 
+## Checkbox
+
+```django
+{% include "components/checkbox.html" with id="payment-method-is-active" name="is_active" label="Active" checked=form.is_active.value description="Inactive methods cannot be selected for new work." error=form.is_active.errors %}
+```
+
+Checkboxes accept `id`, `name`, `value`, `checked`, `disabled`, `required`, `label`, `description` (or `help_text`), `error`, `aria_invalid`, and `aria_describedby`. The native checkbox remains responsible for form submission and keyboard interaction; the shared visual control supplies the PHARMANEX checked, focus, disabled, and error states. Pass a bound field's `.value` and `.errors` to preserve Django validation responses.
+
 The select component progressively enhances its native `<select>` into the shared custom dropdown. Keep passing the original Django field `name`, current `value`, and `options` dictionaries; the native control remains the submitted form field and preserves required, disabled, initial-value, and validation behavior. The shared `static/js/custom-select.js` script is loaded by the base layout and provides click-outside closing plus Arrow Up, Arrow Down, Enter, Escape, Home, End, and Tab keyboard behavior. No page-specific JavaScript is needed.
 
 For a reusable submit/loading state, mark the form with `data-submit-form` and pass `loading_text` to its submit button:
