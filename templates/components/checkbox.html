@@ -1,0 +1,31 @@
+{% firstof id name as field_id %}
+{% firstof description help_text as checkbox_description %}
+<div>
+  <label for="{{ field_id }}" class="flex items-start gap-3 text-sm {% if disabled %}cursor-not-allowed text-slate-400{% else %}cursor-pointer text-slate-700{% endif %}">
+    <span class="relative mt-0.5 flex size-4.5 shrink-0">
+      <input
+        id="{{ field_id }}"
+        name="{{ name }}"
+        type="checkbox"
+        value="{{ value|default:'on' }}"
+        {% if checked %}checked{% endif %}
+        {% if disabled %}disabled{% endif %}
+        {% if required %}required{% endif %}
+        {% if error or aria_invalid %}aria-invalid="true"{% endif %}
+        {% if aria_describedby or checkbox_description or error %}aria-describedby="{% if aria_describedby %}{{ aria_describedby }}{% endif %}{% if checkbox_description %}{% if aria_describedby %} {% endif %}{{ field_id }}-help{% endif %}{% if error %}{% if aria_describedby or checkbox_description %} {% endif %}{{ field_id }}-error{% endif %}"{% endif %}
+        class="peer absolute inset-0 z-10 size-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
+      >
+      <span class="pointer-events-none flex size-full items-center justify-center rounded-status border {% if disabled %}{% if checked %}border-slate-300 bg-slate-300{% else %}border-slate-200 bg-slate-100{% endif %}{% elif error or aria_invalid %}border-red-500 bg-white ring-1 ring-red-500 ring-offset-1 peer-checked:border-primary-600 peer-checked:bg-primary-600 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-600 peer-focus-visible:ring-offset-2{% else %}border-slate-300 bg-white peer-checked:border-primary-600 peer-checked:bg-primary-600 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-600 peer-focus-visible:ring-offset-2{% endif %}" aria-hidden="true"></span>
+      <svg class="pointer-events-none absolute inset-0 size-full p-0.5 text-white {% if disabled and checked %}opacity-100{% else %}opacity-0 peer-checked:opacity-100{% endif %}" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="m3.5 8.25 2.75 2.75 6.25-6.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </span>
+    <span class="min-w-0">
+      <span class="block font-medium {% if disabled %}text-slate-500{% else %}text-slate-800{% endif %}">
+        {{ label }}{% if required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span><span class="sr-only"> (required)</span>{% endif %}
+      </span>
+      {% if checkbox_description %}<span id="{{ field_id }}-help" class="mt-1 block text-sm leading-5 {% if disabled %}text-slate-400{% else %}text-slate-500{% endif %}">{{ checkbox_description }}</span>{% endif %}
+    </span>
+  </label>
+  {% if error %}<p id="{{ field_id }}-error" class="mt-1.5 pl-7.5 text-sm leading-5 text-red-600" role="alert">{{ error|striptags }}</p>{% endif %}
+</div>

@@ -1,17 +1,66 @@
 {% firstof id name as field_id %}
-<div>
+<div data-custom-select-root>
   {% if label %}
-    <label for="{{ field_id }}" class="mb-1.5 block text-sm font-medium leading-none text-slate-700">
+    <label id="{{ field_id }}-label" for="{{ field_id }}" class="mb-2 block text-sm font-semibold leading-none text-slate-800">
       {{ label }}{% if required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span><span class="sr-only"> (required)</span>{% endif %}
     </label>
   {% endif %}
-  <div class="relative">
-    <select id="{{ field_id }}" name="{{ name }}" {% if required %}required{% endif %} {% if disabled %}disabled{% endif %} {% if error %}aria-invalid="true"{% endif %} {% if error or help_text %}aria-describedby="{% if help_text %}{{ field_id }}-help{% endif %}{% if error %}{% if help_text %} {% endif %}{{ field_id }}-error{% endif %}"{% endif %} class="block h-10 w-full appearance-none rounded-lg border bg-white py-0 pl-3 pr-10 text-sm text-slate-900 shadow-xs outline-none transition-colors focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 {% if error %}border-red-500 focus:border-red-600 focus:ring-red-100{% else %}border-slate-200 hover:border-slate-300 focus:border-primary-600 focus:ring-primary-100{% endif %}">
+  <div class="relative" data-custom-select>
+    <select
+      id="{{ field_id }}"
+      name="{{ name }}"
+      data-custom-select-native
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if error %}aria-invalid="true"{% endif %}
+      {% if error or help_text %}aria-describedby="{% if help_text %}{{ field_id }}-help{% endif %}{% if error %}{% if help_text %} {% endif %}{{ field_id }}-error{% endif %}"{% endif %}
+      class="block h-11 w-full appearance-none rounded-xl border bg-white py-0 pl-3.5 pr-10 text-sm text-slate-900 outline-none transition-colors disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 {% if error %}border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-100{% else %}border-slate-200 hover:border-slate-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-100{% endif %}"
+    >
       {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
       {% for option in options %}<option value="{{ option.value }}" {% if option.value == value %}selected{% endif %} {% if option.disabled %}disabled{% endif %}>{{ option.label }}</option>{% endfor %}
     </select>
-    {% include "components/icon.html" with name="chevron-down" class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" only %}
+    <span data-custom-select-native-icon>
+      {% include "components/icon.html" with name="chevron-down" class="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" only %}
+    </span>
+    <div data-custom-select-ui data-placeholder="{{ placeholder|default:'Select an option' }}" hidden>
+      <button
+        id="{{ field_id }}-trigger"
+        type="button"
+        class="flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3.5 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 {% if error %}border-red-500 focus-visible:border-red-600 focus-visible:ring-red-100{% else %}border-slate-200 hover:border-slate-300 focus-visible:border-primary-600 focus-visible:ring-primary-100{% endif %}"
+        data-custom-select-trigger
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-autocomplete="none"
+        aria-expanded="false"
+        aria-controls="{{ field_id }}-listbox"
+        {% if required %}aria-required="true"{% endif %}
+        {% if label %}aria-labelledby="{{ field_id }}-label {{ field_id }}-value"{% else %}aria-labelledby="{{ field_id }}-value"{% endif %}
+        {% if error %}aria-invalid="true"{% endif %}
+        {% if error or help_text %}aria-describedby="{% if help_text %}{{ field_id }}-help{% endif %}{% if error %}{% if help_text %} {% endif %}{{ field_id }}-error{% endif %}"{% endif %}
+        {% if disabled %}disabled{% endif %}
+      >
+        <span id="{{ field_id }}-value" class="min-w-0 truncate" data-custom-select-value>
+          {% if placeholder and not value %}{{ placeholder }}{% else %}{% for option in options %}{% if option.value == value %}{{ option.label }}{% endif %}{% endfor %}{% endif %}
+        </span>
+        {% include "components/icon.html" with name="chevron-down" class="size-4 shrink-0 text-slate-400 transition-transform duration-150" only %}
+      </button>
+
+      <div class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5" data-custom-select-menu hidden>
+        <div id="{{ field_id }}-listbox" role="listbox" {% if label %}aria-labelledby="{{ field_id }}-label"{% endif %}>
+          {% if placeholder %}
+            <button id="{{ field_id }}-option-placeholder" type="button" role="option" class="flex min-h-9 w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:bg-slate-100" data-custom-select-option data-value="" aria-selected="{% if not value %}true{% else %}false{% endif %}" tabindex="-1">
+              <span class="truncate">{{ placeholder }}</span><span class="size-1.5 shrink-0 rounded-full bg-primary-600 {% if value %}hidden{% endif %}" data-custom-select-indicator></span>
+            </button>
+          {% endif %}
+          {% for option in options %}
+            <button id="{{ field_id }}-option-{{ forloop.counter }}" type="button" role="option" class="flex min-h-9 w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-sm outline-none transition-colors {% if option.disabled %}cursor-not-allowed text-slate-400{% else %}text-slate-700 hover:bg-slate-100 focus-visible:bg-slate-100{% endif %}" data-custom-select-option data-value="{{ option.value }}" aria-selected="{% if option.value == value %}true{% else %}false{% endif %}" {% if option.disabled %}aria-disabled="true" disabled{% endif %} tabindex="-1">
+              <span class="truncate">{{ option.label }}</span><span class="size-1.5 shrink-0 rounded-full bg-primary-600 {% if option.value != value %}hidden{% endif %}" data-custom-select-indicator></span>
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
-  {% if help_text %}<p id="{{ field_id }}-help" class="mt-1.5 text-sm leading-5 text-slate-500">{{ help_text }}</p>{% endif %}
+  {% if help_text %}<p id="{{ field_id }}-help" class="mt-1.5 text-xs leading-5 text-slate-500">{{ help_text }}</p>{% endif %}
   {% if error %}<p id="{{ field_id }}-error" class="mt-1.5 text-sm leading-5 text-red-600" role="alert">{{ error|striptags }}</p>{% endif %}
 </div>

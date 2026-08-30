@@ -10,25 +10,29 @@ SAMPLE_KPIS = (
         "label": "Today's Sales",
         "value": "$2,450.00",
         "context": "18 completed transactions",
+        "tone": "neutral",
         "permission": "sales.view_salesinvoice",
+    },
+    {
+        "label": "Receivables",
+        "value": "$1,280.00",
+        "context": "Outstanding customer balances",
+        "tone": "neutral",
+        "permission": "finance.view_customerpayment",
     },
     {
         "label": "Low Stock",
         "value": "12",
         "context": "Medicines below reorder level",
+        "tone": "warning",
         "permission": "inventory.view_medicinebatch",
     },
     {
         "label": "Expiring Soon",
         "value": "7",
         "context": "Batches within the next 30 days",
+        "tone": "warning",
         "permission": "inventory.view_medicinebatch",
-    },
-    {
-        "label": "Receivables",
-        "value": "$1,280.00",
-        "context": "Outstanding customer balances",
-        "permission": "finance.view_customerpayment",
     },
 )
 
@@ -41,6 +45,7 @@ SAMPLE_RECENT_ACTIVITY = (
         "amount": "$124.50",
         "status": "Completed",
         "status_variant": "success",
+        "icon": "sales",
         "permission": "sales.view_salesinvoice",
     },
     {
@@ -51,6 +56,7 @@ SAMPLE_RECENT_ACTIVITY = (
         "amount": "$780.00",
         "status": "Posted",
         "status_variant": "secondary",
+        "icon": "purchases",
         "permission": "purchasing.view_purchaseinvoice",
     },
     {
@@ -61,6 +67,7 @@ SAMPLE_RECENT_ACTIVITY = (
         "amount": "$200.00",
         "status": "Received",
         "status_variant": "success",
+        "icon": "payments",
         "permission": "finance.view_customerpayment",
     },
     {
@@ -71,6 +78,7 @@ SAMPLE_RECENT_ACTIVITY = (
         "amount": "$450.00",
         "status": "Paid",
         "status_variant": "success",
+        "icon": "payments",
         "permission": "finance.view_supplierpayment",
     },
 )
@@ -81,13 +89,15 @@ SAMPLE_ATTENTION_ITEMS = (
         "detail": "8 boxes remaining",
         "status": "Low stock",
         "status_variant": "warning",
+        "group": "Stock",
         "permission": "inventory.view_medicinebatch",
     },
     {
         "title": "Batch B-1842",
         "detail": "Expires in 12 days",
-        "status": "Expiring soon",
+        "status": "Expiry urgent",
         "status_variant": "warning",
+        "group": "Expiry",
         "permission": "inventory.view_medicinebatch",
     },
     {
@@ -95,6 +105,7 @@ SAMPLE_ATTENTION_ITEMS = (
         "detail": "Expired 2 days ago",
         "status": "Expired",
         "status_variant": "destructive",
+        "group": "Expiry",
         "permission": "inventory.view_medicinebatch",
     },
     {
@@ -102,6 +113,7 @@ SAMPLE_ATTENTION_ITEMS = (
         "detail": "$320.00 balance outstanding",
         "status": "Partially paid",
         "status_variant": "warning",
+        "group": "Finance",
         "permission": "sales.view_salesinvoice",
     },
     {
@@ -109,6 +121,7 @@ SAMPLE_ATTENTION_ITEMS = (
         "detail": "$540.00 due to supplier",
         "status": "Unpaid",
         "status_variant": "destructive",
+        "group": "Finance",
         "permission": "purchasing.view_purchaseinvoice",
     },
 )
@@ -126,6 +139,7 @@ def dashboard_view(request):
         "dashboard/index.html",
         {
             "page_context": "Dashboard",
+            "breadcrumbs": [{"label": "Dashboard"}],
             "dashboard_data_notice": (
                 "Illustrative values for the Phase 1 layout; live dashboard "
                 "queries are not connected yet."

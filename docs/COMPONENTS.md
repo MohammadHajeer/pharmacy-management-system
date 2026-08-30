@@ -18,6 +18,21 @@ Use the auth layout for login and password-related screens. It provides a center
 {% block content %}...{% endblock %}
 ```
 
+## Breadcrumb context
+
+Dashboard-shell views provide explicit breadcrumb labels in page context; the topbar never derives labels from route names. Keep the final item unlinked, and only provide earlier-item URLs that are real and permitted for the current user:
+
+```python
+return render(request, "catalog/medicines/list.html", {
+    "breadcrumbs": [
+        {"label": "Catalog"},
+        {"label": "Medicines"},
+    ],
+})
+```
+
+Simple pages use one item. When `breadcrumbs` is absent, the shell may display the existing explicit `page_context` value; it never falls back to `resolver_match.url_name`.
+
 ## Button
 
 ```django
@@ -48,7 +63,17 @@ Variants are `primary`, `secondary`, `outline`, `ghost`, and `destructive`. The 
 
 Select options are dictionaries with `value`, `label`, and an optional `disabled` value. Pass a bound field's `.errors` to show Django validation feedback.
 
-Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
+Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `placeholder`, `autocomplete`, `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `placeholder`, `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
+
+## Checkbox
+
+```django
+{% include "components/checkbox.html" with id="payment-method-is-active" name="is_active" label="Active" checked=form.is_active.value description="Inactive methods cannot be selected for new work." error=form.is_active.errors %}
+```
+
+Checkboxes accept `id`, `name`, `value`, `checked`, `disabled`, `required`, `label`, `description` (or `help_text`), `error`, `aria_invalid`, and `aria_describedby`. The native checkbox remains responsible for form submission and keyboard interaction; the shared visual control supplies the PHARMANEX checked, focus, disabled, and error states. Pass a bound field's `.value` and `.errors` to preserve Django validation responses.
+
+The select component progressively enhances its native `<select>` into the shared custom dropdown. Keep passing the original Django field `name`, current `value`, and `options` dictionaries; the native control remains the submitted form field and preserves required, disabled, initial-value, and validation behavior. The shared `static/js/custom-select.js` script is loaded by the base layout and provides click-outside closing plus Arrow Up, Arrow Down, Enter, Escape, Home, End, and Tab keyboard behavior. No page-specific JavaScript is needed.
 
 For a reusable submit/loading state, mark the form with `data-submit-form` and pass `loading_text` to its submit button:
 
@@ -60,6 +85,8 @@ For a reusable submit/loading state, mark the form with `data-submit-form` and p
 ```
 
 The shared form script waits for the browser's valid `submit` event, disables the button, sets `aria-busy`, and swaps in the spinner/loading label without interrupting the POST.
+
+For forms whose submit action should remain disabled until a value differs from the initial rendered state, add `data-dirty-form`, pass both `disabled=True` and `dirty_submit=True` to the button, and load `static/js/form-dirty-state.js` from the page. The helper compares the complete form state on input/change, so restoring every original value disables the button again.
 
 ## Badge
 
@@ -109,6 +136,12 @@ For a confirmed POST action, pass `confirm_action`. The modal renders a CSRF-pro
 {% include "components/modal.html" with modal_id="logout-modal" title="Sign out?" body="Your session will end." close_text="Cancel" confirm_text="Sign out" confirm_action=logout_url confirm_variant="danger" confirm_loading_text="Signing out..." %}
 ```
 
+Small server-rendered forms can be placed inside the shared dialog by passing `form_action`, `form_template`, `modal_form`, and a unique `field_prefix`. Pass `open_modal` to mark one dialog for automatic opening after a validation response. Form-dialog includes must retain the parent template context so Django's CSRF token is available:
+
+```django
+{% include "components/modal.html" with modal_id="tax-rate-create" title="Add tax rate" form_action=create_url form_template="core/tax_rates/_form_fields.html" modal_form=form field_prefix="tax-rate-create" confirm_text="Save tax rate" open_modal=open_modal %}
+```
+
 ## Toasts
 
 Use Django's standard messages API. The base template automatically turns messages into stacked, dismissible notifications.
@@ -123,6 +156,18 @@ messages.info(request, "The report is being prepared.")
 ```
 
 When a server-rendered message needs a separate title or a non-default display time, pass `toast_title` and `toast_duration` in the template context for that response. Untitled messages and existing button triggers keep their current behavior.
+
+## Clinical operations surfaces
+
+Dashboard and configuration workspaces can use the small shared presentation roles defined in `assets/css/input.css`:
+
+- `workspace-surface` for a connected, bordered workspace region;
+- `operational-kicker` for compact operational context labels;
+- `operational-empty` for readable, action-aware empty states.
+
+The shared theme also defines `status`, `control`, `workspace`, and `dialog` radius roles. Use the matching radius for the element's function rather than applying the largest radius to every region.
+
+Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `data-dirty-surface` elements. `form-dirty-state.js` toggles their presentation while preserving the existing form comparison and submit-button behavior.
 
 ## Sidebar navigation
 
