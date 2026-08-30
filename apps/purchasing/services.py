@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from apps.catalog.unit_economics import acquisition_cost_per_base_unit, base_quantity
 from apps.core.document_numbers import purchase_invoice_number_for_posting
+from apps.core.models import PharmacySettings
 from apps.inventory.services import receive_purchase_stock
 
 from .models import PurchaseInvoice, PurchaseInvoiceLine
@@ -56,6 +57,8 @@ def create_draft_purchase_invoice(
 
     if not lines_data:
         raise ValidationError("A purchase invoice needs at least one line.")
+    if not supplier.is_active:
+        raise ValidationError("An active supplier is required.")
 
     with transaction.atomic():
         invoice = PurchaseInvoice(
@@ -64,7 +67,8 @@ def create_draft_purchase_invoice(
             invoice_date=invoice_date,
             due_date=due_date,
             status=PurchaseInvoice.Status.DRAFT,
-            supplier_name_snapshot=supplier.name,
+            supplier_name_snapshot="",
+            pharmacy_name_snapshot="",
             currency_code=currency_code,
             created_by=actor,
         )
@@ -84,11 +88,13 @@ def create_draft_purchase_invoice(
             discount_amount = line_data.get("discount_amount") or Decimal("0.00")
             tax_rate_percent = line_data.get("tax_rate_percent") or Decimal("0.0000")
 
+            if not medicine.is_active:
+                raise ValidationError("Purchase lines require an active medicine.")
             if medicine_unit.medicine_id != medicine.pk:
                 raise ValidationError("The unit must belong to the selected medicine.")
-            if not medicine_unit.purchase_allowed:
+            if not medicine_unit.is_active or not medicine_unit.purchase_allowed:
                 raise ValidationError(
-                    f"{medicine_unit.name} is not allowed for purchases."
+                    f"{medicine_unit.name} is not an active purchase unit."
                 )
 
             conversion_to_base_snapshot = medicine_unit.conversion_to_base
@@ -147,10 +153,23 @@ def post_purchase_invoice(*, actor, purchase_invoice_id):
     _require_permission(actor, "purchasing.post_purchaseinvoice")
 
     with transaction.atomic():
-        invoice = PurchaseInvoice.objects.select_for_update().get(pk=purchase_invoice_id)
+        invoice = (
+            PurchaseInvoice.objects.select_for_update()
+            .select_related("supplier")
+            .get(pk=purchase_invoice_id)
+        )
+        _require_permission(actor, "purchasing.post_purchaseinvoice")
 
         if invoice.status != PurchaseInvoice.Status.DRAFT:
             raise ValidationError("Only a draft purchase invoice can be posted.")
+        if not invoice.supplier.is_active:
+            raise ValidationError("The purchase invoice supplier is inactive.")
+
+        pharmacy_settings = PharmacySettings.objects.filter(singleton_key=1).first()
+        if pharmacy_settings is None:
+            raise ValidationError(
+                "Pharmacy settings must be configured before posting a purchase."
+            )
 
         lines = list(
             invoice.lines.select_related("medicine", "medicine_unit").order_by("id")
@@ -158,10 +177,32 @@ def post_purchase_invoice(*, actor, purchase_invoice_id):
         if not lines:
             raise ValidationError("A posted purchase invoice requires at least one line.")
 
+        expected_subtotal = Decimal("0.00")
+        expected_discount_total = Decimal("0.00")
+        expected_tax_total = Decimal("0.00")
+        expected_grand_total = Decimal("0.00")
+        business_date = timezone.localdate()
+
         for line in lines:
-            if not line.medicine_unit.purchase_allowed:
+            line.full_clean()
+            if not line.medicine.is_active:
                 raise ValidationError(
-                    f"{line.unit_name_snapshot} is no longer allowed for purchases."
+                    f"{line.medicine_description_snapshot} is no longer active."
+                )
+            if (
+                not line.medicine_unit.is_active
+                or not line.medicine_unit.purchase_allowed
+            ):
+                raise ValidationError(
+                    f"{line.unit_name_snapshot} is no longer an active purchase unit."
+                )
+            if line.medicine_unit.medicine_id != line.medicine_id:
+                raise ValidationError(
+                    "A purchase line unit no longer belongs to its medicine."
+                )
+            if line.expiry_date < business_date:
+                raise ValidationError(
+                    f"Batch {line.batch_number} is expired and cannot be received."
                 )
             expected_base_quantity = base_quantity(
                 line.quantity, line.conversion_to_base_snapshot
@@ -171,6 +212,44 @@ def post_purchase_invoice(*, actor, purchase_invoice_id):
                     "A purchase line's received base quantity no longer matches "
                     "its quantity and conversion snapshot."
                 )
+            line_subtotal, expected_tax_amount, expected_line_total = (
+                compute_line_amounts(
+                    quantity=line.quantity,
+                    unit_cost=line.unit_cost,
+                    discount_amount=line.discount_amount,
+                    tax_rate_percent=line.tax_rate_percent,
+                )
+            )
+            if line.tax_amount != expected_tax_amount or line.line_total != expected_line_total:
+                raise ValidationError(
+                    "A purchase line's stored tax or total no longer matches its inputs."
+                )
+            expected_subtotal += line_subtotal
+            expected_discount_total += line.discount_amount
+            expected_tax_total += expected_tax_amount
+            expected_grand_total += expected_line_total
+
+        expected_totals = (
+            expected_subtotal,
+            expected_discount_total,
+            expected_tax_total,
+            expected_grand_total,
+        )
+        stored_totals = (
+            invoice.subtotal,
+            invoice.discount_total,
+            invoice.tax_total,
+            invoice.grand_total,
+        )
+        if stored_totals != expected_totals:
+            raise ValidationError(
+                "The purchase invoice totals no longer match its stored lines."
+            )
+        if invoice.remaining_balance != invoice.grand_total - invoice.paid_total:
+            raise ValidationError("The purchase invoice balance is inconsistent.")
+
+        if not invoice.invoice_number:
+            invoice.invoice_number = purchase_invoice_number_for_posting(invoice.id)
 
         # Deterministic order across lines/batches, mirroring the FEFO
         # ordering convention used elsewhere, to keep lock acquisition order
@@ -197,16 +276,25 @@ def post_purchase_invoice(*, actor, purchase_invoice_id):
                 source_type="PURCHASE_RECEIPT",
                 source_id=invoice.id,
                 source_line_id=line.id,
+                reference_number=invoice.invoice_number,
                 occurred_at=occurred_at,
             )
 
             line.medicine_batch = batch
+            line.medicine_description_snapshot = line.medicine.name
+            line.unit_name_snapshot = line.medicine_unit.name
             line.full_clean()
-            line.save(update_fields=["medicine_batch", "updated_at"])
+            line.save(
+                update_fields=[
+                    "medicine_batch",
+                    "medicine_description_snapshot",
+                    "unit_name_snapshot",
+                    "updated_at",
+                ]
+            )
 
-        if not invoice.invoice_number:
-            invoice.invoice_number = purchase_invoice_number_for_posting(invoice.id)
-
+        invoice.supplier_name_snapshot = invoice.supplier.name
+        invoice.pharmacy_name_snapshot = pharmacy_settings.pharmacy_name
         invoice.status = PurchaseInvoice.Status.POSTED
         invoice.posted_by = actor
         invoice.posted_at = occurred_at

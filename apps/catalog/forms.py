@@ -27,6 +27,11 @@ class ManufacturerForm(forms.ModelForm):
 
 
 class MedicineForm(forms.ModelForm):
+    base_unit_name = forms.CharField(
+        max_length=80,
+        help_text="Required when creating a medicine. Its conversion factor is 1.",
+    )
+
     class Meta:
         model = Medicine
         fields = [
@@ -45,6 +50,8 @@ class MedicineForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.filter(is_active=True)
         self.fields["manufacturer"].queryset = Manufacturer.objects.filter(is_active=True)
+        if not self.instance._state.adding:
+            self.fields.pop("base_unit_name")
 
     def clean_default_selling_price(self):
         price = self.cleaned_data["default_selling_price"]
@@ -100,6 +107,17 @@ class MedicineUnitForm(forms.ModelForm):
                     "is_base_unit",
                     "This medicine already has an active base unit.",
                 )
+
+        if (
+            self.instance.pk
+            and self.instance.is_active
+            and self.instance.is_base_unit
+            and not is_base_unit
+        ):
+            self.add_error(
+                "is_base_unit",
+                "The active base unit cannot be converted to a non-base unit.",
+            )
 
         name = cleaned_data.get("name")
         if name and self.medicine is not None:

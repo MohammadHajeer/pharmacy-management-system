@@ -12,8 +12,8 @@ This plan contains only work assigned to Malik. Other members' work appears only
 1. Work on exactly one milestone at a time, in the order below. Independent milestones are ordered by the value they unblock: core settings logic first unblocks Mhmd Hajeer's settings UI; centralized numbering then establishes the document contract used by transaction workflows; prescription and draft POS behavior precede effective sale completion.
 2. Do not start a milestone until Malik says **continue** and the preceding milestone is `Done`.
 3. At a milestone marked `Blocked`, do not create a stub, mock, duplicate service, temporary stock implementation, or interim financial implementation. Stop and report the named dependency and owner.
-4. Use a focused feature branch and pull request for each implementation milestone. Do not combine unrelated milestones in one pull request.
-5. `docs/MALIK_IMPLEMENTATION_PLAN.md` must be updated whenever a milestone changes state. After its verification gate passes, update Malik's corresponding entry in `docs/task-status/member-1.js` in the same milestone pull request.
+4. Commit each verified Malik milestone directly to `main`, push it to GitHub, then pull/fetch again to confirm local and remote `main` agree. Do not create pull requests for Malik's work. Review teammate pull requests before merging them, while preserving Mohammad Hajeer's changes exactly as submitted and reporting any notice instead of editing his work.
+5. `docs/MALIK_IMPLEMENTATION_PLAN.md` must be updated whenever a milestone changes state. After its verification gate passes, update only Malik's corresponding entry and synchronization comment in `docs/task-status/member-1.js`, then update the Malik-only cache revision on the `member-1.js` script tag in `docs/TEAM_DASHBOARD.html`. Never edit `member-2.js`, `member-3.js`, or `member-4.js` as part of Malik's task completion.
 6. A milestone becomes `Done` only after every command and every acceptance-criteria check in its verification gate passes. If a failure requires changing a file outside the milestone scope, stop and request Malik's confirmation before expanding scope.
 7. Do not run application tests against the shared Neon development database. Use the configured isolated test database. The shared Neon database may be inspected or migrated only through the separately assigned coordinated migration task.
 8. If Aider is used for a bounded implementation portion, Codex reviews its complete diff and validation results and reports the estimated percentage of Codex implementation effort saved.
@@ -25,8 +25,8 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 0 | `E1-T01` / work item `1100` | Coordinate the approved Phase 1 source of truth and dated delivery plan | Done |
 | 1 | `E1-T04` / work item `1400` | Complete core settings workflow logic over the existing models | Done |
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Done |
-| 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Not started |
-| 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Not started |
+| 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Done |
+| 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Done |
 | 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Hala and Yasser dependencies |
 | 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
 | 7 | `E1-T09` / work item `1800` | Coordinate final documentation and operational handoff | Blocked — Mhmd Hajeer's final integration milestone |
@@ -249,14 +249,14 @@ git status --short
 
 Confirm literally:
 
-- [ ] Authorized callers can create and retrieve lightweight prescriptions with optional customer/prescriber and medicine items.
-- [ ] Required quantities and instructions validate according to the approved schema.
-- [ ] POS can consume non-clinical prescription-required warning data.
-- [ ] No clinical advice or complex prescription lifecycle was added.
-- [ ] File upload remains disabled because its prerequisites are not approved.
-- [ ] Only milestone files changed and there is no migration drift.
+- [x] Authorized callers can create and retrieve lightweight prescriptions with optional customer/prescriber and medicine items.
+- [x] Required quantities and instructions validate according to the approved schema.
+- [x] POS can consume non-clinical prescription-required warning data.
+- [x] No clinical advice or complex prescription lifecycle was added.
+- [x] File upload remains disabled because its prerequisites are not approved.
+- [x] Only milestone files changed and there is no migration drift.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -278,6 +278,7 @@ Confirm literally:
   - `config/urls.py` only for the `apps.sales.urls` include
   - `docs/MALIK_IMPLEMENTATION_PLAN.md`
   - `docs/task-status/member-1.js` only after the gate passes
+  - `docs/TEAM_DASHBOARD.html` only for Malik's status-file cache marker after the gate passes
 - Read-only references: `apps/sales/models.py`, `apps/catalog/models.py`, `apps/catalog/unit_economics.py`, `apps/parties/models.py`, `apps/prescriptions` public contracts, `apps/inventory/models.py`, and core tax/settings models.
 - Must not touch any model/migration, `MedicineBatch.quantity_available_base`, `StockMovement`, inventory services, payment posting, shared navigation, templates/components, CSS/JavaScript, or Mhmd Hajeer's POS UI-UX task.
 
@@ -313,18 +314,18 @@ git status --short
 
 Confirm literally:
 
-- [ ] Known barcodes resolve to the correct active medicine/unit and unknown barcodes write nothing.
-- [ ] Saved-customer and walk-in draft flows work.
-- [ ] Quantities, discounts, tax, and totals are recalculated server-side using the approved rounding sequence.
-- [ ] Tampered totals are rejected.
-- [ ] Stock/expiry information remains query-only until completion.
-- [ ] `Medicine.default_selling_price` is treated as the base-unit price.
-- [ ] Selected-unit price equals base-unit price times conversion, quantized to four decimals with `ROUND_HALF_UP`.
-- [ ] `SalesInvoiceLine.unit_price` stores the selected-unit price snapshot.
-- [ ] Inventory quantities remain in base units.
-- [ ] Only milestone files changed and there is no migration drift.
+- [x] Known barcodes resolve to the correct active medicine/unit and unknown barcodes write nothing.
+- [x] Saved-customer and walk-in draft flows work.
+- [x] Quantities, discounts, tax, and totals are recalculated server-side using the approved rounding sequence.
+- [x] Tampered totals are rejected.
+- [x] Stock/expiry information remains query-only until completion.
+- [x] `Medicine.default_selling_price` is treated as the base-unit price.
+- [x] Selected-unit price equals base-unit price times conversion, quantized to four decimals with `ROUND_HALF_UP`.
+- [x] `SalesInvoiceLine.unit_price` stores the selected-unit price snapshot.
+- [x] Inventory quantities remain in base units.
+- [x] Only milestone files changed and there is no migration drift.
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -446,7 +447,7 @@ Confirm literally:
 - [ ] Tests create isolated data and do not depend on shared Neon state.
 - [ ] No production or unrelated file changed and there is no migration drift.
 
-**Status:** Blocked — Malik's `E3-T01`, `E3-T02`, and `E3-T03` are unfinished, and Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
+**Status:** Blocked — Malik's `E3-T02` and `E3-T03` are unfinished, and Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
 
 ---
 
@@ -515,4 +516,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next milestone eligible to start is **Milestone 3 — Lightweight prescription backend workflow (`E3-T01`)**. It remains **Not started** until Malik says **continue**.
+The next dependency-ordered milestone is **Milestone 5 — Atomic sale completion with FEFO locking (`E3-T03`)**, but it remains **Blocked** by Hala's unfinished `E2-T02` authoritative inventory/FEFO locking service and Yasser's unfinished `E4-T01` customer-payment service. Do not start or bypass either dependency.

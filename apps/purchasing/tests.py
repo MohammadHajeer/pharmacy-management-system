@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import SimpleTestCase
 
 from .models import PurchaseInvoice
@@ -21,7 +21,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.catalog.models import Category, Manufacturer, Medicine, MedicineUnit
-from apps.inventory.models import MedicineBatch
+from apps.core.models import PharmacySettings
+from apps.inventory.models import MedicineBatch, StockMovement
+from apps.inventory.services import InvalidStockOperationError
 from apps.parties.models import Supplier
 
 from .services import create_draft_purchase_invoice, post_purchase_invoice
@@ -51,6 +53,10 @@ class PurchaseInvoiceServiceTests(TestCase):
             is_base_unit=False,
         )
         cls.supplier = Supplier.objects.create(code="SUP-PT", name="Purchasing supplier")
+        cls.pharmacy_settings = PharmacySettings.objects.create(
+            pharmacy_name="Test Pharmacy",
+            currency_code="USD",
+        )
 
         cls.actor = get_user_model().objects.create_user(username="purchasing-user")
         for codename in ("add_purchaseinvoice", "post_purchaseinvoice", "view_purchaseinvoice"):
@@ -105,12 +111,17 @@ class PurchaseInvoiceServiceTests(TestCase):
         self.assertEqual(posted.status, PurchaseInvoice.Status.POSTED)
         self.assertTrue(posted.invoice_number.startswith("PUR-"))
         self.assertIsNotNone(posted.posted_at)
+        self.assertEqual(posted.supplier_name_snapshot, self.supplier.name)
+        self.assertEqual(posted.pharmacy_name_snapshot, "Test Pharmacy")
 
         batch = MedicineBatch.objects.get(medicine=self.medicine, batch_number="PB-1")
         self.assertEqual(batch.quantity_available_base, Decimal("50.000"))
 
         line = posted.lines.get()
         self.assertEqual(line.medicine_batch_id, batch.id)
+        movement = StockMovement.objects.get(source_line_id=line.id)
+        self.assertEqual(movement.reference_number, posted.invoice_number)
+        self.assertEqual(movement.source_id, posted.id)
 
     def test_posting_same_batch_twice_accumulates_quantity_in_one_batch_row(self):
         first_invoice = create_draft_purchase_invoice(
@@ -151,3 +162,89 @@ class PurchaseInvoiceServiceTests(TestCase):
 
         with self.assertRaises(ValidationError):
             post_purchase_invoice(actor=self.actor, purchase_invoice_id=invoice.id)
+
+    def test_posting_rejects_expired_batch_without_inventory_effect(self):
+        invoice = create_draft_purchase_invoice(
+            actor=self.actor,
+            supplier=self.supplier,
+            invoice_date=timezone.localdate(),
+            currency_code="USD",
+            lines_data=[
+                self._line(expiry_date=timezone.localdate() - timedelta(days=1))
+            ],
+        )
+
+        with self.assertRaises(ValidationError):
+            post_purchase_invoice(actor=self.actor, purchase_invoice_id=invoice.id)
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
+        self.assertFalse(MedicineBatch.objects.filter(batch_number="PB-1").exists())
+        self.assertFalse(StockMovement.objects.filter(source_id=invoice.id).exists())
+
+    def test_posting_rejects_tampered_totals(self):
+        invoice = create_draft_purchase_invoice(
+            actor=self.actor,
+            supplier=self.supplier,
+            invoice_date=timezone.localdate(),
+            currency_code="USD",
+            lines_data=[self._line()],
+        )
+        PurchaseInvoice.objects.filter(pk=invoice.pk).update(
+            grand_total=Decimal("69.75"),
+            remaining_balance=Decimal("69.75"),
+        )
+
+        with self.assertRaises(ValidationError):
+            post_purchase_invoice(actor=self.actor, purchase_invoice_id=invoice.id)
+
+        self.assertFalse(MedicineBatch.objects.filter(batch_number="PB-1").exists())
+
+    def test_posting_rolls_back_an_earlier_receipt_when_a_later_batch_is_inactive(self):
+        invoice = create_draft_purchase_invoice(
+            actor=self.actor,
+            supplier=self.supplier,
+            invoice_date=timezone.localdate(),
+            currency_code="USD",
+            lines_data=[
+                self._line(batch_number="PB-ROLLBACK-1"),
+                self._line(batch_number="PB-ROLLBACK-2"),
+            ],
+        )
+        MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="PB-ROLLBACK-2",
+            expiry_date=self._line()["expiry_date"],
+            acquisition_cost_per_base_unit=Decimal("1.2500"),
+            quantity_available_base=Decimal("0.000"),
+            first_received_at=timezone.now(),
+            is_active=False,
+        )
+
+        with self.assertRaises(InvalidStockOperationError):
+            post_purchase_invoice(actor=self.actor, purchase_invoice_id=invoice.id)
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
+        self.assertFalse(
+            MedicineBatch.objects.filter(batch_number="PB-ROLLBACK-1").exists()
+        )
+        self.assertFalse(StockMovement.objects.filter(source_id=invoice.id).exists())
+
+    def test_posting_rechecks_permission_after_invoice_creation(self):
+        invoice = create_draft_purchase_invoice(
+            actor=self.actor,
+            supplier=self.supplier,
+            invoice_date=timezone.localdate(),
+            currency_code="USD",
+            lines_data=[self._line()],
+        )
+        unauthorized_actor = get_user_model().objects.create_user(
+            username="unauthorized-purchasing-user"
+        )
+
+        with self.assertRaises(PermissionDenied):
+            post_purchase_invoice(
+                actor=unauthorized_actor,
+                purchase_invoice_id=invoice.id,
+            )

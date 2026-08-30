@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 
 from apps.catalog.models import Medicine, MedicineUnit
 from apps.core.models import PharmacySettings
-from apps.inventory.services import InsufficientStockError
+from apps.inventory.services import InsufficientStockError, InvalidStockOperationError
 from apps.parties.models import Supplier
 
 from .forms import PurchaseInvoiceHeaderForm, PurchaseInvoiceLineFormSet
@@ -137,7 +137,7 @@ def purchase_invoice_post(request, pk):
         invoice = post_purchase_invoice(actor=request.user, purchase_invoice_id=pk)
     except ValidationError as error:
         messages.error(request, _validation_error_message(error))
-    except InsufficientStockError as error:
+    except (InsufficientStockError, InvalidStockOperationError) as error:
         messages.error(request, str(error))
     else:
         messages.success(request, f"Purchase invoice {invoice.invoice_number} posted.")

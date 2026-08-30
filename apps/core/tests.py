@@ -1,10 +1,14 @@
 from decimal import Decimal
+from unittest.mock import patch
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group, Permission
 from django.core.exceptions import PermissionDenied
-from django.test import SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
+
+from config.navigation import DASHBOARD_NAVIGATION
 
 from .document_numbers import (
     DocumentKind,
@@ -362,6 +366,347 @@ class CoreSettingsServiceTests(TestCase):
                     "is_active": "on",
                 },
             )
+
+
+class CoreSettingsViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        user_model = get_user_model()
+        cls.owner = user_model.objects.create_user(username="settings-ui-owner")
+        cls.unauthorized_user = user_model.objects.create_user(
+            username="settings-ui-accountant"
+        )
+        cls.add_only_user = user_model.objects.create_user(
+            username="settings-ui-add-only"
+        )
+
+        owner_group = Group.objects.create(name="Owner / Admin")
+        owner_group.permissions.set(
+            Permission.objects.filter(
+                content_type__app_label="core",
+                codename__in={
+                    "change_pharmacysettings",
+                    "add_taxrate",
+                    "change_taxrate",
+                    "add_paymentmethod",
+                    "change_paymentmethod",
+                },
+            )
+        )
+        cls.owner.groups.add(owner_group)
+        cls.add_only_user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="core",
+                codename="add_taxrate",
+            )
+        )
+
+    def setUp(self):
+        self.client.force_login(self.owner)
+
+    def test_authorized_user_can_view_operational_settings(self):
+        TaxRate.objects.create(code="VAT", name="VAT", rate_percent="11.0000")
+        PaymentMethod.objects.create(code="CASH", name="Cash")
+
+        response = self.client.get(reverse("core:settings"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["breadcrumbs"], [{"label": "Settings"}])
+        self.assertContains(response, "Pharmacy information")
+        self.assertContains(response, "Business configuration")
+        self.assertContains(response, "Tax rates")
+        self.assertContains(response, "Payment methods")
+        self.assertContains(response, "Invoice and receipt text")
+        self.assertContains(response, 'placeholder="Enter pharmacy name"', html=False)
+        self.assertContains(response, 'placeholder="Enter phone number"', html=False)
+        self.assertContains(response, 'placeholder="Enter contact email"', html=False)
+        self.assertContains(response, 'placeholder="Enter pharmacy address"', html=False)
+        self.assertContains(response, "VAT")
+        self.assertContains(response, "Cash")
+        self.assertContains(response, 'name="default_tax_rate"', html=False)
+        self.assertContains(response, "data-custom-select-native", html=False)
+        self.assertContains(response, "data-custom-select-trigger", html=False)
+        self.assertContains(response, "data-dirty-form")
+        self.assertContains(response, "data-dirty-submit")
+        self.assertContains(response, "data-dirty-indicator")
+        self.assertContains(response, "data-pristine-indicator")
+        self.assertContains(response, "data-dirty-surface")
+        self.assertContains(response, 'href="#pharmacy-information"', html=False)
+        self.assertContains(response, "Rate / code")
+        self.assertContains(response, "Identifier")
+        self.assertRegex(
+            response.content.decode(),
+            r'<button type="submit" disabled[^>]+data-dirty-submit',
+        )
+        self.assertContains(response, 'data-modal-open="tax-rate-create"')
+        self.assertContains(response, 'data-modal-open="payment-method-create"')
+        self.assertContains(response, 'aria-current="page" title="Settings"', html=False)
+        self.assertContains(response, "data-account-identity", html=False)
+        self.assertContains(response, "Owner / Admin")
+        self.assertNotContains(response, "Pharmacy operations")
+        self.assertContains(
+            response,
+            'id="tax-rate-create-is-active"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="payment-method-create-requires-reference"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="payment-method-create-is-active"',
+            html=False,
+        )
+
+    def test_nested_settings_breadcrumb_link_respects_settings_permission(self):
+        response = self.client.get(reverse("core:tax-rate-create"))
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('href="/settings/"', breadcrumb_html)
+        self.assertIn("Tax rates", breadcrumb_html)
+        self.assertIn("Add tax rate", breadcrumb_html)
+
+        self.client.force_login(self.add_only_user)
+        response = self.client.get(reverse("core:tax-rate-create"))
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('href="/settings/"', breadcrumb_html)
+        self.assertIn("Settings", breadcrumb_html)
+
+    def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
+        self.client.logout()
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response.url)
+
+        self.client.force_login(self.unauthorized_user)
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_valid_settings_post_uses_service_and_redirects(self):
+        with patch(
+            "apps.core.views.process_pharmacy_settings_form",
+            wraps=process_pharmacy_settings_form,
+        ) as service:
+            response = self.client.post(
+                reverse("core:settings"),
+                pharmacy_settings_data(pharmacy_name="PHARMANEX Central"),
+            )
+
+        self.assertRedirects(response, reverse("core:settings"))
+        self.assertEqual(service.call_count, 1)
+        self.assertEqual(
+            PharmacySettings.objects.get(singleton_key=1).pharmacy_name,
+            "PHARMANEX Central",
+        )
+
+    def test_invalid_settings_post_preserves_values_and_errors(self):
+        response = self.client.post(
+            reverse("core:settings"),
+            pharmacy_settings_data(
+                pharmacy_name="Entered Pharmacy",
+                currency_code="US1",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].is_bound)
+        self.assertIn("currency_code", response.context["form"].errors)
+        self.assertContains(response, 'value="Entered Pharmacy"', html=False)
+        self.assertContains(response, 'value="US1"', html=False)
+        self.assertFalse(PharmacySettings.objects.exists())
+
+    @override_settings(SECRET_KEY="ui-test-secret-that-must-never-render")
+    def test_settings_page_does_not_render_deployment_secrets(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse("core:settings"))
+
+        self.assertNotContains(response, "ui-test-secret-that-must-never-render")
+        self.assertNotContains(response, "DATABASE_URL")
+        self.assertNotContains(response, "SECRET_KEY")
+        self.assertNotContains(response, "API_KEY")
+
+    def test_tax_rate_create_and_edit_use_permission_specific_routes(self):
+        create_response = self.client.post(
+            reverse("core:tax-rate-create"),
+            {
+                "code": "vat",
+                "name": "VAT",
+                "rate_percent": "11.0000",
+                "is_active": "on",
+            },
+        )
+        tax_rate = TaxRate.objects.get(code="VAT")
+        self.assertRedirects(create_response, reverse("core:settings"))
+
+        self.client.force_login(self.add_only_user)
+        edit_response = self.client.post(
+            reverse("core:tax-rate-edit", args=[tax_rate.pk]),
+            {
+                "code": "VAT",
+                "name": "Changed without permission",
+                "rate_percent": "10.0000",
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(edit_response.status_code, 403)
+        tax_rate.refresh_from_db()
+        self.assertEqual(tax_rate.name, "VAT")
+
+    def test_invalid_tax_rate_post_reopens_modal_with_bound_errors(self):
+        TaxRate.objects.create(code="VAT", name="VAT", rate_percent="11.0000")
+
+        response = self.client.post(
+            reverse("core:tax-rate-create"),
+            {
+                "code": "VAT",
+                "name": "Entered duplicate",
+                "rate_percent": "5.0000",
+                "is_active": "on",
+            },
+        )
+
+        modal_form = response.context["tax_rate_create_form"]
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/settings/index.html")
+        self.assertEqual(response.context["open_modal"], "tax-rate-create")
+        self.assertTrue(modal_form.is_bound)
+        self.assertIn("code", modal_form.errors)
+        self.assertContains(response, 'data-modal-open-on-load', html=False)
+        self.assertContains(response, 'value="Entered duplicate"', html=False)
+
+    def test_invalid_tax_rate_edit_reopens_matching_modal(self):
+        tax_rate = TaxRate.objects.create(
+            code="VAT",
+            name="VAT",
+            rate_percent="11.0000",
+        )
+
+        response = self.client.post(
+            reverse("core:tax-rate-edit", args=[tax_rate.pk]),
+            {
+                "code": "VAT",
+                "name": "Entered edit",
+                "rate_percent": "101.0000",
+                "is_active": "on",
+            },
+        )
+
+        modal_id = f"tax-rate-edit-{tax_rate.pk}"
+        matching_row = next(
+            row
+            for row in response.context["tax_rate_rows"]
+            if row["object"].pk == tax_rate.pk
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/settings/index.html")
+        self.assertEqual(response.context["open_modal"], modal_id)
+        self.assertTrue(matching_row["form"].is_bound)
+        self.assertIn("__all__", matching_row["form"].errors)
+        self.assertContains(response, f'id="{modal_id}"', html=False)
+        self.assertContains(response, "data-modal-open-on-load", html=False)
+
+    def test_modal_forms_submit_with_csrf_protection_enabled(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.owner)
+        settings_response = csrf_client.get(reverse("core:settings"))
+        csrf_token = csrf_client.cookies["csrftoken"].value
+
+        response = csrf_client.post(
+            reverse("core:tax-rate-create"),
+            {
+                "csrfmiddlewaretoken": csrf_token,
+                "code": "VAT",
+                "name": "VAT",
+                "rate_percent": "11.0000",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(settings_response.status_code, 200)
+        self.assertRedirects(response, reverse("core:settings"))
+        self.assertTrue(TaxRate.objects.filter(code="VAT").exists())
+
+    def test_invalid_payment_method_post_preserves_values(self):
+        PaymentMethod.objects.create(code="CASH", name="Cash")
+
+        response = self.client.post(
+            reverse("core:payment-method-create"),
+            {
+                "code": "CASH",
+                "name": "Entered duplicate",
+                "requires_reference": "on",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        modal_form = response.context["payment_method_create_form"]
+        self.assertTemplateUsed(response, "core/settings/index.html")
+        self.assertEqual(response.context["open_modal"], "payment-method-create")
+        self.assertTrue(modal_form.is_bound)
+        self.assertIn("code", modal_form.errors)
+        self.assertContains(response, "data-modal-open-on-load", html=False)
+        self.assertContains(response, 'value="Entered duplicate"', html=False)
+        self.assertContains(response, "Payment method with this Code already exists")
+
+    def test_valid_payment_method_post_redirects_to_settings(self):
+        response = self.client.post(
+            reverse("core:payment-method-create"),
+            {
+                "code": "CARD",
+                "name": "Card",
+                "requires_reference": "on",
+                "is_active": "on",
+            },
+        )
+
+        self.assertRedirects(response, reverse("core:settings"))
+        self.assertTrue(
+            PaymentMethod.objects.filter(
+                code="CARD",
+                name="Card",
+                requires_reference=True,
+            ).exists()
+        )
+
+    def test_payment_method_actions_require_their_existing_permissions(self):
+        payment_method = PaymentMethod.objects.create(code="CASH", name="Cash")
+        self.client.force_login(self.unauthorized_user)
+
+        create_response = self.client.post(
+            reverse("core:payment-method-create"),
+            {"code": "CARD", "name": "Card", "is_active": "on"},
+        )
+        edit_response = self.client.post(
+            reverse("core:payment-method-edit", args=[payment_method.pk]),
+            {"code": "CASH", "name": "Changed", "is_active": "on"},
+        )
+
+        self.assertEqual(create_response.status_code, 403)
+        self.assertEqual(edit_response.status_code, 403)
+        self.assertFalse(PaymentMethod.objects.filter(code="CARD").exists())
+        payment_method.refresh_from_db()
+        self.assertEqual(payment_method.name, "Cash")
+
+    def test_navigation_uses_the_core_settings_route_and_permission(self):
+        settings_item = next(
+            item for item in DASHBOARD_NAVIGATION if item["label"] == "Settings"
+        )
+
+        self.assertEqual(settings_item["url_name"], "core:settings")
+        self.assertEqual(settings_item["namespace"], "core")
+        self.assertEqual(settings_item["permission"], "core.change_pharmacysettings")
 
 
 class DocumentNumberTests(SimpleTestCase):

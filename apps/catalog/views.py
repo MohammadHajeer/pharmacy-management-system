@@ -1,7 +1,11 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -43,7 +47,16 @@ def medicine_list(request):
     return render(
         request,
         "catalog/medicines/list.html",
-        {"medicines": medicines, "query": query, "status": status},
+        {
+            "page_context": "Medicines",
+            "breadcrumbs": [
+                {"label": "Catalog"},
+                {"label": "Medicines"},
+            ],
+            "medicines": medicines,
+            "query": query,
+            "status": status,
+        },
     )
 
 
@@ -82,7 +95,19 @@ def _medicine_select_options():
 def medicine_create(request):
     form = MedicineForm(data=request.POST or None)
     if request.method == "POST" and form.is_valid():
-        medicine = form.save()
+        with transaction.atomic():
+            medicine = form.save()
+            base_unit = MedicineUnit(
+                medicine=medicine,
+                name=form.cleaned_data["base_unit_name"],
+                conversion_to_base=Decimal("1.000000"),
+                is_base_unit=True,
+                purchase_allowed=True,
+                sale_allowed=True,
+                is_active=True,
+            )
+            base_unit.full_clean()
+            base_unit.save()
         messages.success(request, "Medicine added successfully.")
         return redirect("catalog:medicine-detail", pk=medicine.pk)
 
@@ -91,6 +116,12 @@ def medicine_create(request):
         request,
         "catalog/medicines/form.html",
         {
+            "page_context": "Medicines",
+            "breadcrumbs": [
+                {"label": "Catalog"},
+                {"label": "Medicines", "url": reverse("catalog:medicine-list")},
+                {"label": "Add medicine"},
+            ],
             "form": form,
             "medicine": None,
             "category_options": category_options,
@@ -127,6 +158,15 @@ def medicine_update(request, pk):
 @require_POST
 def medicine_toggle_active(request, pk):
     medicine = get_object_or_404(Medicine, pk=pk)
+    if not medicine.is_active and medicine.units.filter(
+        is_active=True,
+        is_base_unit=True,
+    ).count() != 1:
+        messages.error(
+            request,
+            "A medicine requires exactly one active base unit before activation.",
+        )
+        return redirect("catalog:medicine-detail", pk=medicine.pk)
     medicine.is_active = not medicine.is_active
     medicine.save(update_fields=["is_active", "updated_at"])
     messages.success(
@@ -180,7 +220,20 @@ def medicine_unit_update(request, medicine_pk, pk):
 def medicine_unit_toggle_active(request, medicine_pk, pk):
     medicine = get_object_or_404(Medicine, pk=medicine_pk)
     unit = get_object_or_404(MedicineUnit, pk=pk, medicine=medicine)
+    if unit.is_active and unit.is_base_unit:
+        messages.error(request, "The active base unit cannot be deactivated.")
+        return redirect("catalog:medicine-detail", pk=medicine.pk)
+    if (
+        not unit.is_active
+        and unit.is_base_unit
+        and medicine.units.filter(is_active=True, is_base_unit=True)
+        .exclude(pk=unit.pk)
+        .exists()
+    ):
+        messages.error(request, "This medicine already has an active base unit.")
+        return redirect("catalog:medicine-detail", pk=medicine.pk)
     unit.is_active = not unit.is_active
+    unit.full_clean()
     unit.save(update_fields=["is_active", "updated_at"])
     messages.success(
         request,
