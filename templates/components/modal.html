@@ -6,6 +6,7 @@
   aria-modal="true"
   aria-labelledby="{{ modal_id }}-title"
   {% if description %}aria-describedby="{{ modal_id }}-description"{% endif %}
+  {% if open_modal == modal_id %}data-modal-open-on-load{% endif %}
   data-state="closed"
   hidden
 >
@@ -52,33 +53,46 @@
       </button>
     </header>
 
-    {# Content #}
-    {% if body %}
-      <div class="min-h-0 overflow-y-auto border-t border-slate-100 px-6 py-5 text-sm leading-6 text-slate-600 sm:px-7">
-        {{ body }}
-      </div>
-    {% endif %}
-
-    {# Actions #}
-    <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
-      {% include "components/button.html" with text=close_text|default:"Close" variant="outline" modal_close=True only %}
-
-      {% if confirm_text %}
-        {% if confirm_action %}
-          <form
-            method="post"
-            action="{{ confirm_action }}"
-            class="contents"
-            data-submit-form
-          >
-            {% csrf_token %}
-
-            {% include "components/button.html" with text=confirm_text loading_text=confirm_loading_text|default:"Working..." variant=confirm_variant|default:"primary" type="submit" only %}
-          </form>
-        {% else %}
-          {% include "components/button.html" with text=confirm_text variant=confirm_variant|default:"primary" modal_close=True only %}
-        {% endif %}
+    {% if form_template and form_action %}
+      <form method="post" action="{{ form_action }}" class="contents" data-submit-form novalidate>
+        {% csrf_token %}
+        <div class="min-h-0 overflow-y-auto border-t border-slate-100 px-6 py-5 text-sm leading-6 text-slate-600 sm:px-7">
+          {% include form_template with form=modal_form field_prefix=field_prefix only %}
+        </div>
+        <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
+          {% include "components/button.html" with text=close_text|default:"Cancel" variant="outline" modal_close=True only %}
+          {% include "components/button.html" with text=confirm_text|default:"Save" loading_text=confirm_loading_text|default:"Saving..." variant=confirm_variant|default:"primary" type="submit" only %}
+        </footer>
+      </form>
+    {% else %}
+      {# Content #}
+      {% if body %}
+        <div class="min-h-0 overflow-y-auto border-t border-slate-100 px-6 py-5 text-sm leading-6 text-slate-600 sm:px-7">
+          {{ body }}
+        </div>
       {% endif %}
-    </footer>
+
+      {# Actions #}
+      <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
+        {% include "components/button.html" with text=close_text|default:"Close" variant="outline" modal_close=True only %}
+
+        {% if confirm_text %}
+          {% if confirm_action %}
+            <form
+              method="post"
+              action="{{ confirm_action }}"
+              class="contents"
+              data-submit-form
+            >
+              {% csrf_token %}
+
+              {% include "components/button.html" with text=confirm_text loading_text=confirm_loading_text|default:"Working..." variant=confirm_variant|default:"primary" type="submit" only %}
+            </form>
+          {% else %}
+            {% include "components/button.html" with text=confirm_text variant=confirm_variant|default:"primary" modal_close=True only %}
+          {% endif %}
+        {% endif %}
+      </footer>
+    {% endif %}
   </div>
 </div>

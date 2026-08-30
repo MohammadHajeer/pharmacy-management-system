@@ -13,17 +13,7 @@
     <form method="post" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-submit-form novalidate>
       {% csrf_token %}
       <div class="space-y-5 p-5 sm:p-6">
-        {% if form.non_field_errors %}<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-        {% include "components/input.html" with name="code" label="Code" value=form.code.value error=form.code.errors required=True maxlength=30 help_text="A short internal code, such as VAT or ZERO." %}
-        {% include "components/input.html" with name="name" label="Name" value=form.name.value error=form.name.errors required=True maxlength=100 %}
-        {% include "components/input.html" with name="rate_percent" label="Rate (%)" type="number" value=form.rate_percent.value error=form.rate_percent.errors required=True help_text="Enter a percentage from 0 to 100." %}
-        <div>
-          <label class="flex items-start gap-3 text-sm text-slate-700" for="is_active">
-            <input id="is_active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %} {% if form.is_active.errors %}aria-invalid="true" aria-describedby="is_active-error"{% endif %} class="mt-0.5 size-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600">
-            <span><span class="font-medium">Active</span><span class="mt-1 block text-slate-500">Inactive rates remain in transaction history but cannot be selected for new work.</span></span>
-          </label>
-          {% if form.is_active.errors %}<p id="is_active-error" class="mt-1.5 text-sm text-red-600" role="alert">{{ form.is_active.errors|striptags }}</p>{% endif %}
-        </div>
+        {% include "core/tax_rates/_form_fields.html" with form=form field_prefix="tax-rate-page" only %}
       </div>
       <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
         {% url "core:settings" as settings_url %}

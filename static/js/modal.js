@@ -64,7 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
     activeModal = modal;
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
-    (modal.querySelector("[data-modal-panel]") || modal).focus({
+    const panel = modal.querySelector("[data-modal-panel]") || modal;
+    const initialFocus =
+      modal.querySelector("[aria-invalid='true']") ||
+      modal.querySelector("[autofocus]") ||
+      panel;
+    initialFocus.focus({
       preventScroll: true,
     });
   };
@@ -80,6 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-modal-backdrop]").forEach((backdrop) => {
     backdrop.addEventListener("click", closeModal);
   });
+
+  const initialModal = document.querySelector("[data-modal-open-on-load]");
+  if (initialModal) openModal(initialModal);
 
   document.addEventListener("keydown", (event) => {
     if (!activeModal) return;

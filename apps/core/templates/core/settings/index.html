@@ -1,4 +1,5 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 
 {% block title %}Settings | PHARMANEX{% endblock %}
 
@@ -12,7 +13,7 @@
       </div>
     </header>
 
-    <form method="post" class="space-y-6" data-submit-form novalidate>
+    <form method="post" class="space-y-6" data-submit-form data-dirty-form novalidate>
       {% csrf_token %}
 
       {% if form.non_field_errors %}
@@ -67,7 +68,7 @@
       </section>
 
       <div class="flex justify-end">
-        {% include "components/button.html" with text="Save settings" loading_text="Saving settings..." type="submit" %}
+        {% include "components/button.html" with text="Save settings" loading_text="Saving settings..." type="submit" disabled=True dirty_submit=True %}
       </div>
     </form>
 
@@ -78,24 +79,33 @@
             <h2 id="tax-rates-heading" class="text-lg font-semibold text-slate-950">Tax rates</h2>
             <p class="mt-1 text-sm text-slate-500">Rates available to taxable transactions.</p>
           </div>
-          {% if perms.core.add_taxrate %}{% url "core:tax-rate-create" as add_tax_rate_url %}{% include "components/button.html" with text="Add tax rate" variant="outline" size="sm" href=add_tax_rate_url %}{% endif %}
+          {% if perms.core.add_taxrate %}{% include "components/button.html" with text="Add tax rate" variant="outline" size="sm" modal_target="tax-rate-create" %}{% endif %}
         </div>
         <div class="divide-y divide-slate-100">
-          {% for tax_rate in tax_rates %}
+          {% for row in tax_rate_rows %}
             <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <p class="truncate text-sm font-semibold text-slate-900">{{ tax_rate.name }}</p>
-                  {% if tax_rate.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}
+                  <p class="truncate text-sm font-semibold text-slate-900">{{ row.object.name }}</p>
+                  {% if row.object.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}
                 </div>
-                <p class="mt-1 text-sm text-slate-500">{{ tax_rate.code }} · {{ tax_rate.rate_percent|floatformat:"-4" }}%</p>
+                <p class="mt-1 text-sm text-slate-500">{{ row.object.code }} · {{ row.object.rate_percent|floatformat:"-4" }}%</p>
               </div>
-              {% if perms.core.change_taxrate %}{% url "core:tax-rate-edit" tax_rate.pk as edit_tax_rate_url %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" href=edit_tax_rate_url %}{% endif %}
+              {% if perms.core.change_taxrate %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id %}{% endif %}
             </div>
           {% empty %}
             <p class="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">No tax rates have been configured.</p>
           {% endfor %}
         </div>
+        {% if perms.core.add_taxrate %}
+          {% url "core:tax-rate-create" as add_tax_rate_url %}
+          {% include "components/modal.html" with modal_id="tax-rate-create" title="Add tax rate" description="Configure a reusable tax rate for pharmacy transactions." form_action=add_tax_rate_url form_template="core/tax_rates/_form_fields.html" modal_form=tax_rate_create_form field_prefix="tax-rate-create" confirm_text="Save tax rate" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+        {% endif %}
+        {% if perms.core.change_taxrate %}
+          {% for row in tax_rate_rows %}
+            {% include "components/modal.html" with modal_id=row.modal_id title="Edit tax rate" description="Update this tax rate or deactivate it for future transactions." form_action=row.action_url form_template="core/tax_rates/_form_fields.html" modal_form=row.form field_prefix=row.field_prefix confirm_text="Save tax rate" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+          {% endfor %}
+        {% endif %}
       </section>
 
       <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="payment-methods-heading">
@@ -104,26 +114,39 @@
             <h2 id="payment-methods-heading" class="text-lg font-semibold text-slate-950">Payment methods</h2>
             <p class="mt-1 text-sm text-slate-500">Approved ways customers can settle invoices.</p>
           </div>
-          {% if perms.core.add_paymentmethod %}{% url "core:payment-method-create" as add_payment_method_url %}{% include "components/button.html" with text="Add payment method" variant="outline" size="sm" href=add_payment_method_url %}{% endif %}
+          {% if perms.core.add_paymentmethod %}{% include "components/button.html" with text="Add payment method" variant="outline" size="sm" modal_target="payment-method-create" %}{% endif %}
         </div>
         <div class="divide-y divide-slate-100">
-          {% for payment_method in payment_methods %}
+          {% for row in payment_method_rows %}
             <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <p class="truncate text-sm font-semibold text-slate-900">{{ payment_method.name }}</p>
-                  {% if payment_method.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}
-                  {% if payment_method.requires_reference %}{% include "components/badge.html" with text="Reference required" variant="outline" %}{% endif %}
+                  <p class="truncate text-sm font-semibold text-slate-900">{{ row.object.name }}</p>
+                  {% if row.object.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}
+                  {% if row.object.requires_reference %}{% include "components/badge.html" with text="Reference required" variant="outline" %}{% endif %}
                 </div>
-                <p class="mt-1 text-sm text-slate-500">{{ payment_method.code }}</p>
+                <p class="mt-1 text-sm text-slate-500">{{ row.object.code }}</p>
               </div>
-              {% if perms.core.change_paymentmethod %}{% url "core:payment-method-edit" payment_method.pk as edit_payment_method_url %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" href=edit_payment_method_url %}{% endif %}
+              {% if perms.core.change_paymentmethod %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id %}{% endif %}
             </div>
           {% empty %}
             <p class="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">No payment methods have been configured.</p>
           {% endfor %}
         </div>
+        {% if perms.core.add_paymentmethod %}
+          {% url "core:payment-method-create" as add_payment_method_url %}
+          {% include "components/modal.html" with modal_id="payment-method-create" title="Add payment method" description="Configure an approved way to record customer payments." form_action=add_payment_method_url form_template="core/payment_methods/_form_fields.html" modal_form=payment_method_create_form field_prefix="payment-method-create" confirm_text="Save payment method" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+        {% endif %}
+        {% if perms.core.change_paymentmethod %}
+          {% for row in payment_method_rows %}
+            {% include "components/modal.html" with modal_id=row.modal_id title="Edit payment method" description="Update this payment method or deactivate it for future payments." form_action=row.action_url form_template="core/payment_methods/_form_fields.html" modal_form=row.form field_prefix=row.field_prefix confirm_text="Save payment method" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+          {% endfor %}
+        {% endif %}
       </section>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/form-dirty-state.js' %}" defer></script>
 {% endblock %}

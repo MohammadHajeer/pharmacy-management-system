@@ -61,6 +61,8 @@ For a reusable submit/loading state, mark the form with `data-submit-form` and p
 
 The shared form script waits for the browser's valid `submit` event, disables the button, sets `aria-busy`, and swaps in the spinner/loading label without interrupting the POST.
 
+For forms whose submit action should remain disabled until a value differs from the initial rendered state, add `data-dirty-form`, pass both `disabled=True` and `dirty_submit=True` to the button, and load `static/js/form-dirty-state.js` from the page. The helper compares the complete form state on input/change, so restoring every original value disables the button again.
+
 ## Badge
 
 ```django
@@ -107,6 +109,12 @@ For a confirmed POST action, pass `confirm_action`. The modal renders a CSRF-pro
 
 ```django
 {% include "components/modal.html" with modal_id="logout-modal" title="Sign out?" body="Your session will end." close_text="Cancel" confirm_text="Sign out" confirm_action=logout_url confirm_variant="danger" confirm_loading_text="Signing out..." %}
+```
+
+Small server-rendered forms can be placed inside the shared dialog by passing `form_action`, `form_template`, `modal_form`, and a unique `field_prefix`. Pass `open_modal` to mark one dialog for automatic opening after a validation response. Form-dialog includes must retain the parent template context so Django's CSRF token is available:
+
+```django
+{% include "components/modal.html" with modal_id="tax-rate-create" title="Add tax rate" form_action=create_url form_template="core/tax_rates/_form_fields.html" modal_form=form field_prefix="tax-rate-create" confirm_text="Save tax rate" open_modal=open_modal %}
 ```
 
 ## Toasts

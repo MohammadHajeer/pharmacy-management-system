@@ -5,7 +5,7 @@ from uuid import UUID
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group, Permission
 from django.core.exceptions import PermissionDenied
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from config.navigation import DASHBOARD_NAVIGATION
@@ -418,6 +418,14 @@ class CoreSettingsViewTests(TestCase):
         self.assertContains(response, "Invoice and receipt text")
         self.assertContains(response, "VAT")
         self.assertContains(response, "Cash")
+        self.assertContains(response, "data-dirty-form")
+        self.assertContains(response, "data-dirty-submit")
+        self.assertRegex(
+            response.content.decode(),
+            r'<button type="submit" disabled[^>]+data-dirty-submit',
+        )
+        self.assertContains(response, 'data-modal-open="tax-rate-create"')
+        self.assertContains(response, 'data-modal-open="payment-method-create"')
 
     def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
         self.client.logout()
@@ -499,6 +507,80 @@ class CoreSettingsViewTests(TestCase):
         tax_rate.refresh_from_db()
         self.assertEqual(tax_rate.name, "VAT")
 
+    def test_invalid_tax_rate_post_reopens_modal_with_bound_errors(self):
+        TaxRate.objects.create(code="VAT", name="VAT", rate_percent="11.0000")
+
+        response = self.client.post(
+            reverse("core:tax-rate-create"),
+            {
+                "code": "VAT",
+                "name": "Entered duplicate",
+                "rate_percent": "5.0000",
+                "is_active": "on",
+            },
+        )
+
+        modal_form = response.context["tax_rate_create_form"]
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/settings/index.html")
+        self.assertEqual(response.context["open_modal"], "tax-rate-create")
+        self.assertTrue(modal_form.is_bound)
+        self.assertIn("code", modal_form.errors)
+        self.assertContains(response, 'data-modal-open-on-load', html=False)
+        self.assertContains(response, 'value="Entered duplicate"', html=False)
+
+    def test_invalid_tax_rate_edit_reopens_matching_modal(self):
+        tax_rate = TaxRate.objects.create(
+            code="VAT",
+            name="VAT",
+            rate_percent="11.0000",
+        )
+
+        response = self.client.post(
+            reverse("core:tax-rate-edit", args=[tax_rate.pk]),
+            {
+                "code": "VAT",
+                "name": "Entered edit",
+                "rate_percent": "101.0000",
+                "is_active": "on",
+            },
+        )
+
+        modal_id = f"tax-rate-edit-{tax_rate.pk}"
+        matching_row = next(
+            row
+            for row in response.context["tax_rate_rows"]
+            if row["object"].pk == tax_rate.pk
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/settings/index.html")
+        self.assertEqual(response.context["open_modal"], modal_id)
+        self.assertTrue(matching_row["form"].is_bound)
+        self.assertIn("__all__", matching_row["form"].errors)
+        self.assertContains(response, f'id="{modal_id}"', html=False)
+        self.assertContains(response, "data-modal-open-on-load", html=False)
+
+    def test_modal_forms_submit_with_csrf_protection_enabled(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.owner)
+        settings_response = csrf_client.get(reverse("core:settings"))
+        csrf_token = csrf_client.cookies["csrftoken"].value
+
+        response = csrf_client.post(
+            reverse("core:tax-rate-create"),
+            {
+                "csrfmiddlewaretoken": csrf_token,
+                "code": "VAT",
+                "name": "VAT",
+                "rate_percent": "11.0000",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(settings_response.status_code, 200)
+        self.assertRedirects(response, reverse("core:settings"))
+        self.assertTrue(TaxRate.objects.filter(code="VAT").exists())
+
     def test_invalid_payment_method_post_preserves_values(self):
         PaymentMethod.objects.create(code="CASH", name="Cash")
 
@@ -513,9 +595,34 @@ class CoreSettingsViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("code", response.context["form"].errors)
+        modal_form = response.context["payment_method_create_form"]
+        self.assertTemplateUsed(response, "core/settings/index.html")
+        self.assertEqual(response.context["open_modal"], "payment-method-create")
+        self.assertTrue(modal_form.is_bound)
+        self.assertIn("code", modal_form.errors)
+        self.assertContains(response, "data-modal-open-on-load", html=False)
         self.assertContains(response, 'value="Entered duplicate"', html=False)
         self.assertContains(response, "Payment method with this Code already exists")
+
+    def test_valid_payment_method_post_redirects_to_settings(self):
+        response = self.client.post(
+            reverse("core:payment-method-create"),
+            {
+                "code": "CARD",
+                "name": "Card",
+                "requires_reference": "on",
+                "is_active": "on",
+            },
+        )
+
+        self.assertRedirects(response, reverse("core:settings"))
+        self.assertTrue(
+            PaymentMethod.objects.filter(
+                code="CARD",
+                name="Card",
+                requires_reference=True,
+            ).exists()
+        )
 
     def test_payment_method_actions_require_their_existing_permissions(self):
         payment_method = PaymentMethod.objects.create(code="CASH", name="Cash")
