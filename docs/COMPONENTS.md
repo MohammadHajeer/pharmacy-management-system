@@ -134,6 +134,18 @@ messages.info(request, "The report is being prepared.")
 
 When a server-rendered message needs a separate title or a non-default display time, pass `toast_title` and `toast_duration` in the template context for that response. Untitled messages and existing button triggers keep their current behavior.
 
+## Clinical operations surfaces
+
+Dashboard and configuration workspaces can use the small shared presentation roles defined in `assets/css/input.css`:
+
+- `workspace-surface` for a connected, bordered workspace region;
+- `operational-kicker` for compact operational context labels;
+- `operational-empty` for readable, action-aware empty states.
+
+The shared theme also defines `status`, `control`, `workspace`, and `dialog` radius roles. Use the matching radius for the element's function rather than applying the largest radius to every region.
+
+Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `data-dirty-surface` elements. `form-dirty-state.js` toggles their presentation while preserving the existing form comparison and submit-button behavior.
+
 ## Sidebar navigation
 
 Navigation is configured once in `config/navigation.py`; views do not pass link lists. When a routed feature is enabled, update its existing namespaced `url_name` (for example, `catalog:medicine-list`) and Django permission (for example, `catalog.view_medicine`). Do not create a duplicate app from a navigation label.

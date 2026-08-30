@@ -427,6 +427,12 @@ class CoreSettingsViewTests(TestCase):
         self.assertContains(response, "data-custom-select-trigger", html=False)
         self.assertContains(response, "data-dirty-form")
         self.assertContains(response, "data-dirty-submit")
+        self.assertContains(response, "data-dirty-indicator")
+        self.assertContains(response, "data-pristine-indicator")
+        self.assertContains(response, "data-dirty-surface")
+        self.assertContains(response, 'href="#pharmacy-information"', html=False)
+        self.assertContains(response, "Rate / code")
+        self.assertContains(response, "Identifier")
         self.assertRegex(
             response.content.decode(),
             r'<button type="submit" disabled[^>]+data-dirty-submit',

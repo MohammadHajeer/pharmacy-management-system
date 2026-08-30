@@ -1,6 +1,4 @@
-{% firstof page_context request.resolver_match.url_name "Workspace" as current_page_context %}
-
-<header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+<header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95">
   <div class="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
 
     {# Mobile sidebar trigger #}
@@ -15,21 +13,11 @@
       {% include "components/icon.html" with name="menu" class="size-5" only %}
     </button>
 
-    {# Current page #}
-    <div class="min-w-0 flex-1">
-      <div class="flex items-center gap-2 text-xs font-medium text-slate-400">
-        <span>Pharmanex</span>
-
-        {% include "components/icon.html" with name="chevron-right" class="size-3.5 shrink-0" only %}
-
-        <span class="truncate">
-          Pharmacy Management
-        </span>
-      </div>
-
-      <h1 class="mt-0.5 truncate text-base font-semibold tracking-tight text-slate-950">
-        {{ current_page_context|title }}
-      </h1>
+    {# Stable workspace context; feature templates own the single page heading. #}
+    <div class="flex min-w-0 flex-1 items-center gap-2.5">
+      <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-800">PHARMANEX</span>
+      <span class="h-4 w-px bg-slate-200" aria-hidden="true"></span>
+      <span class="truncate text-xs font-medium text-slate-500">Pharmacy operations</span>
     </div>
 
     {# User area #}

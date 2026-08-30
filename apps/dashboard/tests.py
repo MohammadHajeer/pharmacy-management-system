@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import AnonymousUser
 from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import resolve, reverse
@@ -8,6 +9,16 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_topbar_uses_stable_workspace_context_not_raw_route_names(self):
+        request = RequestFactory().get("/catalog/medicines/")
+        request.user = AnonymousUser()
+        request.resolver_match = resolve("/catalog/medicines/")
+
+        rendered = render_to_string("components/topbar.html", request=request)
+
+        self.assertIn("Pharmacy operations", rendered)
+        self.assertNotIn("medicine-list", rendered.lower())
+
     def test_icon_selects_named_path_and_applies_shared_svg_attributes(self):
         rendered = render_to_string(
             "components/icon.html",
@@ -336,10 +347,15 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(self.dashboard_url)
 
-        self.assertContains(response, "Overview of today's pharmacy activity.")
+        self.assertContains(response, "Clinical operations console")
+        self.assertContains(response, "Daily Pulse")
         self.assertContains(response, "Today&#x27;s Sales")
         self.assertContains(response, "Recent Activity")
         self.assertContains(response, "Attention Required")
+        self.assertContains(response, "Operational ledger")
+        self.assertContains(response, "Stock")
+        self.assertContains(response, "Expiry")
+        self.assertContains(response, "Finance")
         self.assertNotContains(response, "Dashboard UI foundation")
         self.assertNotContains(response, ">Demo<")
         self.assertNotContains(response, "Form controls")
@@ -366,6 +382,6 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(self.dashboard_url)
 
-        self.assertContains(response, "No summary metrics are available.")
+        self.assertContains(response, "No daily measures are available.")
         self.assertContains(response, "No recent activity is available.")
         self.assertContains(response, "No attention items are available.")
