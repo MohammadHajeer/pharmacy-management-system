@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django_browser_reload",
     "apps.accounts",
     "apps.dashboard",
+    "apps.dashboard_preview",
     "apps.core",
     "apps.catalog",
     "apps.parties",
