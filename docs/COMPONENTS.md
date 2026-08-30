@@ -48,7 +48,9 @@ Variants are `primary`, `secondary`, `outline`, `ghost`, and `destructive`. The 
 
 Select options are dictionaries with `value`, `label`, and an optional `disabled` value. Pass a bound field's `.errors` to show Django validation feedback.
 
-Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
+Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `placeholder`, `autocomplete`, `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `placeholder`, `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
+
+The select component progressively enhances its native `<select>` into the shared custom dropdown. Keep passing the original Django field `name`, current `value`, and `options` dictionaries; the native control remains the submitted form field and preserves required, disabled, initial-value, and validation behavior. The shared `static/js/custom-select.js` script is loaded by the base layout and provides click-outside closing plus Arrow Up, Arrow Down, Enter, Escape, Home, End, and Tab keyboard behavior. No page-specific JavaScript is needed.
 
 For a reusable submit/loading state, mark the form with `data-submit-form` and pass `loading_text` to its submit button:
 

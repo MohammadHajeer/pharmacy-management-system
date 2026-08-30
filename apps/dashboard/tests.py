@@ -90,6 +90,51 @@ class SharedComponentTests(SimpleTestCase):
         self.assertIn("readonly", textarea)
         self.assertIn('aria-describedby="category-help"', select)
         self.assertIn("appearance-none", select)
+        self.assertIn('name="category"', select)
+        self.assertIn("data-custom-select-native", select)
+        self.assertIn("data-custom-select-trigger", select)
+        self.assertIn('role="combobox"', select)
+        self.assertIn('role="listbox"', select)
+
+    def test_select_preserves_initial_required_and_disabled_option_state(self):
+        rendered = render_to_string(
+            "components/select.html",
+            {
+                "name": "tax_rate",
+                "label": "Tax rate",
+                "required": True,
+                "value": "vat",
+                "options": [
+                    {"value": "zero", "label": "Zero", "disabled": True},
+                    {"value": "vat", "label": "VAT"},
+                ],
+            },
+        )
+
+        self.assertIn('name="tax_rate"', rendered)
+        self.assertIn("required", rendered)
+        self.assertIn('value="vat" selected', rendered)
+        self.assertIn('value="zero"  disabled', rendered)
+        self.assertIn('data-value="vat" aria-selected="true"', rendered)
+        self.assertIn('data-value="zero" aria-selected="false" aria-disabled="true" disabled', rendered)
+
+    def test_flat_button_and_modal_omit_component_shadows(self):
+        button = render_to_string(
+            "components/button.html",
+            {"text": "Save", "variant": "primary", "flat": True},
+        )
+        modal = render_to_string(
+            "components/modal.html",
+            {
+                "modal_id": "flat-modal",
+                "title": "Flat modal",
+                "body": "Content",
+                "flat": True,
+            },
+        )
+
+        self.assertNotIn("shadow-", button)
+        self.assertNotIn("shadow-[", modal)
 
     def test_modal_description_is_programmatically_associated(self):
         rendered = render_to_string(

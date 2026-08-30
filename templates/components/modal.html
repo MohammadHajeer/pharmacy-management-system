@@ -18,7 +18,7 @@
 
   {# Dialog #}
   <div
-    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_24px_70px_-20px_rgba(15,23,42,0.35)] outline-none"
+    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white {% if not flat %}shadow-[0_24px_70px_-20px_rgba(15,23,42,0.35)]{% endif %} outline-none"
     data-modal-panel
     tabindex="-1"
   >
@@ -60,8 +60,8 @@
           {% include form_template with form=modal_form field_prefix=field_prefix only %}
         </div>
         <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
-          {% include "components/button.html" with text=close_text|default:"Cancel" variant="outline" modal_close=True only %}
-          {% include "components/button.html" with text=confirm_text|default:"Save" loading_text=confirm_loading_text|default:"Saving..." variant=confirm_variant|default:"primary" type="submit" only %}
+          {% include "components/button.html" with text=close_text|default:"Cancel" variant="outline" modal_close=True flat=flat only %}
+          {% include "components/button.html" with text=confirm_text|default:"Save" loading_text=confirm_loading_text|default:"Saving..." variant=confirm_variant|default:"primary" type="submit" flat=flat only %}
         </footer>
       </form>
     {% else %}
@@ -74,7 +74,7 @@
 
       {# Actions #}
       <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
-        {% include "components/button.html" with text=close_text|default:"Close" variant="outline" modal_close=True only %}
+        {% include "components/button.html" with text=close_text|default:"Close" variant="outline" modal_close=True flat=flat only %}
 
         {% if confirm_text %}
           {% if confirm_action %}
@@ -86,10 +86,10 @@
             >
               {% csrf_token %}
 
-              {% include "components/button.html" with text=confirm_text loading_text=confirm_loading_text|default:"Working..." variant=confirm_variant|default:"primary" type="submit" only %}
+              {% include "components/button.html" with text=confirm_text loading_text=confirm_loading_text|default:"Working..." variant=confirm_variant|default:"primary" type="submit" flat=flat only %}
             </form>
           {% else %}
-            {% include "components/button.html" with text=confirm_text variant=confirm_variant|default:"primary" modal_close=True only %}
+            {% include "components/button.html" with text=confirm_text variant=confirm_variant|default:"primary" modal_close=True flat=flat only %}
           {% endif %}
         {% endif %}
       </footer>

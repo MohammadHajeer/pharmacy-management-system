@@ -4,142 +4,166 @@
 {% block title %}Settings | PHARMANEX{% endblock %}
 
 {% block content %}
-  <div class="mx-auto max-w-7xl space-y-8">
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p class="text-sm font-semibold uppercase tracking-wider text-primary-700">System configuration</p>
-        <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-950">Settings</h1>
-        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Manage the pharmacy identity and the operational defaults used across PHARMANEX.</p>
-      </div>
+  <div class="mx-auto max-w-7xl space-y-7">
+    <header>
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">System configuration</p>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Settings</h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Manage the pharmacy identity and operational defaults used across PHARMANEX.</p>
     </header>
 
-    <form method="post" class="space-y-6" data-submit-form data-dirty-form novalidate>
+    <form method="post" class="space-y-5" data-submit-form data-dirty-form novalidate>
       {% csrf_token %}
 
       {% if form.non_field_errors %}
-        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert" tabindex="-1">
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert" tabindex="-1">
           <p class="font-semibold">Review the settings form.</p>
           {{ form.non_field_errors }}
         </div>
       {% endif %}
 
-      <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="pharmacy-information-heading">
-        <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
-          <h2 id="pharmacy-information-heading" class="text-lg font-semibold text-slate-950">Pharmacy information</h2>
-          <p class="mt-1 text-sm text-slate-500">Identity and contact details shown on operational documents.</p>
-        </div>
-        <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
-          <div class="sm:col-span-2">
-            {% include "components/input.html" with name="pharmacy_name" label="Pharmacy name" value=form.pharmacy_name.value error=form.pharmacy_name.errors required=True maxlength=200 autocomplete="organization" %}
+      <section class="rounded-2xl border border-slate-200/80 bg-white" aria-labelledby="pharmacy-information-heading">
+        <div class="flex items-start gap-3 px-5 pb-2 pt-5 sm:px-6 sm:pt-6">
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700" aria-hidden="true">
+            {% include "components/icon.html" with name="medicines" class="size-5" only %}
+          </span>
+          <div>
+            <h2 id="pharmacy-information-heading" class="text-lg font-semibold tracking-tight text-slate-950">Pharmacy information</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Identity and contact details shown on operational documents.</p>
           </div>
-          {% include "components/input.html" with name="phone" label="Phone" value=form.phone.value error=form.phone.errors maxlength=32 autocomplete="tel" %}
-          {% include "components/input.html" with name="email" label="Email" type="email" value=form.email.value error=form.email.errors autocomplete="email" %}
+        </div>
+        <div class="grid gap-x-5 gap-y-5 px-5 pb-5 pt-4 sm:grid-cols-2 sm:px-6 sm:pb-6">
           <div class="sm:col-span-2">
-            {% include "components/textarea.html" with name="address" label="Address" value=form.address.value error=form.address.errors rows=3 autocomplete="street-address" %}
+            {% include "components/input.html" with name="pharmacy_name" label="Pharmacy name" value=form.pharmacy_name.value error=form.pharmacy_name.errors required=True maxlength=200 autocomplete="organization" placeholder="Enter pharmacy name" %}
+          </div>
+          {% include "components/input.html" with name="phone" label="Phone" value=form.phone.value error=form.phone.errors maxlength=32 autocomplete="tel" placeholder="Enter phone number" %}
+          {% include "components/input.html" with name="email" label="Email" type="email" value=form.email.value error=form.email.errors autocomplete="email" placeholder="Enter contact email" %}
+          <div class="sm:col-span-2">
+            {% include "components/textarea.html" with name="address" label="Address" value=form.address.value error=form.address.errors rows=3 autocomplete="street-address" placeholder="Enter pharmacy address" %}
           </div>
         </div>
       </section>
 
-      <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="business-configuration-heading">
-        <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
-          <h2 id="business-configuration-heading" class="text-lg font-semibold text-slate-950">Business configuration</h2>
-          <p class="mt-1 text-sm text-slate-500">Single-currency, tax, stock, and expiry defaults for Phase 1 workflows.</p>
+      <section class="relative z-10 rounded-2xl border border-slate-200/80 bg-white" aria-labelledby="business-configuration-heading">
+        <div class="flex items-start gap-3 px-5 pb-2 pt-5 sm:px-6 sm:pt-6">
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700" aria-hidden="true">
+            {% include "components/icon.html" with name="settings" class="size-5" only %}
+          </span>
+          <div>
+            <h2 id="business-configuration-heading" class="text-lg font-semibold tracking-tight text-slate-950">Business configuration</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Currency, tax, stock, and expiry defaults for daily workflows.</p>
+          </div>
         </div>
-        <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
-          {% include "components/input.html" with name="currency_code" label="Currency code" value=form.currency_code.value error=form.currency_code.errors required=True maxlength=3 help_text="Use a three-letter code such as USD or LBP." %}
+        <div class="grid gap-x-5 gap-y-5 px-5 pb-5 pt-4 sm:grid-cols-2 sm:px-6 sm:pb-6">
+          {% include "components/input.html" with name="currency_code" label="Currency code" value=form.currency_code.value error=form.currency_code.errors required=True maxlength=3 placeholder="e.g. USD" help_text="Use a three-letter code such as USD or LBP." %}
           {% include "components/select.html" with name="default_tax_rate" label="Default tax rate" options=tax_rate_options value=selected_tax_rate error=form.default_tax_rate.errors help_text="Applied by default where a workflow supports tax." %}
-          {% include "components/input.html" with name="expiry_warning_days" label="Expiry warning threshold (days)" type="number" value=form.expiry_warning_days.value error=form.expiry_warning_days.errors required=True help_text="Items are flagged this many days before expiry." %}
-          {% include "components/input.html" with name="default_low_stock_threshold" label="Default low-stock threshold" type="number" value=form.default_low_stock_threshold.value error=form.default_low_stock_threshold.errors required=True help_text="Default base-unit quantity used when a medicine has no specific threshold." %}
+          {% include "components/input.html" with name="expiry_warning_days" label="Expiry warning threshold (days)" type="number" value=form.expiry_warning_days.value error=form.expiry_warning_days.errors required=True placeholder="e.g. 90" help_text="Items are flagged this many days before expiry." %}
+          {% include "components/input.html" with name="default_low_stock_threshold" label="Default low-stock threshold" type="number" value=form.default_low_stock_threshold.value error=form.default_low_stock_threshold.errors required=True placeholder="e.g. 5" help_text="Used when a medicine has no specific threshold." %}
         </div>
       </section>
 
-      <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="document-text-heading">
-        <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
-          <h2 id="document-text-heading" class="text-lg font-semibold text-slate-950">Invoice and receipt text</h2>
-          <p class="mt-1 text-sm text-slate-500">Public-facing copy included on generated sales documents.</p>
-        </div>
-        <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
-          <div class="sm:col-span-2">
-            {% include "components/textarea.html" with name="invoice_header" label="Invoice header" value=form.invoice_header.value error=form.invoice_header.errors rows=3 %}
+      <section class="rounded-2xl border border-slate-200/80 bg-white" aria-labelledby="document-text-heading">
+        <div class="flex items-start gap-3 px-5 pb-2 pt-5 sm:px-6 sm:pt-6">
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700" aria-hidden="true">
+            {% include "components/icon.html" with name="invoices" class="size-5" only %}
+          </span>
+          <div>
+            <h2 id="document-text-heading" class="text-lg font-semibold tracking-tight text-slate-950">Invoice and receipt text</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Customer-facing copy included on generated sales documents.</p>
           </div>
-          {% include "components/textarea.html" with name="invoice_footer" label="Invoice footer" value=form.invoice_footer.value error=form.invoice_footer.errors rows=4 %}
-          {% include "components/textarea.html" with name="receipt_footer" label="Receipt footer" value=form.receipt_footer.value error=form.receipt_footer.errors rows=4 %}
+        </div>
+        <div class="grid gap-x-5 gap-y-5 px-5 pb-5 pt-4 sm:grid-cols-2 sm:px-6 sm:pb-6">
+          <div class="sm:col-span-2">
+            {% include "components/textarea.html" with name="invoice_header" label="Invoice header" value=form.invoice_header.value error=form.invoice_header.errors rows=3 placeholder="Enter invoice header text" %}
+          </div>
+          {% include "components/textarea.html" with name="invoice_footer" label="Invoice footer" value=form.invoice_footer.value error=form.invoice_footer.errors rows=4 placeholder="Enter invoice footer text" %}
+          {% include "components/textarea.html" with name="receipt_footer" label="Receipt footer" value=form.receipt_footer.value error=form.receipt_footer.errors rows=4 placeholder="Enter receipt footer text" %}
         </div>
       </section>
 
-      <div class="flex justify-end">
-        {% include "components/button.html" with text="Save settings" loading_text="Saving settings..." type="submit" disabled=True dirty_submit=True %}
+      <div class="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p class="text-sm leading-6 text-slate-500">Save to apply these settings across future pharmacy workflows.</p>
+        {% include "components/button.html" with text="Save settings" loading_text="Saving settings..." type="submit" disabled=True dirty_submit=True size="lg" flat=True %}
       </div>
     </form>
 
-    <div class="grid gap-6 xl:grid-cols-2">
-      <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="tax-rates-heading">
-        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
-          <div>
-            <h2 id="tax-rates-heading" class="text-lg font-semibold text-slate-950">Tax rates</h2>
-            <p class="mt-1 text-sm text-slate-500">Rates available to taxable transactions.</p>
+    <div class="grid gap-5 xl:grid-cols-2">
+      <section class="rounded-2xl border border-slate-200/80 bg-white" aria-labelledby="tax-rates-heading">
+        <div class="flex flex-col gap-4 px-5 pb-4 pt-5 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:pt-6">
+          <div class="flex items-start gap-3">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700" aria-hidden="true">
+              {% include "components/icon.html" with name="reports" class="size-5" only %}
+            </span>
+            <div>
+              <h2 id="tax-rates-heading" class="text-lg font-semibold tracking-tight text-slate-950">Tax rates</h2>
+              <p class="mt-1 text-sm leading-6 text-slate-500">Rates available to taxable transactions.</p>
+            </div>
           </div>
-          {% if perms.core.add_taxrate %}{% include "components/button.html" with text="Add tax rate" variant="outline" size="sm" modal_target="tax-rate-create" %}{% endif %}
+          {% if perms.core.add_taxrate %}{% include "components/button.html" with text="Add tax rate" variant="outline" size="sm" modal_target="tax-rate-create" pill=True flat=True %}{% endif %}
         </div>
-        <div class="divide-y divide-slate-100">
+        <div class="space-y-3 px-5 pb-5 sm:px-6 sm:pb-6">
           {% for row in tax_rate_rows %}
-            <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
+            <div class="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-3.5">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="truncate text-sm font-semibold text-slate-900">{{ row.object.name }}</p>
                   {% if row.object.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}
                 </div>
-                <p class="mt-1 text-sm text-slate-500">{{ row.object.code }} · {{ row.object.rate_percent|floatformat:"-4" }}%</p>
+                <p class="mt-1.5 text-xs font-medium text-slate-500">{{ row.object.code }} <span class="px-1 text-slate-300">•</span> {{ row.object.rate_percent|floatformat:"-4" }}%</p>
               </div>
-              {% if perms.core.change_taxrate %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id %}{% endif %}
+              {% if perms.core.change_taxrate %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id pill=True flat=True %}{% endif %}
             </div>
           {% empty %}
-            <p class="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">No tax rates have been configured.</p>
+            <p class="rounded-xl border border-dashed border-slate-200 px-5 py-8 text-center text-sm text-slate-500">No tax rates have been configured.</p>
           {% endfor %}
         </div>
         {% if perms.core.add_taxrate %}
           {% url "core:tax-rate-create" as add_tax_rate_url %}
-          {% include "components/modal.html" with modal_id="tax-rate-create" title="Add tax rate" description="Configure a reusable tax rate for pharmacy transactions." form_action=add_tax_rate_url form_template="core/tax_rates/_form_fields.html" modal_form=tax_rate_create_form field_prefix="tax-rate-create" confirm_text="Save tax rate" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+          {% include "components/modal.html" with modal_id="tax-rate-create" title="Add tax rate" description="Configure a reusable tax rate for pharmacy transactions." form_action=add_tax_rate_url form_template="core/tax_rates/_form_fields.html" modal_form=tax_rate_create_form field_prefix="tax-rate-create" confirm_text="Save tax rate" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal flat=True %}
         {% endif %}
         {% if perms.core.change_taxrate %}
           {% for row in tax_rate_rows %}
-            {% include "components/modal.html" with modal_id=row.modal_id title="Edit tax rate" description="Update this tax rate or deactivate it for future transactions." form_action=row.action_url form_template="core/tax_rates/_form_fields.html" modal_form=row.form field_prefix=row.field_prefix confirm_text="Save tax rate" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+            {% include "components/modal.html" with modal_id=row.modal_id title="Edit tax rate" description="Update this tax rate or deactivate it for future transactions." form_action=row.action_url form_template="core/tax_rates/_form_fields.html" modal_form=row.form field_prefix=row.field_prefix confirm_text="Save tax rate" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal flat=True %}
           {% endfor %}
         {% endif %}
       </section>
 
-      <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="payment-methods-heading">
-        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
-          <div>
-            <h2 id="payment-methods-heading" class="text-lg font-semibold text-slate-950">Payment methods</h2>
-            <p class="mt-1 text-sm text-slate-500">Approved ways customers can settle invoices.</p>
+      <section class="rounded-2xl border border-slate-200/80 bg-white" aria-labelledby="payment-methods-heading">
+        <div class="flex flex-col gap-4 px-5 pb-4 pt-5 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:pt-6">
+          <div class="flex items-start gap-3">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700" aria-hidden="true">
+              {% include "components/icon.html" with name="payments" class="size-5" only %}
+            </span>
+            <div>
+              <h2 id="payment-methods-heading" class="text-lg font-semibold tracking-tight text-slate-950">Payment methods</h2>
+              <p class="mt-1 text-sm leading-6 text-slate-500">Approved ways customers can settle invoices.</p>
+            </div>
           </div>
-          {% if perms.core.add_paymentmethod %}{% include "components/button.html" with text="Add payment method" variant="outline" size="sm" modal_target="payment-method-create" %}{% endif %}
+          {% if perms.core.add_paymentmethod %}{% include "components/button.html" with text="Add payment method" variant="outline" size="sm" modal_target="payment-method-create" pill=True flat=True %}{% endif %}
         </div>
-        <div class="divide-y divide-slate-100">
+        <div class="space-y-3 px-5 pb-5 sm:px-6 sm:pb-6">
           {% for row in payment_method_rows %}
-            <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
+            <div class="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-3.5">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="truncate text-sm font-semibold text-slate-900">{{ row.object.name }}</p>
                   {% if row.object.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}
                   {% if row.object.requires_reference %}{% include "components/badge.html" with text="Reference required" variant="outline" %}{% endif %}
                 </div>
-                <p class="mt-1 text-sm text-slate-500">{{ row.object.code }}</p>
+                <p class="mt-1.5 text-xs font-medium text-slate-500">{{ row.object.code }}</p>
               </div>
-              {% if perms.core.change_paymentmethod %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id %}{% endif %}
+              {% if perms.core.change_paymentmethod %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id pill=True flat=True %}{% endif %}
             </div>
           {% empty %}
-            <p class="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">No payment methods have been configured.</p>
+            <p class="rounded-xl border border-dashed border-slate-200 px-5 py-8 text-center text-sm text-slate-500">No payment methods have been configured.</p>
           {% endfor %}
         </div>
         {% if perms.core.add_paymentmethod %}
           {% url "core:payment-method-create" as add_payment_method_url %}
-          {% include "components/modal.html" with modal_id="payment-method-create" title="Add payment method" description="Configure an approved way to record customer payments." form_action=add_payment_method_url form_template="core/payment_methods/_form_fields.html" modal_form=payment_method_create_form field_prefix="payment-method-create" confirm_text="Save payment method" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+          {% include "components/modal.html" with modal_id="payment-method-create" title="Add payment method" description="Configure an approved way to record customer payments." form_action=add_payment_method_url form_template="core/payment_methods/_form_fields.html" modal_form=payment_method_create_form field_prefix="payment-method-create" confirm_text="Save payment method" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal flat=True %}
         {% endif %}
         {% if perms.core.change_paymentmethod %}
           {% for row in payment_method_rows %}
-            {% include "components/modal.html" with modal_id=row.modal_id title="Edit payment method" description="Update this payment method or deactivate it for future payments." form_action=row.action_url form_template="core/payment_methods/_form_fields.html" modal_form=row.form field_prefix=row.field_prefix confirm_text="Save payment method" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal %}
+            {% include "components/modal.html" with modal_id=row.modal_id title="Edit payment method" description="Update this payment method or deactivate it for future payments." form_action=row.action_url form_template="core/payment_methods/_form_fields.html" modal_form=row.form field_prefix=row.field_prefix confirm_text="Save payment method" confirm_loading_text="Saving..." close_text="Cancel" open_modal=open_modal flat=True %}
           {% endfor %}
         {% endif %}
       </section>
