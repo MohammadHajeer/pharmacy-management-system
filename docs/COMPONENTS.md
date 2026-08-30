@@ -18,6 +18,21 @@ Use the auth layout for login and password-related screens. It provides a center
 {% block content %}...{% endblock %}
 ```
 
+## Breadcrumb context
+
+Dashboard-shell views provide explicit breadcrumb labels in page context; the topbar never derives labels from route names. Keep the final item unlinked, and only provide earlier-item URLs that are real and permitted for the current user:
+
+```python
+return render(request, "catalog/medicines/list.html", {
+    "breadcrumbs": [
+        {"label": "Catalog"},
+        {"label": "Medicines"},
+    ],
+})
+```
+
+Simple pages use one item. When `breadcrumbs` is absent, the shell may display the existing explicit `page_context` value; it never falls back to `resolver_match.url_name`.
+
 ## Button
 
 ```django

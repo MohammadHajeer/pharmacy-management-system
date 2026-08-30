@@ -16,6 +16,11 @@ def medicine_list(request):
         request,
         "catalog/medicines/list.html",
         {
+            "page_context": "Medicines",
+            "breadcrumbs": [
+                {"label": "Catalog"},
+                {"label": "Medicines"},
+            ],
             "medicines": medicines,
         },
     )

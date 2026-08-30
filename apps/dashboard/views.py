@@ -139,6 +139,7 @@ def dashboard_view(request):
         "dashboard/index.html",
         {
             "page_context": "Dashboard",
+            "breadcrumbs": [{"label": "Dashboard"}],
             "dashboard_data_notice": (
                 "Illustrative values for the Phase 1 layout; live dashboard "
                 "queries are not connected yet."

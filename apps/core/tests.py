@@ -411,6 +411,7 @@ class CoreSettingsViewTests(TestCase):
         response = self.client.get(reverse("core:settings"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["breadcrumbs"], [{"label": "Settings"}])
         self.assertContains(response, "Pharmacy information")
         self.assertContains(response, "Business configuration")
         self.assertContains(response, "Tax rates")
@@ -439,6 +440,10 @@ class CoreSettingsViewTests(TestCase):
         )
         self.assertContains(response, 'data-modal-open="tax-rate-create"')
         self.assertContains(response, 'data-modal-open="payment-method-create"')
+        self.assertContains(response, 'aria-current="page" title="Settings"', html=False)
+        self.assertContains(response, "data-account-identity", html=False)
+        self.assertContains(response, "Owner / Admin")
+        self.assertNotContains(response, "Pharmacy operations")
         self.assertContains(
             response,
             'id="tax-rate-create-is-active"',
@@ -454,6 +459,29 @@ class CoreSettingsViewTests(TestCase):
             'id="payment-method-create-is-active"',
             html=False,
         )
+
+    def test_nested_settings_breadcrumb_link_respects_settings_permission(self):
+        response = self.client.get(reverse("core:tax-rate-create"))
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('href="/settings/"', breadcrumb_html)
+        self.assertIn("Tax rates", breadcrumb_html)
+        self.assertIn("Add tax rate", breadcrumb_html)
+
+        self.client.force_login(self.add_only_user)
+        response = self.client.get(reverse("core:tax-rate-create"))
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('href="/settings/"', breadcrumb_html)
+        self.assertIn("Settings", breadcrumb_html)
 
     def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
         self.client.logout()

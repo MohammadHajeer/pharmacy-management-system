@@ -9,14 +9,27 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
-    def test_topbar_uses_stable_workspace_context_not_raw_route_names(self):
+    def test_topbar_renders_explicit_breadcrumbs_not_raw_route_names(self):
         request = RequestFactory().get("/catalog/medicines/")
         request.user = AnonymousUser()
         request.resolver_match = resolve("/catalog/medicines/")
 
-        rendered = render_to_string("components/topbar.html", request=request)
+        rendered = render_to_string(
+            "components/topbar.html",
+            {
+                "breadcrumbs": [
+                    {"label": "Medicines", "url": "/catalog/medicines/"},
+                    {"label": "Panadol 500mg"},
+                ]
+            },
+            request=request,
+        )
 
-        self.assertIn("Pharmacy operations", rendered)
+        self.assertIn('aria-label="Breadcrumb"', rendered)
+        self.assertIn('<a href="/catalog/medicines/"', rendered)
+        self.assertIn('aria-current="page"', rendered)
+        self.assertIn("Panadol 500mg", rendered)
+        self.assertNotIn("Pharmacy operations", rendered)
         self.assertNotIn("medicine-list", rendered.lower())
 
     def test_icon_selects_named_path_and_applies_shared_svg_attributes(self):
@@ -397,6 +410,7 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(self.dashboard_url)
 
+        self.assertEqual(response.context["breadcrumbs"], [{"label": "Dashboard"}])
         self.assertContains(response, "Clinical operations console")
         self.assertContains(response, "Daily Pulse")
         self.assertContains(response, "Today&#x27;s Sales")
@@ -406,6 +420,12 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, "Stock")
         self.assertContains(response, "Expiry")
         self.assertContains(response, "Finance")
+        self.assertContains(response, 'aria-label="Breadcrumb"', html=False)
+        self.assertContains(response, 'aria-current="page" title="Dashboard"', html=False)
+        self.assertContains(response, "data-account-identity", html=False)
+        self.assertContains(response, "dashboard-user")
+        self.assertContains(response, "Staff member")
+        self.assertNotContains(response, "Pharmacy operations")
         self.assertNotContains(response, "Dashboard UI foundation")
         self.assertNotContains(response, ">Demo<")
         self.assertNotContains(response, "Form controls")
