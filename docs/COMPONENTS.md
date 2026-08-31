@@ -266,10 +266,10 @@ On browser history restoration, the filter form resets to its server-rendered
 defaults so cached edits cannot disagree with the URL and displayed result page.
 
 Currently applied to Medicines, Customers, Suppliers, Prescribers, Purchase
-Invoices, and Finance payment registries, invoice selection, and invoice payment
+Invoices, Sales Invoices, and Finance payment registries, invoice selection, and invoice payment
 history. Small configuration lists, document line items, and dashboard recent
-subsets remain unpaginated. Inventory/history, returns/refunds, reports,
-and sales history have no implemented list pages; prescription views currently
+subsets remain unpaginated. Inventory/history, returns/refunds, and reports
+have no implemented list pages; prescription views currently
 lack templates. Apply this convention when those screens are implemented.
 
 ## Sidebar navigation

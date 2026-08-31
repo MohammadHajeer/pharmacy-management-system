@@ -1,0 +1,25 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Sales invoices · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container">
+  <header class="mb-6 flex flex-wrap items-center justify-between gap-4"><div><p class="operational-kicker">Transaction ledger</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Sales invoices</h1><p class="mt-1 text-sm text-slate-500">Drafts and completed sales, with their payment-only balances.</p></div>{% if can_create %}{% url 'sales:pos' as new_url %}{% include "components/button.html" with text="New sale" href=new_url flat=True %}{% endif %}</header>
+  <section class="workspace-surface" aria-label="Sales invoice registry">
+    {% url 'sales:invoice-list' as clear_url %}
+    {% include "components/registry_filters.html" with search_label="Find an invoice or customer" search_placeholder="Invoice number or customer name…" extra_filters_template="sales/_invoice_filters.html" %}
+    {% if invoices %}
+      <div class="ledger-scroll" tabindex="0" role="region" aria-label="Sales invoices"><table class="ledger-table"><caption class="sr-only">Sales invoices, newest transaction first</caption>
+        <thead><tr><th scope="col">Invoice / Customer</th><th scope="col">Completed / Pharmacist</th><th scope="col" class="ledger-number">Grand total</th><th scope="col">Payment</th><th scope="col" class="ledger-number">Balance</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
+        <tbody>{% for invoice in invoices %}<tr>
+          <td><p class="max-w-64 break-all text-xs font-semibold text-slate-900">{{ invoice.invoice_number|default:"Draft · number assigned at completion" }}</p><p class="mt-1 text-xs text-slate-500">{% if invoice.status == 'DRAFT' %}{{ invoice.customer.name|default:"Walk-in" }}{% else %}{{ invoice.customer_name_snapshot|default:"Walk-in" }}{% endif %}</p></td>
+          <td><p class="whitespace-nowrap text-xs">{{ invoice.completed_at|date:"d M Y, H:i"|default:"Not completed" }}</p><p class="mt-1 text-xs text-slate-500">{{ invoice.pharmacist.get_full_name|default:invoice.pharmacist.username }}</p></td>
+          <td class="ledger-number font-medium text-slate-900">{{ invoice.grand_total|floatformat:2 }} <span class="text-xs text-slate-500">{{ invoice.currency_code }}</span></td>
+          <td>{% include "sales/_payment_badge.html" %}</td><td class="ledger-number">{{ invoice.balance_due|floatformat:2 }}</td>
+          <td>{% include "sales/_status_badge.html" %}</td>
+          <td>{% if perms.sales.view_salesinvoiceline %}<a class="registry-link text-xs" href="{% url 'sales:invoice-detail' invoice.pk %}">View<span class="sr-only"> {{ invoice.invoice_number|default:"draft" }}</span></a>{% else %}<span class="text-xs text-slate-400">Summary only</span>{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+      {% include "components/pagination.html" with label="sales invoices" %}
+    {% else %}<div class="p-5"><div class="operational-empty"><h2 class="font-semibold text-slate-800">No sales invoices found</h2><p class="mt-1 text-sm text-slate-500">Adjust the filters or start a new sale.</p></div></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

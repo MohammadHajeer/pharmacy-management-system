@@ -1,0 +1,19 @@
+{% load l10n %}
+<article class="p-4 sm:p-5" data-sale-line data-medicine-id="{{ line_form.medicine.value|default_if_none:'' }}">
+  <input type="hidden" name="{{ line_form.medicine.html_name }}" value="{{ line_form.medicine.value|default_if_none:'' }}" data-medicine-field>
+  <div class="mb-4 flex items-start justify-between gap-3">
+    <div class="min-w-0"><h3 class="font-semibold text-slate-900" data-medicine-name>{{ row.medicine.name|default:"Select a medicine" }}</h3><p class="mt-1 text-xs text-slate-500" data-stock-context>{% if row.stock %}Available: {{ row.stock.available_stock_base|floatformat:"-3" }} {{ row.base_unit }}{% if row.stock.earliest_expiry_date %} · Earliest expiry {{ row.stock.earliest_expiry_date|date:"d M Y" }}{% endif %}{% else %}No eligible sale unit or stock context available.{% endif %}</p></div>
+    {% if can_edit %}<button type="button" data-remove-line class="rounded-control px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600" aria-label="Remove {{ row.medicine.name|default:'medicine' }}">Remove</button>{% endif %}
+  </div>
+  {% if line_form.errors %}<div class="mb-3 text-sm text-red-700" role="alert">{{ line_form.non_field_errors }}{{ line_form.medicine.errors }}</div>{% endif %}
+  <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div>{% include "components/select.html" with name=line_form.medicine_unit.html_name label="Unit" options=row.unit_options value=line_form.medicine_unit.value|default_if_none:''|stringformat:'s' error=line_form.medicine_unit.errors required=True %}</div>
+    <div>{% include "components/input.html" with name=line_form.quantity.html_name label="Quantity" type="number" value=line_form.quantity.value|unlocalize min="0.001" step="0.001" required=True error=line_form.quantity.errors %}</div>
+    <div>{% include "components/input.html" with name=line_form.discount_amount.html_name label="Discount" type="number" value=line_form.discount_amount.value|default_if_none:'0'|unlocalize min="0" step="0.01" error=line_form.discount_amount.errors %}</div>
+    <div class="text-right"><p class="mb-2 text-sm font-semibold">Line total</p><p class="py-2 text-lg font-semibold tabular-nums text-slate-900" data-line-total>{% if row.saved_line %}{{ row.saved_line.line_total|floatformat:2 }}{% else %}—{% endif %}</p></div>
+  </div>
+  <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500"><p data-unit-context>{% if row.saved_line %}Unit price {{ row.saved_line.unit_price|floatformat:"-4" }} {{ currency_code }} · 1 {{ row.saved_line.unit_name_snapshot }} = {{ row.saved_line.conversion_to_base_snapshot|floatformat:"-6" }} base units{% else %}Price and conversion supplied by the server{% endif %}</p><p data-line-tax>{% if row.saved_line %}Tax {{ row.saved_line.tax_amount|floatformat:2 }} ({{ row.saved_line.tax_rate_percent|floatformat:"-4" }}%){% else %}Tax calculated on save{% endif %}</p></div>
+  <div class="mt-3 rounded-control border border-amber-200 bg-amber-50 p-3" data-prescription-warning {% if not row.medicine.prescription_required and not row.saved_line.prescription_required_snapshot %}hidden{% endif %}>
+    {% include "components/checkbox.html" with name=line_form.prescription_warning_acknowledged.html_name label="Prescription required — warning acknowledged" checked=line_form.prescription_warning_acknowledged.value description="Acknowledge this warning before completing the sale. Linking a prescription does not replace acknowledgment." error=line_form.prescription_warning_acknowledged.errors %}
+  </div>
+</article>

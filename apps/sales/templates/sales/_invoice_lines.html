@@ -1,0 +1,8 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Invoice medicine lines"><table class="ledger-table">
+  <caption class="sr-only">Medicine lines with snapshotted quantities, prices, discounts and tax in {{ invoice.currency_code }}</caption>
+  <thead><tr><th scope="col">Medicine / Unit</th><th scope="col" class="ledger-number">Qty</th><th scope="col" class="ledger-number">Unit price</th><th scope="col" class="ledger-number">Discount</th><th scope="col" class="ledger-number">Tax</th><th scope="col" class="ledger-number">Total</th></tr></thead>
+  <tbody>{% for line in lines %}<tr>
+    <td><p class="font-semibold text-slate-900">{{ line.medicine_description_snapshot }}</p><p class="mt-1 text-xs text-slate-500">{{ line.unit_name_snapshot }}{% if line.prescription_required_snapshot %} · Rx warning {% if line.prescription_warning_acknowledged %}acknowledged{% else %}not acknowledged{% endif %}{% endif %}</p></td>
+    <td class="ledger-number">{{ line.quantity|floatformat:"-3" }}</td><td class="ledger-number">{{ line.unit_price|floatformat:"-4" }}</td><td class="ledger-number">{{ line.discount_amount|floatformat:2 }}</td><td class="ledger-number">{{ line.tax_amount|floatformat:2 }}<span class="mt-1 block text-xs text-slate-500">{{ line.tax_rate_percent|floatformat:"-4" }}%</span></td><td class="ledger-number font-semibold text-slate-900">{{ line.line_total|floatformat:2 }}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>

@@ -1,0 +1,1 @@
+{% if invoice.status == 'COMPLETED' %}{% include "components/badge.html" with text="Completed" variant="success" only %}{% elif invoice.status == 'VOID' %}{% include "components/badge.html" with text="Void" variant="secondary" only %}{% else %}{% include "components/badge.html" with text="Draft" variant="outline" only %}{% endif %}

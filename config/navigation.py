@@ -20,8 +20,9 @@ DASHBOARD_NAVIGATION = (
         "section": "Main",
         "label": "Sales",
         "icon": "sales",
-        "url_name": None,
+        "url_name": "sales:pos",
         "namespace": "sales",
+        "active_url_names": ("pos", "pos-workspace"),
         "permission": "sales.view_salesinvoice",
     },
     {
@@ -94,8 +95,9 @@ DASHBOARD_NAVIGATION = (
         "section": "Transactions",
         "label": "Invoices",
         "icon": "invoices",
-        "url_name": None,
+        "url_name": "sales:invoice-list",
         "namespace": "sales",
+        "active_url_names": ("invoice-list", "invoice-detail", "invoice-print"),
         "permission": "sales.view_salesinvoice",
     },
     {
