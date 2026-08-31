@@ -1,0 +1,39 @@
+name: Deploy production to Render
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Trigger Render deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Deploy latest main commit
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        shell: bash
+        run: |
+          if [[ -z "${RENDER_DEPLOY_HOOK_URL}" ]]; then
+            echo "::error::The RENDER_DEPLOY_HOOK_URL repository secret is missing."
+            exit 1
+          fi
+
+          curl \
+            --fail \
+            --show-error \
+            --silent \
+            --retry 3 \
+            --retry-all-errors \
+            --max-time 30 \
+            --request POST \
+            "${RENDER_DEPLOY_HOOK_URL}"
