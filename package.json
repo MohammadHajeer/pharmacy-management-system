@@ -28,5 +28,8 @@
     "@tailwindcss/cli": "^4.3.3",
     "concurrently": "^10.0.5",
     "tailwindcss": "^4.3.3"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1"
   }
 }
