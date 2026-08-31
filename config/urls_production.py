@@ -22,4 +22,3 @@ urlpatterns = [
         if str(pattern.pattern) != "__reload__/"
     ],
 ]
-
