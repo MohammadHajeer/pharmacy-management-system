@@ -27,7 +27,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Done |
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Done |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Done |
-| 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Blocked — Yasser payment dependency |
+| 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Not started — prerequisites verified |
 | 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
 | 7 | `E1-T09` / work item `1800` | Coordinate final documentation and operational handoff | Blocked — Mhmd Hajeer's final integration milestone |
 
@@ -390,7 +390,7 @@ Confirm literally:
 - [ ] No inventory or finance logic was duplicated and no dependency file was edited.
 - [ ] Only milestone files changed and there is no migration drift.
 
-**Status:** Blocked — Hala's `E2-T02` authoritative inventory/FEFO locking service is merged and verified on `main` as of commit `eafc9c0`. Yasser's `E4-T01` payment service exists only on the unmerged `origin/Finance` branch, remains recorded as `not_started`, and has no open pull request. The former Mhmd Hajeer migration blocker (`E1-T08`) is verified complete. Do not start this milestone until Yasser's dependency is reviewed, merged, and confirmed complete.
+**Status:** Not started — prerequisites verified. Hala's `E2-T02` authoritative inventory/FEFO locking service is merged and verified on `main` as of commit `eafc9c0`. Yasser's `E4-T01` customer/supplier payment services are merged on `main` through commits `4e758bb` and `4bd81ac`; on 2026-08-31, all 68 `apps.finance.tests` and `apps.finance.test_ui` tests passed against the existing PostgreSQL test database with `--keepdb`. Mhmd Hajeer's `E1-T08` migration prerequisite remains verified complete. Yasser's separate `docs/task-status/member-4.js` entry still says `not_started` and must be reconciled by its owner, but the merged and tested implementation no longer blocks this milestone technically.
 
 ---
 
@@ -516,4 +516,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next dependency-ordered milestone is **Milestone 5 — Atomic sale completion with FEFO locking (`E3-T03`)**, but it remains **Blocked** by Yasser's unmerged `E4-T01` customer-payment service. Hala's `E2-T02` inventory prerequisite is complete on `main`. Do not start or bypass the remaining payment dependency.
+The next dependency-ordered milestone is **Milestone 5 — Atomic sale completion with FEFO locking (`E3-T03`)**. It is **ready to start**: Hala's `E2-T02` inventory prerequisite and Yasser's merged/tested `E4-T01` payment-service prerequisite are available on `main`, and the PostgreSQL locking-test prerequisite is available. Do not begin implementation until Malik says `continue`, in accordance with this plan's execution rule.
