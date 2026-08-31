@@ -483,6 +483,58 @@ class CoreSettingsViewTests(TestCase):
         self.assertNotIn('href="/settings/"', breadcrumb_html)
         self.assertIn("Settings", breadcrumb_html)
 
+    def test_snapshot_keeps_saved_defaults_after_invalid_post(self):
+        tax = TaxRate.objects.create(
+            code="VAT", name="VAT", rate_percent="11.0000", is_active=False,
+        )
+        PharmacySettings.objects.create(
+            pharmacy_name="Saved Pharmacy", currency_code="USD",
+            default_tax_rate=tax, expiry_warning_days=30,
+            default_low_stock_threshold="20.125",
+        )
+
+        for response in (
+            self.client.get(reverse("core:settings")),
+            self.client.post(reverse("core:settings"), pharmacy_settings_data(
+                currency_code="US1", expiry_warning_days="60",
+                default_low_stock_threshold="10.000",
+            )),
+        ):
+            with self.subTest(bound=response.context["form"].is_bound):
+                snapshot = response.content.decode().split(
+                    'aria-label="Configuration snapshot"', 1,
+                )[1].split("</section>", 1)[0]
+                self.assertIn("USD", snapshot)
+                self.assertIn("VAT · 11%", snapshot)
+                self.assertIn("(Inactive)", snapshot)
+                self.assertIn("30 days", snapshot)
+                self.assertIn("20.125", snapshot)
+                self.assertNotIn("US1", snapshot)
+                self.assertContains(response, "Saved default", count=2)
+
+        self.assertContains(response, 'value="US1"')
+        self.assertContains(response, 'value="60"')
+        self.assertIn("currency_code", response.context["form"].errors)
+
+    def test_snapshot_handles_unconfigured_settings_and_zero_thresholds(self):
+        response = self.client.get(reverse("core:settings"))
+        self.assertContains(response, "No settings saved yet")
+        self.assertContains(response, "Not configured", count=3)
+        self.assertContains(response, "No default tax</dd>")
+
+        PharmacySettings.objects.create(
+            pharmacy_name="Saved Pharmacy", currency_code="USD",
+            expiry_warning_days=0, default_low_stock_threshold="0.000",
+        )
+        response = self.client.get(reverse("core:settings"))
+        self.assertNotContains(response, "Not configured")
+        self.assertContains(response, "0 days")
+        self.assertContains(response, "No default tax</dd>")
+        snapshot = response.content.decode().split(
+            'aria-label="Configuration snapshot"', 1,
+        )[1].split("</section>", 1)[0]
+        self.assertIn('>0 <span', snapshot)
+
     def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
         self.client.logout()
         response = self.client.get(reverse("core:settings"))
