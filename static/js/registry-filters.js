@@ -32,6 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      // New criteria always start at the first server-rendered result page.
+      url.searchParams.delete("page");
+
       if (url.href === window.location.href) return;
 
       try {
@@ -77,6 +80,14 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       if (!composing) applyFilters();
+    });
+    window.addEventListener("pageshow", (event) => {
+      const historyNavigation = event.persisted
+        || window.performance?.getEntriesByType("navigation")[0]?.type === "back_forward";
+      if (!historyNavigation) return;
+      // History can restore edits made just before leaving over the URL's
+      // rendered criteria. Reset after restoration; custom selects sync on reset.
+      setTimeout(() => form.reset(), 0);
     });
     window.addEventListener("pagehide", () => clearTimeout(timer));
   });

@@ -107,6 +107,22 @@
     @apply font-semibold text-slate-900 underline-offset-4 hover:text-primary-700 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600;
   }
 
+  .pagination-control {
+    @apply inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-status border border-slate-200 px-2 text-xs font-medium text-slate-600 tabular-nums;
+  }
+
+  a.pagination-control {
+    @apply hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
+  }
+
+  .pagination-control[aria-current="page"] {
+    @apply border-primary-200 bg-primary-50 text-primary-800;
+  }
+
+  .pagination-control[aria-disabled="true"] {
+    @apply border-slate-100 text-slate-400;
+  }
+
   .app-toast {
     @apply pointer-events-none absolute inset-x-0 bottom-0 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 pr-10 shadow-[0_4px_12px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)];
     touch-action: pan-y;

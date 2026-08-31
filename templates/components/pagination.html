@@ -1,0 +1,33 @@
+{% if page_obj.paginator.count %}
+  <div class="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+    <p class="min-w-0 break-words tabular-nums">
+      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} {{ label }}
+    </p>
+    {% if page_obj.has_other_pages %}
+      <nav aria-label="Pagination" class="flex flex-wrap items-center gap-1">
+        {% if page_obj.has_previous %}
+          <a class="pagination-control" href="{% querystring page=page_obj.previous_page_number %}" aria-label="Previous page">Previous</a>
+        {% else %}
+          <span class="pagination-control" aria-disabled="true" aria-label="Previous page">Previous</span>
+        {% endif %}
+        <span class="px-2 tabular-nums sm:hidden" aria-current="page" aria-label="Current page, page {{ page_obj.number }}">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <span class="hidden items-center gap-1 sm:flex">
+          {% for number in page_numbers %}
+            {% if number == page_obj.paginator.ELLIPSIS %}
+              <span class="px-1" aria-hidden="true">{{ number }}</span>
+            {% elif number == page_obj.number %}
+              <span class="pagination-control" aria-current="page" aria-label="Current page, page {{ number }}">{{ number }}</span>
+            {% else %}
+              <a class="pagination-control" href="{% querystring page=number %}" aria-label="Page {{ number }}">{{ number }}</a>
+            {% endif %}
+          {% endfor %}
+        </span>
+        {% if page_obj.has_next %}
+          <a class="pagination-control" href="{% querystring page=page_obj.next_page_number %}" aria-label="Next page">Next</a>
+        {% else %}
+          <span class="pagination-control" aria-disabled="true" aria-label="Next page">Next</span>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </div>
+{% endif %}
