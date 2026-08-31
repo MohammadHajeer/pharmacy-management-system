@@ -1,11 +1,13 @@
+import threading
 from datetime import timedelta
 from decimal import Decimal
+from unittest import skipUnless
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import IntegrityError, transaction
-from django.test import SimpleTestCase, TestCase
+from django.db import IntegrityError, connection, connections, transaction
+from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -16,15 +18,17 @@ from apps.catalog.models import (
     MedicineBarcode,
     MedicineUnit,
 )
-from apps.core.models import PharmacySettings, TaxRate
+from apps.core.models import PaymentMethod, PharmacySettings, TaxRate
+from apps.finance.models import CustomerPayment, PaymentStatus
 from apps.inventory.models import MedicineBatch, StockMovement
+from apps.inventory.services import InsufficientStockError
 from apps.parties.models import Customer
 from apps.prescriptions.models import Prescription
 
 from .forms import DraftSaleForm, DraftSaleLineFormSet
 from .models import SaleBatchAllocation, SalesInvoice, SalesInvoiceLine
 from .queries import active_pos_medicine_queryset, find_active_pos_barcode
-from .services import process_draft_sale
+from .services import complete_sale, process_draft_sale
 
 
 class SalesInvoiceValidationTests(SimpleTestCase):
@@ -482,4 +486,428 @@ class PosDraftServiceTests(PosTestDataMixin, TestCase):
                 "discount_amount",
                 "prescription_warning_acknowledged",
             ),
+        )
+
+
+class SaleCompletionServiceTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        user_model = get_user_model()
+        cls.actor = user_model.objects.create_user(username="sale-completer")
+        cls.actor.user_permissions.set(
+            Permission.objects.filter(
+                codename__in={"complete_sale", "post_customerpayment"},
+                content_type__app_label__in={"sales", "finance"},
+            )
+        )
+        cls.unauthorized_user = user_model.objects.create_user(
+            username="sale-completion-denied"
+        )
+
+        cls.category = Category.objects.create(name="Completion category")
+        cls.manufacturer = Manufacturer.objects.create(name="Completion manufacturer")
+        cls.medicine = Medicine.objects.create(
+            name="Completion tablets",
+            category=cls.category,
+            manufacturer=cls.manufacturer,
+            default_selling_price=Decimal("10.0000"),
+        )
+        cls.unit = MedicineUnit.objects.create(
+            medicine=cls.medicine,
+            name="Tablet",
+            conversion_to_base=Decimal("1.000000"),
+            is_base_unit=True,
+        )
+        cls.customer = Customer.objects.create(
+            code="COMP-CUSTOMER",
+            name="Completion Customer",
+            phone="555-0100",
+        )
+        cls.payment_method = PaymentMethod.objects.create(code="COMP-CASH", name="Cash")
+        PharmacySettings.objects.create(
+            pharmacy_name="Completion Pharmacy",
+            currency_code="USD",
+        )
+
+    def setUp(self):
+        now = timezone.now()
+        self.first_batch = MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="COMP-FIRST",
+            expiry_date=timezone.localdate() + timedelta(days=30),
+            acquisition_cost_per_base_unit=Decimal("2.5000"),
+            quantity_available_base=Decimal("4.000"),
+            first_received_at=now - timedelta(days=2),
+        )
+        self.second_batch = MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="COMP-SECOND",
+            expiry_date=timezone.localdate() + timedelta(days=60),
+            acquisition_cost_per_base_unit=Decimal("3.0000"),
+            quantity_available_base=Decimal("10.000"),
+            first_received_at=now - timedelta(days=1),
+        )
+        self.expired_batch = MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="COMP-EXPIRED",
+            expiry_date=timezone.localdate() - timedelta(days=1),
+            acquisition_cost_per_base_unit=Decimal("1.0000"),
+            quantity_available_base=Decimal("100.000"),
+            first_received_at=now - timedelta(days=10),
+        )
+
+    def create_draft(
+        self,
+        *,
+        quantity=Decimal("7.000"),
+        customer=True,
+        prescription_required=False,
+        warning_acknowledged=True,
+    ):
+        grand_total = (quantity * Decimal("10.0000")).quantize(Decimal("0.01"))
+        invoice = SalesInvoice.objects.create(
+            customer=self.customer if customer else None,
+            pharmacist=self.actor,
+            currency_code="USD",
+            subtotal=grand_total,
+            grand_total=grand_total,
+            balance_due=grand_total,
+        )
+        SalesInvoiceLine.objects.create(
+            sales_invoice=invoice,
+            medicine=self.medicine,
+            medicine_description_snapshot=self.medicine.name,
+            medicine_unit=self.unit,
+            unit_name_snapshot=self.unit.name,
+            quantity=quantity,
+            conversion_to_base_snapshot=Decimal("1.000000"),
+            requested_quantity_base=quantity,
+            unit_price=Decimal("10.0000"),
+            line_total=grand_total,
+            prescription_required_snapshot=prescription_required,
+            prescription_warning_acknowledged=warning_acknowledged,
+        )
+        return invoice
+
+    def payment_data(self, amount):
+        return {
+            "payment_method": str(self.payment_method.pk),
+            "amount": str(amount),
+            "reference": "",
+            "paid_at": timezone.now().isoformat(),
+        }
+
+    def test_completion_allocates_fefo_and_creates_exact_movement_mapping(self):
+        invoice = self.create_draft()
+
+        result = complete_sale(actor=self.actor, sales_invoice_id=invoice.pk)
+
+        completed = result.invoice
+        self.assertEqual(completed.status, SalesInvoice.Status.COMPLETED)
+        self.assertEqual(completed.invoice_number, f"SAL-{invoice.id.hex.upper()}")
+        self.assertEqual(completed.pharmacy_name_snapshot, "Completion Pharmacy")
+        self.assertEqual(completed.customer_name_snapshot, self.customer.name)
+        self.assertEqual(completed.customer_phone_snapshot, self.customer.phone)
+        self.assertIsNotNone(completed.completed_at)
+
+        allocations = list(
+            SaleBatchAllocation.objects.filter(
+                sales_invoice_line__sales_invoice=completed
+            ).order_by("batch__expiry_date")
+        )
+        self.assertEqual(
+            [allocation.allocated_quantity_base for allocation in allocations],
+            [Decimal("4.000"), Decimal("3.000")],
+        )
+        self.assertEqual(
+            [allocation.acquisition_cost_snapshot for allocation in allocations],
+            [Decimal("2.5000"), Decimal("3.0000")],
+        )
+
+        movements = list(
+            StockMovement.objects.filter(
+                movement_type=StockMovement.MovementType.SALE,
+                source_id=completed.pk,
+            ).order_by("batch__expiry_date")
+        )
+        self.assertEqual(len(movements), 2)
+        for allocation, movement in zip(allocations, movements, strict=True):
+            self.assertEqual(movement.source_type, "SALE")
+            self.assertEqual(movement.source_line_id, allocation.pk)
+            self.assertEqual(movement.batch_id, allocation.batch_id)
+            self.assertEqual(
+                movement.quantity_delta_base,
+                -allocation.allocated_quantity_base,
+            )
+            self.assertEqual(
+                movement.unit_cost_snapshot,
+                allocation.acquisition_cost_snapshot,
+            )
+            self.assertEqual(movement.reference_number, completed.invoice_number)
+
+        self.first_batch.refresh_from_db()
+        self.second_batch.refresh_from_db()
+        self.expired_batch.refresh_from_db()
+        self.assertEqual(self.first_batch.quantity_available_base, Decimal("0.000"))
+        self.assertEqual(self.second_batch.quantity_available_base, Decimal("7.000"))
+        self.assertEqual(self.expired_batch.quantity_available_base, Decimal("100.000"))
+
+    def test_optional_initial_payment_uses_finance_service_and_updates_balance(self):
+        invoice = self.create_draft()
+
+        result = complete_sale(
+            actor=self.actor,
+            sales_invoice_id=invoice.pk,
+            initial_payment_data=self.payment_data("20.00"),
+        )
+
+        self.assertIsNotNone(result.initial_payment)
+        self.assertEqual(result.initial_payment.status, PaymentStatus.POSTED)
+        self.assertEqual(result.invoice.paid_total, Decimal("20.00"))
+        self.assertEqual(result.invoice.balance_due, Decimal("50.00"))
+        self.assertEqual(
+            result.invoice.payment_status,
+            SalesInvoice.PaymentStatus.PARTIAL,
+        )
+
+    def test_walk_in_requires_and_accepts_only_full_initial_payment(self):
+        missing_payment_invoice = self.create_draft(customer=False)
+        with self.assertRaisesMessage(
+            ValidationError,
+            "A walk-in sale requires full payment during completion.",
+        ):
+            complete_sale(actor=self.actor, sales_invoice_id=missing_payment_invoice.pk)
+
+        partial_payment_invoice = self.create_draft(customer=False)
+        with self.assertRaisesMessage(
+            ValidationError,
+            "A completed walk-in sale must be fully settled.",
+        ):
+            complete_sale(
+                actor=self.actor,
+                sales_invoice_id=partial_payment_invoice.pk,
+                initial_payment_data=self.payment_data("20.00"),
+            )
+
+        full_payment_invoice = self.create_draft(customer=False)
+        result = complete_sale(
+            actor=self.actor,
+            sales_invoice_id=full_payment_invoice.pk,
+            initial_payment_data=self.payment_data("70.00"),
+        )
+        self.assertEqual(result.invoice.balance_due, Decimal("0.00"))
+        self.assertEqual(result.invoice.paid_total, Decimal("70.00"))
+        self.assertEqual(result.invoice.payment_status, SalesInvoice.PaymentStatus.PAID)
+
+        for rejected_invoice in (missing_payment_invoice, partial_payment_invoice):
+            rejected_invoice.refresh_from_db()
+            self.assertEqual(rejected_invoice.status, SalesInvoice.Status.DRAFT)
+            self.assertEqual(rejected_invoice.invoice_number, "")
+
+    def test_zero_total_walk_in_is_already_settled_without_payment(self):
+        invoice = self.create_draft(customer=False)
+        line = invoice.lines.get()
+        line.discount_amount = Decimal("70.00")
+        line.line_total = Decimal("0.00")
+        line.save(update_fields=["discount_amount", "line_total"])
+        invoice.discount_total = Decimal("70.00")
+        invoice.grand_total = Decimal("0.00")
+        invoice.balance_due = Decimal("0.00")
+        invoice.save(update_fields=["discount_total", "grand_total", "balance_due"])
+
+        result = complete_sale(actor=self.actor, sales_invoice_id=invoice.pk)
+
+        self.assertEqual(result.invoice.status, SalesInvoice.Status.COMPLETED)
+        self.assertEqual(result.invoice.balance_due, Decimal("0.00"))
+        self.assertIsNone(result.initial_payment)
+        self.assertFalse(CustomerPayment.objects.exists())
+
+    def test_permission_status_totals_and_warning_are_rechecked_after_invoice_lock(self):
+        invoice = self.create_draft()
+        with self.assertRaises(PermissionDenied):
+            complete_sale(actor=self.unauthorized_user, sales_invoice_id=invoice.pk)
+
+        invoice.subtotal = Decimal("0.01")
+        invoice.save(update_fields=["subtotal"])
+        with self.assertRaisesMessage(
+            ValidationError,
+            "The sale totals no longer match its stored lines.",
+        ):
+            complete_sale(actor=self.actor, sales_invoice_id=invoice.pk)
+
+        invoice.subtotal = invoice.grand_total
+        invoice.save(update_fields=["subtotal"])
+        line = invoice.lines.get()
+        line.prescription_required_snapshot = True
+        line.prescription_warning_acknowledged = False
+        line.save(
+            update_fields=[
+                "prescription_required_snapshot",
+                "prescription_warning_acknowledged",
+            ]
+        )
+        with self.assertRaisesMessage(ValidationError, "must be acknowledged"):
+            complete_sale(actor=self.actor, sales_invoice_id=invoice.pk)
+
+        line.prescription_warning_acknowledged = True
+        line.save(update_fields=["prescription_warning_acknowledged"])
+        invoice.status = SalesInvoice.Status.VOID
+        invoice.save(update_fields=["status"])
+        with self.assertRaisesMessage(ValidationError, "Only a draft sale"):
+            complete_sale(actor=self.actor, sales_invoice_id=invoice.pk)
+
+        self.assertFalse(SaleBatchAllocation.objects.exists())
+        self.assertFalse(StockMovement.objects.exists())
+
+    def test_insufficient_stock_and_payment_failure_roll_back_every_write(self):
+        insufficient_invoice = self.create_draft(quantity=Decimal("20.000"))
+        with self.assertRaises(InsufficientStockError):
+            complete_sale(actor=self.actor, sales_invoice_id=insufficient_invoice.pk)
+
+        payment_failure_invoice = self.create_draft()
+        with self.assertRaises(ValidationError):
+            complete_sale(
+                actor=self.actor,
+                sales_invoice_id=payment_failure_invoice.pk,
+                initial_payment_data=self.payment_data("999.00"),
+            )
+
+        for rejected_invoice in (insufficient_invoice, payment_failure_invoice):
+            rejected_invoice.refresh_from_db()
+            self.assertEqual(rejected_invoice.status, SalesInvoice.Status.DRAFT)
+            self.assertEqual(rejected_invoice.invoice_number, "")
+        self.first_batch.refresh_from_db()
+        self.second_batch.refresh_from_db()
+        self.assertEqual(self.first_batch.quantity_available_base, Decimal("4.000"))
+        self.assertEqual(self.second_batch.quantity_available_base, Decimal("10.000"))
+        self.assertFalse(SaleBatchAllocation.objects.exists())
+        self.assertFalse(StockMovement.objects.exists())
+        self.assertFalse(CustomerPayment.objects.exists())
+
+    def test_completion_endpoint_is_permission_scoped(self):
+        invoice = self.create_draft()
+        url = reverse("sales:pos-sale-complete", args=[invoice.pk])
+
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.client.force_login(self.unauthorized_user)
+        self.assertEqual(self.client.post(url).status_code, 403)
+
+        self.client.force_login(self.actor)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], SalesInvoice.Status.COMPLETED)
+        self.assertEqual(response.json()["invoice_number"], f"SAL-{invoice.id.hex.upper()}")
+
+
+@skipUnless(connection.vendor == "postgresql", "PostgreSQL row locks are required.")
+class SaleCompletionConcurrencyTests(TransactionTestCase):
+    reset_sequences = False
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.actor = user_model.objects.create_user(username="concurrent-sale-completer")
+        self.actor.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="sales",
+                codename="complete_sale",
+            )
+        )
+        category = Category.objects.create(name="Concurrent sale category")
+        manufacturer = Manufacturer.objects.create(name="Concurrent sale manufacturer")
+        self.medicine = Medicine.objects.create(
+            name="Concurrent tablets",
+            category=category,
+            manufacturer=manufacturer,
+            default_selling_price=Decimal("10.0000"),
+        )
+        self.unit = MedicineUnit.objects.create(
+            medicine=self.medicine,
+            name="Tablet",
+            conversion_to_base=Decimal("1.000000"),
+            is_base_unit=True,
+        )
+        self.customer = Customer.objects.create(
+            code="CONCURRENT-CUSTOMER",
+            name="Concurrent Customer",
+        )
+        PharmacySettings.objects.create(
+            pharmacy_name="Concurrent Pharmacy",
+            currency_code="USD",
+        )
+        self.batch = MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="CONCURRENT-BATCH",
+            expiry_date=timezone.localdate() + timedelta(days=30),
+            acquisition_cost_per_base_unit=Decimal("2.0000"),
+            quantity_available_base=Decimal("10.000"),
+            first_received_at=timezone.now(),
+        )
+        self.invoice_ids = [self.create_draft().pk for _ in range(2)]
+
+    def create_draft(self):
+        invoice = SalesInvoice.objects.create(
+            customer=self.customer,
+            pharmacist=self.actor,
+            currency_code="USD",
+            subtotal=Decimal("80.00"),
+            grand_total=Decimal("80.00"),
+            balance_due=Decimal("80.00"),
+        )
+        SalesInvoiceLine.objects.create(
+            sales_invoice=invoice,
+            medicine=self.medicine,
+            medicine_description_snapshot=self.medicine.name,
+            medicine_unit=self.unit,
+            unit_name_snapshot=self.unit.name,
+            quantity=Decimal("8.000"),
+            conversion_to_base_snapshot=Decimal("1.000000"),
+            requested_quantity_base=Decimal("8.000"),
+            unit_price=Decimal("10.0000"),
+            line_total=Decimal("80.00"),
+        )
+        return invoice
+
+    def test_concurrent_completions_cannot_oversell(self):
+        barrier = threading.Barrier(2)
+        outcomes = []
+
+        def attempt(invoice_id):
+            try:
+                actor = get_user_model().objects.get(pk=self.actor.pk)
+                barrier.wait(timeout=10)
+                complete_sale(actor=actor, sales_invoice_id=invoice_id)
+                outcomes.append("completed")
+            except InsufficientStockError:
+                outcomes.append("insufficient")
+            except Exception as error:  # pragma: no cover - asserted below for diagnostics
+                outcomes.append(f"unexpected:{type(error).__name__}:{error}")
+            finally:
+                connections.close_all()
+
+        threads = [
+            threading.Thread(target=attempt, args=(invoice_id,))
+            for invoice_id in self.invoice_ids
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertCountEqual(outcomes, ["completed", "insufficient"])
+        self.batch.refresh_from_db()
+        self.assertEqual(self.batch.quantity_available_base, Decimal("2.000"))
+        self.assertEqual(
+            SalesInvoice.objects.filter(status=SalesInvoice.Status.COMPLETED).count(),
+            1,
+        )
+        self.assertEqual(
+            SalesInvoice.objects.filter(status=SalesInvoice.Status.DRAFT).count(),
+            1,
+        )
+        self.assertEqual(
+            StockMovement.objects.filter(
+                movement_type=StockMovement.MovementType.SALE
+            ).count(),
+            1,
         )

@@ -1,7 +1,9 @@
 from decimal import ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.catalog.unit_economics import selected_unit_selling_price
@@ -13,7 +15,8 @@ from .queries import (
     get_draft_sale,
     get_pos_medicine,
 )
-from .services import MONEY_QUANTUM, process_draft_sale
+from .models import SalesInvoice
+from .services import MONEY_QUANTUM, complete_sale, process_draft_sale
 
 
 def _unit_payload(unit):
@@ -80,6 +83,7 @@ def _draft_payload(invoice):
         )
     return {
         "id": str(invoice.pk),
+        "invoice_number": invoice.invoice_number,
         "status": invoice.status,
         "customer_id": str(invoice.customer_id) if invoice.customer_id else None,
         "prescription_id": (
@@ -93,6 +97,7 @@ def _draft_payload(invoice):
         "paid_total": str(invoice.paid_total),
         "balance_due": str(invoice.balance_due),
         "payment_status": invoice.payment_status,
+        "completed_at": invoice.completed_at.isoformat() if invoice.completed_at else None,
         "lines": lines,
     }
 
@@ -177,3 +182,36 @@ def pos_draft_update(request, pk):
     if saved_invoice is None:
         return JsonResponse(_error_payload(form, line_formset), status=400)
     return JsonResponse(_draft_payload(saved_invoice))
+
+
+@login_required
+@permission_required("sales.complete_sale", raise_exception=True)
+@require_POST
+def pos_sale_complete(request, pk):
+    get_object_or_404(SalesInvoice, pk=pk)
+    payment_fields = ("payment_method", "amount", "reference", "paid_at")
+    initial_payment_data = (
+        {field: request.POST.get(field, "") for field in payment_fields}
+        if any(field in request.POST for field in payment_fields)
+        else None
+    )
+
+    try:
+        result = complete_sale(
+            actor=request.user,
+            sales_invoice_id=pk,
+            initial_payment_data=initial_payment_data,
+        )
+    except ValidationError as error:
+        errors = (
+            error.message_dict
+            if hasattr(error, "message_dict")
+            else {"__all__": error.messages}
+        )
+        return JsonResponse({"errors": errors}, status=400)
+
+    payload = _draft_payload(result.invoice)
+    payload["initial_payment_id"] = (
+        str(result.initial_payment.pk) if result.initial_payment else None
+    )
+    return JsonResponse(payload)

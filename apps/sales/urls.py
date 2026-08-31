@@ -15,4 +15,9 @@ urlpatterns = [
         views.pos_draft_update,
         name="pos-draft-update",
     ),
+    path(
+        "pos/drafts/<uuid:pk>/complete/",
+        views.pos_sale_complete,
+        name="pos-sale-complete",
+    ),
 ]

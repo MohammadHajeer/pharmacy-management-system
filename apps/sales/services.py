@@ -1,11 +1,16 @@
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from apps.catalog.unit_economics import base_quantity, selected_unit_selling_price
+from apps.core.document_numbers import sales_invoice_number_for_completion
 from apps.core.models import PharmacySettings
+from apps.finance.services import post_customer_payment
+from apps.inventory.models import StockMovement
+from apps.inventory.services import deduct_stock_fefo
 
 from .forms import DraftSaleForm, DraftSaleLineFormSet
 from .models import SaleBatchAllocation, SalesInvoice, SalesInvoiceLine
@@ -31,6 +36,12 @@ class DraftLineCalculation:
     tax_amount: Decimal
     line_total: Decimal
     prescription_warning_acknowledged: bool
+
+
+@dataclass(frozen=True)
+class SaleCompletionResult:
+    invoice: SalesInvoice
+    initial_payment: object | None
 
 
 def _require_permissions(actor, permissions):
@@ -94,6 +105,221 @@ def _calculate_line(*, line_form, tax_rate_percent):
             "prescription_warning_acknowledged",
             False,
         ),
+    )
+
+
+def _completion_line_amounts(line):
+    line_subtotal = (line.quantity * line.unit_price).quantize(
+        MONEY_QUANTUM,
+        rounding=ROUND_HALF_UP,
+    )
+    if line.discount_amount > line_subtotal:
+        raise ValidationError(
+            f"The stored discount for {line.medicine_description_snapshot} exceeds "
+            "its rounded subtotal."
+        )
+    taxable_amount = line_subtotal - line.discount_amount
+    tax_amount = (
+        taxable_amount * line.tax_rate_percent / Decimal("100")
+    ).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
+    line_total = (taxable_amount + tax_amount).quantize(
+        MONEY_QUANTUM,
+        rounding=ROUND_HALF_UP,
+    )
+    return line_subtotal, tax_amount, line_total
+
+
+def _validate_completion_state(invoice, lines):
+    if invoice.status != SalesInvoice.Status.DRAFT:
+        raise ValidationError("Only a draft sale can be completed.")
+    if not lines:
+        raise ValidationError("A completed sale requires at least one line.")
+    if SaleBatchAllocation.objects.filter(
+        sales_invoice_line__sales_invoice=invoice
+    ).exists():
+        raise ValidationError("A draft sale cannot already have stock allocations.")
+    if (
+        invoice.payments.exists()
+        or invoice.paid_total != ZERO_MONEY
+        or invoice.payment_status != SalesInvoice.PaymentStatus.UNPAID
+    ):
+        raise ValidationError("A draft sale cannot already have customer payments.")
+
+    expected_subtotal = ZERO_MONEY
+    expected_discount_total = ZERO_MONEY
+    expected_tax_total = ZERO_MONEY
+    expected_grand_total = ZERO_MONEY
+
+    for line in lines:
+        line.full_clean()
+        if not line.medicine.is_active:
+            raise ValidationError(
+                f"{line.medicine_description_snapshot} is no longer active."
+            )
+        if not line.medicine_unit.is_active or not line.medicine_unit.sale_allowed:
+            raise ValidationError(
+                f"{line.unit_name_snapshot} is no longer an active sale unit."
+            )
+        expected_base_quantity = base_quantity(
+            line.quantity,
+            line.conversion_to_base_snapshot,
+        )
+        if line.requested_quantity_base != expected_base_quantity:
+            raise ValidationError(
+                "A sale line's requested base quantity no longer matches its "
+                "quantity and conversion snapshot."
+            )
+        if (
+            line.prescription_required_snapshot
+            and not line.prescription_warning_acknowledged
+        ):
+            raise ValidationError(
+                f"The prescription warning for {line.medicine_description_snapshot} "
+                "must be acknowledged before completion."
+            )
+
+        line_subtotal, expected_tax_amount, expected_line_total = (
+            _completion_line_amounts(line)
+        )
+        if line.tax_amount != expected_tax_amount or line.line_total != expected_line_total:
+            raise ValidationError(
+                "A sale line's stored tax or total no longer matches its inputs."
+            )
+        expected_subtotal += line_subtotal
+        expected_discount_total += line.discount_amount
+        expected_tax_total += expected_tax_amount
+        expected_grand_total += expected_line_total
+
+    expected_totals = (
+        expected_subtotal,
+        expected_discount_total,
+        expected_tax_total,
+        expected_grand_total,
+    )
+    stored_totals = (
+        invoice.subtotal,
+        invoice.discount_total,
+        invoice.tax_total,
+        invoice.grand_total,
+    )
+    if stored_totals != expected_totals:
+        raise ValidationError("The sale totals no longer match its stored lines.")
+    if invoice.balance_due != invoice.grand_total - invoice.paid_total:
+        raise ValidationError("The sale balance is inconsistent.")
+
+
+def _raise_payment_form_errors(form):
+    messages = [str(error) for errors in form.errors.values() for error in errors]
+    raise ValidationError(
+        {"initial_payment": messages or ["The initial payment was rejected."]}
+    )
+
+
+def complete_sale(*, actor, sales_invoice_id, initial_payment_data=None):
+    """Complete a draft sale atomically through Inventory and Finance.
+
+    The invoice is locked first. Lines are processed in deterministic medicine/id
+    order, while ``apps.inventory`` owns FEFO batch locks, quantity changes, and
+    matching SALE movements. Optional payment writes remain owned by
+    ``apps.finance``. Any validation or downstream failure rolls the whole unit
+    of work back.
+    """
+    _require_permissions(actor, ("sales.complete_sale",))
+
+    with transaction.atomic():
+        # Lock only the invoice row. Joining nullable customer/prescription
+        # relations here would make PostgreSQL reject FOR UPDATE on the
+        # nullable side of an outer join.
+        invoice = SalesInvoice.objects.select_for_update().get(pk=sales_invoice_id)
+        _require_permissions(actor, ("sales.complete_sale",))
+
+        lines = list(
+            invoice.lines.select_related("medicine", "medicine_unit").order_by(
+                "medicine_id",
+                "id",
+            )
+        )
+        _validate_completion_state(invoice, lines)
+
+        if (
+            invoice.customer_id is None
+            and invoice.grand_total > ZERO_MONEY
+            and initial_payment_data is None
+        ):
+            raise ValidationError(
+                "A walk-in sale requires full payment during completion."
+            )
+
+        pharmacy_settings = PharmacySettings.objects.filter(singleton_key=1).first()
+        if pharmacy_settings is None:
+            raise ValidationError(
+                "Pharmacy settings must be configured before completing a sale."
+            )
+
+        invoice.invoice_number = sales_invoice_number_for_completion(invoice.id)
+        occurred_at = timezone.now()
+
+        for line in lines:
+            def create_allocation(allocation):
+                sale_allocation = SaleBatchAllocation(
+                    sales_invoice_line=line,
+                    batch=allocation.batch,
+                    allocated_quantity_base=allocation.quantity_base,
+                    acquisition_cost_snapshot=allocation.unit_cost_snapshot,
+                )
+                sale_allocation.full_clean()
+                sale_allocation.save()
+                return sale_allocation.id
+
+            deduct_stock_fefo(
+                actor=actor,
+                medicine=line.medicine,
+                quantity_base=line.requested_quantity_base,
+                source_type=StockMovement.MovementType.SALE,
+                source_id=invoice.id,
+                source_line_id_factory=create_allocation,
+                reference_number=invoice.invoice_number,
+                occurred_at=occurred_at,
+            )
+
+        invoice.pharmacy_name_snapshot = pharmacy_settings.pharmacy_name
+        invoice.customer_name_snapshot = invoice.customer.name if invoice.customer else ""
+        invoice.customer_phone_snapshot = invoice.customer.phone if invoice.customer else ""
+        invoice.completed_at = occurred_at
+        invoice.status = SalesInvoice.Status.COMPLETED
+
+        # The database requires a completed walk-in sale to be settled. These
+        # provisional values only make the not-yet-visible row valid while the
+        # finance service posts the required payment in this same transaction.
+        if invoice.customer_id is None:
+            invoice.paid_total = invoice.grand_total
+            invoice.balance_due = ZERO_MONEY
+            invoice.payment_status = SalesInvoice.PaymentStatus.PAID
+
+        invoice.full_clean()
+        invoice.save()
+
+        initial_payment = None
+        if initial_payment_data is not None:
+            payment_form, initial_payment = post_customer_payment(
+                actor=actor,
+                sales_invoice=invoice,
+                data=initial_payment_data,
+            )
+            if initial_payment is None:
+                _raise_payment_form_errors(payment_form)
+            invoice.refresh_from_db()
+
+        if invoice.customer_id is None and invoice.balance_due != ZERO_MONEY:
+            raise ValidationError(
+                "A walk-in sale must be fully settled during completion."
+            )
+
+        invoice.full_clean()
+
+    return SaleCompletionResult(
+        invoice=invoice,
+        initial_payment=initial_payment,
     )
 
 

@@ -27,7 +27,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 2 | `E1-T06` / work item `1600` | Implement approved UUID-derived document numbering | Done |
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Done |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Done |
-| 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Not started — prerequisites verified |
+| 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Done |
 | 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
 | 7 | `E1-T09` / work item `1800` | Coordinate final documentation and operational handoff | Blocked — Mhmd Hajeer's final integration milestone |
 
@@ -382,15 +382,15 @@ git status --short
 
 Confirm literally:
 
-- [ ] Completion locks the invoice and eligible batches in deterministic FEFO order.
-- [ ] Status, permission, totals, prescription acknowledgement, and stock are rechecked after locks.
-- [ ] Allocations, negative sale movements, cost snapshots, optional initial payment, and completion status commit atomically.
-- [ ] Insufficient/expired stock and every tested failure roll back all writes.
-- [ ] Concurrent completions cannot oversell on PostgreSQL.
-- [ ] No inventory or finance logic was duplicated and no dependency file was edited.
-- [ ] Only milestone files changed and there is no migration drift.
+- [x] Completion locks the invoice and eligible batches in deterministic FEFO order.
+- [x] Status, permission, totals, prescription acknowledgement, and stock are rechecked after locks.
+- [x] Allocations, negative sale movements, cost snapshots, optional initial payment, and completion status commit atomically.
+- [x] Insufficient/expired stock and every tested failure roll back all writes.
+- [x] Concurrent completions cannot oversell on PostgreSQL.
+- [x] No inventory or finance logic was duplicated and no dependency file was edited.
+- [x] Only milestone files changed and there is no migration drift.
 
-**Status:** Not started — prerequisites verified. Hala's `E2-T02` authoritative inventory/FEFO locking service is merged and verified on `main` as of commit `eafc9c0`. Yasser's `E4-T01` customer/supplier payment services are merged on `main` through commits `4e758bb` and `4bd81ac`; on 2026-08-31, all 68 `apps.finance.tests` and `apps.finance.test_ui` tests passed against the existing PostgreSQL test database with `--keepdb`. Mhmd Hajeer's `E1-T08` migration prerequisite remains verified complete. Yasser's separate `docs/task-status/member-4.js` entry still says `not_started` and must be reconciled by its owner, but the merged and tested implementation no longer blocks this milestone technically.
+**Status:** Done. Sale completion now locks the invoice, revalidates the authoritative draft state, delegates deterministic FEFO deduction/movements to `apps.inventory`, delegates optional initial payments to `apps.finance`, assigns the approved UUID-derived sales number, and commits or rolls back the entire workflow atomically. On 2026-08-31, all 23 `apps.sales.tests` passed against PostgreSQL in 513.758 seconds, including the two-thread oversell test; `manage.py check` and `makemigrations --check --dry-run` also passed with no migration drift.
 
 ---
 
@@ -447,7 +447,7 @@ Confirm literally:
 - [ ] Tests create isolated data and do not depend on shared Neon state.
 - [ ] No production or unrelated file changed and there is no migration drift.
 
-**Status:** Blocked — Malik's `E3-T02` and `E3-T03` are unfinished, and Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
+**Status:** Blocked — Malik's prerequisite milestones `E3-T01`, `E3-T02`, and `E3-T03` are Done, but Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
 
 ---
 
@@ -516,4 +516,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next dependency-ordered milestone is **Milestone 5 — Atomic sale completion with FEFO locking (`E3-T03`)**. It is **ready to start**: Hala's `E2-T02` inventory prerequisite and Yasser's merged/tested `E4-T01` payment-service prerequisite are available on `main`, and the PostgreSQL locking-test prerequisite is available. Do not begin implementation until Malik says `continue`, in accordance with this plan's execution rule.
+The next dependency-ordered milestone is **Milestone 6 — Sales and prescription verification (`E3-T06`)**. It is **blocked by Mhmd Hajeer**, owner of unfinished `E3-T05 — Deliver print-ready sales invoice and receipt output`. Do not stub or bypass that dependency; begin only after it is merged and Malik says `continue`.
