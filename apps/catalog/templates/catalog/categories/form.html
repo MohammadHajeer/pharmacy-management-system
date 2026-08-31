@@ -47,7 +47,7 @@
             Use a clear name that staff can recognize.
           </p>
         </div>
-        {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Category name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  only %}
+        {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Category name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  placeholder="Enter category name" only %}
       </section>
       <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">
         {% if perms.catalog.view_category %}

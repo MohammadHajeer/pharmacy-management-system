@@ -9,6 +9,31 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_registry_filters_have_get_fallback_and_only_show_useful_reset(self):
+        for query_string, query, status, show_clear in (
+            ("", "", "active", False),
+            ("?q=Example", "Example", "active", True),
+            ("?status=inactive", "", "inactive", True),
+        ):
+            request = RequestFactory().get("/catalog/medicines/" + query_string)
+            request.user = AnonymousUser()
+            request.resolver_match = resolve("/catalog/medicines/")
+            rendered = render_to_string("components/registry_filters.html", {
+                "clear_url": "/catalog/medicines/", "search_label": "Search medicines",
+                "search_placeholder": "Name, generic name or barcode",
+                "query": query, "status": status,
+                "status_options": [{"value": "active", "label": "Active"}],
+            }, request=request)
+            with self.subTest(query_string=query_string):
+                self.assertIn('method="get" action="/catalog/medicines/"', rendered)
+                self.assertIn("data-registry-filter-form", rendered)
+                self.assertIn('name="q"', rendered)
+                self.assertIn("<noscript>", rendered)
+                self.assertIn("Apply filters", rendered)
+                self.assertEqual("Clear filters" in rendered, show_clear)
+                enhanced = rendered.split("<noscript>")[0] + rendered.split("</noscript>")[1]
+                self.assertNotIn('type="submit"', enhanced)
+
     def test_numeric_input_preserves_zero_minimum_and_decimal_step(self):
         rendered = render_to_string("components/input.html", {
             "name": "unit_cost", "type": "number", "step": "0.0001", "min": 0, "max": 100,

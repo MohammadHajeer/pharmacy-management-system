@@ -42,7 +42,7 @@
         </div>
         <div class="grid min-w-0 gap-5 md:grid-cols-2">
           {% include "components/select.html" with name=form.medicine_unit.html_name id=form.medicine_unit.id_for_label label="Unit" value=form.medicine_unit.value|stringformat:"s" error=form.medicine_unit.errors required=form.medicine_unit.field.required maxlength=form.medicine_unit.field.max_length  options=unit_options placeholder="Select unit…" only %}
-          {% include "components/input.html" with name=form.barcode.html_name id=form.barcode.id_for_label label="Barcode" value=form.barcode.value error=form.barcode.errors required=form.barcode.field.required maxlength=form.barcode.field.max_length autocomplete="off" only %}
+          {% include "components/input.html" with name=form.barcode.html_name id=form.barcode.id_for_label label="Barcode" value=form.barcode.value error=form.barcode.errors required=form.barcode.field.required maxlength=form.barcode.field.max_length autocomplete="off" placeholder="Scan or enter barcode" only %}
         </div>
       </section>
       <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">

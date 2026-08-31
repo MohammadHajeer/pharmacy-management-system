@@ -48,12 +48,12 @@
           </p>
         </div>
         <div class="grid min-w-0 gap-5 md:grid-cols-2">
-          {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Medicine name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  only %}
-          {% include "components/input.html" with name=form.generic_name.html_name id=form.generic_name.id_for_label label="Generic name" value=form.generic_name.value error=form.generic_name.errors required=form.generic_name.field.required maxlength=form.generic_name.field.max_length  only %}
+          {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Medicine name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  placeholder="Enter medicine name" only %}
+          {% include "components/input.html" with name=form.generic_name.html_name id=form.generic_name.id_for_label label="Generic name" value=form.generic_name.value error=form.generic_name.errors required=form.generic_name.field.required maxlength=form.generic_name.field.max_length  placeholder="Enter generic name" only %}
           {% include "components/select.html" with name=form.category.html_name id=form.category.id_for_label label="Category" value=form.category.value|stringformat:"s" error=form.category.errors required=form.category.field.required maxlength=form.category.field.max_length  options=category_options placeholder="Select category…" only %}
           {% include "components/select.html" with name=form.manufacturer.html_name id=form.manufacturer.id_for_label label="Manufacturer" value=form.manufacturer.value|stringformat:"s" error=form.manufacturer.errors required=form.manufacturer.field.required maxlength=form.manufacturer.field.max_length  options=manufacturer_options placeholder="Select manufacturer…" only %}
-          {% include "components/input.html" with name=form.strength.html_name id=form.strength.id_for_label label="Strength" value=form.strength.value error=form.strength.errors required=form.strength.field.required maxlength=form.strength.field.max_length  only %}
-          {% include "components/input.html" with name=form.dosage_form.html_name id=form.dosage_form.id_for_label label="Dosage form" value=form.dosage_form.value error=form.dosage_form.errors required=form.dosage_form.field.required maxlength=form.dosage_form.field.max_length  only %}
+          {% include "components/input.html" with name=form.strength.html_name id=form.strength.id_for_label label="Strength" value=form.strength.value error=form.strength.errors required=form.strength.field.required maxlength=form.strength.field.max_length  placeholder="e.g. 500 mg" only %}
+          {% include "components/input.html" with name=form.dosage_form.html_name id=form.dosage_form.id_for_label label="Dosage form" value=form.dosage_form.value error=form.dosage_form.errors required=form.dosage_form.field.required maxlength=form.dosage_form.field.max_length  placeholder="e.g. Tablet" only %}
         </div>
       </section>
       {% if form.base_unit_name %}
@@ -82,7 +82,7 @@
         </div>
         <div class="grid min-w-0 gap-5 md:grid-cols-2">
           {% include "components/input.html" with name=form.default_selling_price.html_name id=form.default_selling_price.id_for_label label="Base selling price" value=form.default_selling_price.value error=form.default_selling_price.errors required=form.default_selling_price.field.required maxlength=form.default_selling_price.field.max_length type="number" step="0.0001" min="0" only %}
-          {% include "components/input.html" with name=form.low_stock_threshold_base.html_name id=form.low_stock_threshold_base.id_for_label label="Low-stock threshold (base units)" value=form.low_stock_threshold_base.value error=form.low_stock_threshold_base.errors required=form.low_stock_threshold_base.field.required maxlength=form.low_stock_threshold_base.field.max_length type="number" step="0.001" min="0" only %}
+          {% include "components/input.html" with name=form.low_stock_threshold_base.html_name id=form.low_stock_threshold_base.id_for_label label="Low-stock threshold (base units)" value=form.low_stock_threshold_base.value error=form.low_stock_threshold_base.errors required=form.low_stock_threshold_base.field.required maxlength=form.low_stock_threshold_base.field.max_length type="number" step="0.001" min="0" placeholder="Enter threshold in base units" only %}
         </div>
         <div class="mt-6">
           {% include "components/checkbox.html" with name=form.prescription_required.html_name id=form.prescription_required.id_for_label label="Prescription required" checked=form.prescription_required.value error=form.prescription_required.errors description="This medicine requires a prescription for dispensing." only %}

@@ -25,7 +25,7 @@
     </header>
     <section class="workspace-surface overflow-visible">
       {% url "parties:prescriber-list" as clear_url %}
-      {% include "components/registry_filters.html" with search_label="Search prescribers" search_placeholder="Name, code or contact details" %}
+      {% include "components/registry_filters.html" with search_label="Search prescribers" search_placeholder="Name, phone or professional identifier" %}
       <div class="flex items-center justify-between gap-3 px-5 py-4">
         <h2 class="text-sm font-semibold text-slate-900">
           Prescriber registry

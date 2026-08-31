@@ -48,8 +48,8 @@
           </p>
         </div>
         <div class="grid min-w-0 gap-5 md:grid-cols-2">
-          {% include "components/input.html" with name=form.code.html_name id=form.code.id_for_label label="Customer code" value=form.code.value error=form.code.errors required=form.code.field.required maxlength=form.code.field.max_length  only %}
-          {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Customer name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  only %}
+          {% include "components/input.html" with name=form.code.html_name id=form.code.id_for_label label="Customer code" value=form.code.value error=form.code.errors required=form.code.field.required maxlength=form.code.field.max_length  placeholder="Enter customer code" only %}
+          {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Customer name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  placeholder="Enter customer name" only %}
         </div>
       </section>
       <section class="border-b border-slate-200 p-5 sm:p-6">
@@ -62,8 +62,8 @@
           </p>
         </div>
         <div class="grid min-w-0 gap-5 md:grid-cols-2">
-          {% include "components/input.html" with name=form.phone.html_name id=form.phone.id_for_label label="Phone" value=form.phone.value error=form.phone.errors required=form.phone.field.required maxlength=form.phone.field.max_length type="tel" only %}
-          {% include "components/input.html" with name=form.email.html_name id=form.email.id_for_label label="Email" value=form.email.value error=form.email.errors required=form.email.field.required maxlength=form.email.field.max_length type="email" only %}
+          {% include "components/input.html" with name=form.phone.html_name id=form.phone.id_for_label label="Phone" value=form.phone.value error=form.phone.errors required=form.phone.field.required maxlength=form.phone.field.max_length type="tel" placeholder="Enter phone number" only %}
+          {% include "components/input.html" with name=form.email.html_name id=form.email.id_for_label label="Email" value=form.email.value error=form.email.errors required=form.email.field.required maxlength=form.email.field.max_length type="email" placeholder="Enter email address" only %}
         </div>
       </section>
       <section class="border-b border-slate-200 p-5 sm:p-6">
@@ -76,8 +76,8 @@
           </p>
         </div>
         <div class="grid min-w-0 gap-5 md:grid-cols-2">
-          {% include "components/textarea.html" with name=form.address.html_name id=form.address.id_for_label label="Address" value=form.address.value error=form.address.errors required=form.address.field.required maxlength=form.address.field.max_length rows="3" only %}
-          {% include "components/textarea.html" with name=form.notes.html_name id=form.notes.id_for_label label="Notes" value=form.notes.value error=form.notes.errors required=form.notes.field.required maxlength=form.notes.field.max_length rows="3" only %}
+          {% include "components/textarea.html" with name=form.address.html_name id=form.address.id_for_label label="Address" value=form.address.value error=form.address.errors required=form.address.field.required maxlength=form.address.field.max_length rows="3" placeholder="Enter address" only %}
+          {% include "components/textarea.html" with name=form.notes.html_name id=form.notes.id_for_label label="Notes" value=form.notes.value error=form.notes.errors required=form.notes.field.required maxlength=form.notes.field.max_length rows="3" placeholder="Add internal notes" only %}
         </div>
       </section>
       <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">

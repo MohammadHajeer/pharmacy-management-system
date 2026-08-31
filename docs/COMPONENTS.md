@@ -173,7 +173,11 @@ Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `
 
 ## Registry controls and ledgers
 
-Registry pages share `components/registry_filters.html`. It submits the existing GET parameters `q` and `status` together. Supply `query`, `status`, `status_options`, and a reversed `clear_url`; optional `search_label` and `search_placeholder` enable search only where supported. It composes the shared input, select, and buttons without JavaScript state.
+Registry pages share `components/registry_filters.html`. Supply `query`, `status`, `status_options`, and a reversed `clear_url`; optional `search_label` and `search_placeholder` enable search only where supported. It composes the existing controls and remains a normal GET form.
+
+`static/js/registry-filters.js` enhances forms marked `data-registry-filter-form`: search input applies after 350 ms, Enter applies immediately, and the shared custom select's bubbling native `change` event applies immediately. Navigation sends the form's existing `q`/`status` values to Django, preserves unrelated URL parameters, and removes blank searches. These registries have no pagination parameter to reset. Search focus/caret are restored after navigation when session storage is available; no query/filter business logic runs in JavaScript. A conditional **Clear filters** link returns to the base route. A submit button exists only inside `noscript`, supporting Enter and status-only forms without JavaScript.
+
+Run the dependency-free interaction tests with `node --test apps/dashboard/tests_js/registry-filters.test.cjs`.
 
 Use `ledger-scroll` around a `ledger-table` for a contained horizontal scroll region, with `tabindex="0"`, `role="region"`, and a descriptive `aria-label`. Tables retain captions and column headers. Use `ledger-number` on numeric cells and their headers for right alignment and tabular numerals. `registry-link` provides the shared record-link focus/hover treatment. These roles use existing theme colors and do not change the dashboard shell.
 
