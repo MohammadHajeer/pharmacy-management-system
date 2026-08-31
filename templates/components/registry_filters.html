@@ -1,0 +1,14 @@
+<form method="get" class="grid gap-3 border-b border-slate-200 bg-slate-50/60 p-4 sm:flex sm:flex-wrap sm:items-end sm:px-5" aria-label="Registry filters">
+  {% if search_label %}
+    <div class="min-w-0 sm:min-w-64 sm:flex-1">
+      {% include "components/input.html" with name="q" label=search_label placeholder=search_placeholder value=query type="search" only %}
+    </div>
+  {% endif %}
+  <div class="sm:w-40">
+    {% include "components/select.html" with name="status" label="Status" options=status_options value=status only %}
+  </div>
+  <div class="flex items-center gap-2 pb-0.5">
+    {% include "components/button.html" with text="Filter" variant="secondary" type="submit" flat=True only %}
+    {% include "components/button.html" with text="Clear" variant="ghost" href=clear_url flat=True only %}
+  </div>
+</form>

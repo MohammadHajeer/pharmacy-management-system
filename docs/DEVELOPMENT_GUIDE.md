@@ -129,7 +129,7 @@ Configure sidebar items once in `config/navigation.py`. `config/context_processo
 - resolves each namespaced URL;
 - leaves not-yet-implemented routes disabled;
 - filters items by Django permission; and
-- marks the current namespace active.
+- matches explicit `active_url_names` within the current namespace, falling back to namespace matching only for a uniquely configured area.
 
 Do not pass duplicate link lists from views or hardcode them in feature templates. When a feature becomes available, set its `url_name`, preserve its `namespace`, and set its Django permission when the model permission exists.
 

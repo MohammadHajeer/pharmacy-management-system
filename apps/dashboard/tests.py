@@ -9,6 +9,17 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_numeric_input_preserves_zero_minimum_and_decimal_step(self):
+        rendered = render_to_string("components/input.html", {
+            "name": "unit_cost", "type": "number", "step": "0.0001", "min": 0, "max": 100,
+        })
+        self.assertIn('min="0"', rendered)
+        self.assertIn('max="100"', rendered)
+        self.assertIn('step="0.0001"', rendered)
+        ordinary = render_to_string("components/input.html", {"name": "name"})
+        self.assertNotIn('min="', ordinary)
+        self.assertNotIn('max="', ordinary)
+
     def test_topbar_renders_explicit_breadcrumbs_not_raw_route_names(self):
         request = RequestFactory().get("/catalog/medicines/")
         request.user = AnonymousUser()
@@ -227,6 +238,46 @@ class SharedComponentTests(SimpleTestCase):
 
 
 class DashboardNavigationTests(TestCase):
+    def test_shared_namespaces_match_only_the_configured_area(self):
+        from uuid import UUID
+
+        from apps.catalog.urls import urlpatterns as catalog_routes
+        from apps.parties.urls import urlpatterns as party_routes
+        from apps.purchasing.urls import urlpatterns as purchase_routes
+
+        user = get_user_model().objects.create_superuser(username="navigation-admin")
+        for namespace, routes in (
+            ("catalog", catalog_routes),
+            ("parties", party_routes),
+            ("purchasing", purchase_routes),
+        ):
+            for route in routes:
+                kwargs = {key: UUID(int=1) for key in route.pattern.converters}
+                url = reverse(f"{namespace}:{route.name}", kwargs=kwargs)
+                request = RequestFactory().get(url)
+                request.user = user
+                request.resolver_match = resolve(url)
+                if namespace == "catalog":
+                    expected = ["Medicines"]
+                elif namespace == "purchasing":
+                    expected = ["Purchases"]
+                elif route.name.startswith("supplier-"):
+                    expected = ["Suppliers"]
+                elif route.name.startswith("customer-"):
+                    expected = ["Customers"]
+                else:
+                    expected = []  # Prescribers has no sidebar entry.
+                with self.subTest(route=route.name):
+                    items = dashboard_navigation(request)["dashboard_navigation"]
+                    self.assertEqual([item["label"] for item in items if item["is_active"]], expected)
+
+    def test_unresolved_request_has_no_active_item(self):
+        request = RequestFactory().get("/")
+        request.user = AnonymousUser()
+        request.resolver_match = None
+        items = dashboard_navigation(request)["dashboard_navigation"]
+        self.assertFalse(any(item["is_active"] for item in items))
+
     role_permissions = {
         "Owner / Admin": "all",
         "Pharmacist": {

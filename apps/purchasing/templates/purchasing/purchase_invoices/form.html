@@ -1,39 +1,133 @@
 {% extends "layouts/dashboard.html" %}
-
+{% block title %}
+  New Purchase Invoice · PHARMANEX
+{% endblock %}
 {% block content %}
-    <h1>New purchase invoice</h1>
-
-    <form method="post" data-submit-form>
-        {% csrf_token %}
-
-        <h2>Header</h2>
-        {% include "components/select.html" with name="supplier" label="Supplier" options=supplier_options value=header_form.supplier.value|stringformat:"s" error=header_form.supplier.errors required=True %}
-        {% include "components/input.html" with name="supplier_invoice_reference" label="Supplier invoice reference" value=header_form.supplier_invoice_reference.value error=header_form.supplier_invoice_reference.errors %}
-        {% include "components/input.html" with name="invoice_date" label="Invoice date" type="date" value=header_form.invoice_date.value error=header_form.invoice_date.errors required=True %}
-        {% include "components/input.html" with name="due_date" label="Due date" type="date" value=header_form.due_date.value error=header_form.due_date.errors %}
-        {% include "components/input.html" with name="currency_code" label="Currency code" value=header_form.currency_code.value error=header_form.currency_code.errors required=True %}
-
-        <h2>Lines</h2>
-        {{ formset.management_form }}
-        {% for line_form in formset %}
-            <fieldset>
-                {% include "components/select.html" with name=line_form.medicine.html_name label="Medicine" options=medicine_options value=line_form.medicine.value|stringformat:"s" error=line_form.medicine.errors required=True %}
-                {% include "components/select.html" with name=line_form.medicine_unit.html_name label="Unit" options=unit_options value=line_form.medicine_unit.value|stringformat:"s" error=line_form.medicine_unit.errors required=True %}
-                {% include "components/input.html" with name=line_form.quantity.html_name label="Quantity" value=line_form.quantity.value error=line_form.quantity.errors required=True %}
-                {% include "components/input.html" with name=line_form.unit_cost.html_name label="Unit cost" value=line_form.unit_cost.value error=line_form.unit_cost.errors required=True %}
-                {% include "components/input.html" with name=line_form.discount_amount.html_name label="Discount amount" value=line_form.discount_amount.value error=line_form.discount_amount.errors %}
-                {% include "components/input.html" with name=line_form.tax_rate_percent.html_name label="Tax rate %" value=line_form.tax_rate_percent.value error=line_form.tax_rate_percent.errors %}
-                {% include "components/input.html" with name=line_form.batch_number.html_name label="Batch number" value=line_form.batch_number.value error=line_form.batch_number.errors required=True %}
-                {% include "components/input.html" with name=line_form.expiry_date.html_name label="Expiry date" type="date" value=line_form.expiry_date.value error=line_form.expiry_date.errors required=True %}
-                {% if formset.can_delete %}
-                    <label>
-                        <input type="checkbox" name="{{ line_form.DELETE.html_name }}"> Remove this line
-                    </label>
+  <div class="mx-auto min-w-0 max-w-7xl space-y-5">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <p class="operational-kicker">
+          Purchasing operations
+        </p>
+        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
+          New Purchase Invoice
+        </h1>
+        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
+          Enter supplier information and purchase lines, then save the invoice for review.
+        </p>
+      </div>
+      <div class="flex shrink-0 flex-wrap gap-2">
+        {% include "components/badge.html" with text="New draft" variant="warning" only %}
+      </div>
+    </header>
+    <form method="post" class="space-y-5" data-submit-form novalidate>
+      {% csrf_token %}
+      {% if header_form.errors or formset.errors or formset.non_form_errors %}
+        <div class="rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+          <p class="font-semibold">
+            The invoice could not be saved. Review the highlighted fields and purchase lines.
+          </p>
+          {{ header_form.non_field_errors }}
+          {{ formset.non_form_errors }}
+        </div>
+      {% endif %}
+      <section class="rounded-workspace border border-slate-200 bg-white">
+        <section class="p-5 sm:p-6">
+          <div class="mb-5">
+            <h2 class="text-sm font-semibold text-slate-900">
+              Invoice information
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+              Supplier and document references for this transaction.
+            </p>
+          </div>
+          <div class="grid min-w-0 gap-5 md:grid-cols-2">
+            {% include "components/select.html" with name=header_form.supplier.html_name id=header_form.supplier.id_for_label label="Supplier" value=header_form.supplier.value|stringformat:"s" error=header_form.supplier.errors required=header_form.supplier.field.required maxlength=header_form.supplier.field.max_length  options=supplier_options placeholder="Select supplier…" only %}
+            {% include "components/input.html" with name=header_form.supplier_invoice_reference.html_name id=header_form.supplier_invoice_reference.id_for_label label="Supplier invoice reference" value=header_form.supplier_invoice_reference.value error=header_form.supplier_invoice_reference.errors required=header_form.supplier_invoice_reference.field.required maxlength=header_form.supplier_invoice_reference.field.max_length  only %}
+            {% include "components/input.html" with name=header_form.invoice_date.html_name id=header_form.invoice_date.id_for_label label="Invoice date" value=header_form.invoice_date.value error=header_form.invoice_date.errors required=header_form.invoice_date.field.required maxlength=header_form.invoice_date.field.max_length type="date" only %}
+            {% include "components/input.html" with name=header_form.due_date.html_name id=header_form.due_date.id_for_label label="Due date" value=header_form.due_date.value error=header_form.due_date.errors required=header_form.due_date.field.required maxlength=header_form.due_date.field.max_length type="date" only %}
+          </div>
+          <div class="mt-5 max-w-xs">
+            {% include "components/input.html" with name=header_form.currency_code.html_name id=header_form.currency_code.id_for_label label="Currency code" value=header_form.currency_code.value error=header_form.currency_code.errors required=header_form.currency_code.field.required maxlength=header_form.currency_code.field.max_length help_text="Three-letter code used for every amount on this invoice." only %}
+          </div>
+        </section>
+      </section>
+      <div class="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <section class="min-w-0 rounded-workspace border border-slate-200 bg-white" aria-labelledby="purchase-lines-heading">
+          <header class="border-b border-slate-200 px-5 py-4">
+            <p class="operational-kicker">
+              Stock receipt details
+            </p>
+            <h2 id="purchase-lines-heading" class="mt-1 text-base font-semibold text-slate-900">
+              Purchase lines
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+              Enter at least one line. Leave unused lines completely blank or mark them for removal.
+            </p>
+          </header>
+          {{ formset.management_form }}
+          {% for line_form in formset %}
+            <fieldset class="min-w-0 border-b border-slate-200 px-5 pb-5 pt-4 last:border-b-0">
+              <legend class="px-1 pt-4 text-sm font-semibold text-slate-900">
+                Line
+                {{ forloop.counter }}
+                {% if line_form.empty_permitted %}
+                  <span class="ml-2 text-xs font-normal text-slate-500">
+                    Optional unless used
+                  </span>
                 {% endif %}
+              </legend>
+              {% if line_form.non_field_errors %}
+                <div class="mb-4 text-sm text-red-700" role="alert">
+                  {{ line_form.non_field_errors }}
+                </div>
+              {% endif %}
+              <div class="grid min-w-0 gap-4 md:grid-cols-2">
+                {% include "components/select.html" with name=line_form.medicine.html_name id=line_form.medicine.id_for_label label="Medicine" value=line_form.medicine.value|stringformat:"s" error=line_form.medicine.errors required=line_form.medicine.field.required maxlength=line_form.medicine.field.max_length  options=medicine_options placeholder="Select medicine…" only %}
+                {% include "components/select.html" with name=line_form.medicine_unit.html_name id=line_form.medicine_unit.id_for_label label="Unit" value=line_form.medicine_unit.value|stringformat:"s" error=line_form.medicine_unit.errors required=line_form.medicine_unit.field.required maxlength=line_form.medicine_unit.field.max_length help_text="Choose a purchase unit belonging to the selected medicine." options=unit_options placeholder="Select unit…" only %}
+              </div>
+              <div class="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+                {% include "components/input.html" with name=line_form.quantity.html_name id=line_form.quantity.id_for_label label="Quantity" value=line_form.quantity.value error=line_form.quantity.errors required=line_form.quantity.field.required maxlength=line_form.quantity.field.max_length type="number" step="0.001" min="0.001" only %}
+                {% include "components/input.html" with name=line_form.unit_cost.html_name id=line_form.unit_cost.id_for_label label="Unit cost" value=line_form.unit_cost.value error=line_form.unit_cost.errors required=line_form.unit_cost.field.required maxlength=line_form.unit_cost.field.max_length type="number" step="0.0001" min="0" only %}
+                {% include "components/input.html" with name=line_form.discount_amount.html_name id=line_form.discount_amount.id_for_label label="Discount amount" value=line_form.discount_amount.value error=line_form.discount_amount.errors required=line_form.discount_amount.field.required maxlength=line_form.discount_amount.field.max_length type="number" step="0.01" min="0" only %}
+                {% include "components/input.html" with name=line_form.tax_rate_percent.html_name id=line_form.tax_rate_percent.id_for_label label="Tax rate %" value=line_form.tax_rate_percent.value error=line_form.tax_rate_percent.errors required=line_form.tax_rate_percent.field.required maxlength=line_form.tax_rate_percent.field.max_length type="number" step="0.0001" min="0" max="100" only %}
+              </div>
+              <div class="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
+                {% include "components/input.html" with name=line_form.batch_number.html_name id=line_form.batch_number.id_for_label label="Batch number" value=line_form.batch_number.value error=line_form.batch_number.errors required=line_form.batch_number.field.required maxlength=line_form.batch_number.field.max_length  only %}
+                {% include "components/input.html" with name=line_form.expiry_date.html_name id=line_form.expiry_date.id_for_label label="Expiry date" value=line_form.expiry_date.value error=line_form.expiry_date.errors required=line_form.expiry_date.field.required maxlength=line_form.expiry_date.field.max_length type="date" only %}
+              </div>
+              {% if formset.can_delete %}
+                <div class="mt-5 border-t border-slate-100 pt-4">
+                  {% include "components/checkbox.html" with name=line_form.DELETE.html_name id=line_form.DELETE.id_for_label label="Remove this line" checked=line_form.DELETE.value error=line_form.DELETE.errors description="Marked lines are excluded when you save the draft." only %}
+                </div>
+              {% endif %}
             </fieldset>
-        {% endfor %}
-        <p>Add more lines by resubmitting with a higher TOTAL_FORMS count, or extend this page with client-side row cloning.</p>
-
-        {% include "components/button.html" with text="Save draft" loading_text="Saving..." variant="primary" type="submit" %}
+          {% endfor %}
+        </section>
+        <aside class="workspace-surface xl:sticky xl:top-21" aria-label="Save purchase draft">
+          <div class="border-b border-slate-200 bg-slate-900 px-5 py-4">
+            <h2 class="text-sm font-semibold text-white">
+              Purchase summary
+            </h2>
+            <p class="mt-1 text-xs leading-5 text-slate-300">
+              Calculated when the draft is saved
+            </p>
+          </div>
+          <div class="space-y-4 p-5">
+            <p class="text-sm leading-6 text-slate-600">
+              The saved invoice shows the subtotal, discounts, tax, and grand total calculated from your purchase lines.
+            </p>
+            <p class="rounded-control border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+              Saving a draft does not receive stock. Review the saved invoice before posting.
+            </p>
+            {% include "components/button.html" with text="Save draft" flat=True type="submit" loading_text="Saving…" variant="primary" full_width=True %}
+            {% if perms.purchasing.view_purchaseinvoice %}
+              {% url "purchasing:purchase-invoice-list" as cancel_url %}
+              {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" full_width=True %}
+            {% endif %}
+          </div>
+        </aside>
+      </div>
     </form>
+  </div>
 {% endblock %}

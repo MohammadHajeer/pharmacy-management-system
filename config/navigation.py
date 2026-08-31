@@ -30,6 +30,14 @@ DASHBOARD_NAVIGATION = (
         "icon": "medicines",
         "url_name": "catalog:medicine-list",
         "namespace": "catalog",
+        "active_url_names": (
+            "medicine-list", "medicine-create", "medicine-detail", "medicine-update",
+            "medicine-toggle-active", "medicine-unit-create", "medicine-unit-update",
+            "medicine-unit-toggle-active", "medicine-barcode-create",
+            "medicine-barcode-toggle-active", "category-list", "category-create",
+            "category-update", "category-toggle-active", "manufacturer-list",
+            "manufacturer-create", "manufacturer-update", "manufacturer-toggle-active",
+        ),
         "permission": "catalog.view_medicine",
     },
     {
@@ -46,6 +54,9 @@ DASHBOARD_NAVIGATION = (
         "icon": "suppliers",
         "url_name": "parties:supplier-list",
         "namespace": "parties",
+        "active_url_names": (
+            "supplier-list", "supplier-create", "supplier-update", "supplier-toggle-active",
+        ),
         "permission": "parties.view_supplier",
     },
     {
@@ -54,6 +65,9 @@ DASHBOARD_NAVIGATION = (
         "icon": "customers",
         "url_name": "parties:customer-list",
         "namespace": "parties",
+        "active_url_names": (
+            "customer-list", "customer-create", "customer-update", "customer-toggle-active",
+        ),
         "permission": "parties.view_customer",
     },
     {
@@ -70,6 +84,10 @@ DASHBOARD_NAVIGATION = (
         "icon": "purchases",
         "url_name": "purchasing:purchase-invoice-list",
         "namespace": "purchasing",
+        "active_url_names": (
+            "purchase-invoice-list", "purchase-invoice-create",
+            "purchase-invoice-detail", "purchase-invoice-post",
+        ),
         "permission": "purchasing.view_purchaseinvoice",
     },
     {

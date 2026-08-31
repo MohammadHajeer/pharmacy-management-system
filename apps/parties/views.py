@@ -2,10 +2,28 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import CustomerForm, PrescriberForm, SupplierForm
 from .models import Customer, Prescriber, Supplier
+
+
+def _page_context(request, label, route, action=None):
+    root = {"label": label}
+    if action and request.user.has_perm(f"parties.view_{route}"):
+        root["url"] = reverse(f"parties:{route}-list")
+    breadcrumbs = [{"label": "Management"}, root]
+    if action:
+        breadcrumbs.append({"label": action})
+    return {
+        "breadcrumbs": breadcrumbs,
+        "status_options": [
+            {"value": "active", "label": "Active"},
+            {"value": "inactive", "label": "Inactive"},
+            {"value": "all", "label": "All statuses"},
+        ],
+    }
 
 
 def _search(queryset, query, fields):
@@ -40,7 +58,12 @@ def supplier_list(request):
     return render(
         request,
         "parties/suppliers/list.html",
-        {"suppliers": suppliers, "query": query, "status": status},
+        {
+            **_page_context(request, "Suppliers", "supplier"),
+            "suppliers": suppliers,
+            "query": query,
+            "status": status,
+        },
     )
 
 
@@ -53,7 +76,15 @@ def supplier_create(request):
         messages.success(request, "Supplier added successfully.")
         return redirect("parties:supplier-list")
 
-    return render(request, "parties/suppliers/form.html", {"form": form, "supplier": None})
+    return render(
+        request,
+        "parties/suppliers/form.html",
+        {
+            **_page_context(request, "Suppliers", "supplier", action="Add supplier"),
+            "form": form,
+            "supplier": None,
+        },
+    )
 
 
 @login_required
@@ -66,7 +97,15 @@ def supplier_update(request, pk):
         messages.success(request, "Supplier updated successfully.")
         return redirect("parties:supplier-list")
 
-    return render(request, "parties/suppliers/form.html", {"form": form, "supplier": supplier})
+    return render(
+        request,
+        "parties/suppliers/form.html",
+        {
+            **_page_context(request, "Suppliers", "supplier", action="Edit supplier"),
+            "form": form,
+            "supplier": supplier,
+        },
+    )
 
 
 @login_required
@@ -98,7 +137,12 @@ def customer_list(request):
     return render(
         request,
         "parties/customers/list.html",
-        {"customers": customers, "query": query, "status": status},
+        {
+            **_page_context(request, "Customers", "customer"),
+            "customers": customers,
+            "query": query,
+            "status": status,
+        },
     )
 
 
@@ -111,7 +155,15 @@ def customer_create(request):
         messages.success(request, "Customer added successfully.")
         return redirect("parties:customer-list")
 
-    return render(request, "parties/customers/form.html", {"form": form, "customer": None})
+    return render(
+        request,
+        "parties/customers/form.html",
+        {
+            **_page_context(request, "Customers", "customer", action="Add customer"),
+            "form": form,
+            "customer": None,
+        },
+    )
 
 
 @login_required
@@ -124,7 +176,15 @@ def customer_update(request, pk):
         messages.success(request, "Customer updated successfully.")
         return redirect("parties:customer-list")
 
-    return render(request, "parties/customers/form.html", {"form": form, "customer": customer})
+    return render(
+        request,
+        "parties/customers/form.html",
+        {
+            **_page_context(request, "Customers", "customer", action="Edit customer"),
+            "form": form,
+            "customer": customer,
+        },
+    )
 
 
 @login_required
@@ -156,7 +216,12 @@ def prescriber_list(request):
     return render(
         request,
         "parties/prescribers/list.html",
-        {"prescribers": prescribers, "query": query, "status": status},
+        {
+            **_page_context(request, "Prescribers", "prescriber"),
+            "prescribers": prescribers,
+            "query": query,
+            "status": status,
+        },
     )
 
 
@@ -169,7 +234,15 @@ def prescriber_create(request):
         messages.success(request, "Prescriber added successfully.")
         return redirect("parties:prescriber-list")
 
-    return render(request, "parties/prescribers/form.html", {"form": form, "prescriber": None})
+    return render(
+        request,
+        "parties/prescribers/form.html",
+        {
+            **_page_context(request, "Prescribers", "prescriber", action="Add prescriber"),
+            "form": form,
+            "prescriber": None,
+        },
+    )
 
 
 @login_required
@@ -183,7 +256,13 @@ def prescriber_update(request, pk):
         return redirect("parties:prescriber-list")
 
     return render(
-        request, "parties/prescribers/form.html", {"form": form, "prescriber": prescriber}
+        request,
+        "parties/prescribers/form.html",
+        {
+            **_page_context(request, "Prescribers", "prescriber", action="Edit prescriber"),
+            "form": form,
+            "prescriber": prescriber,
+        },
     )
 
 

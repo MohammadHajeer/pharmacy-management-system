@@ -1,12 +1,57 @@
 {% extends "layouts/dashboard.html" %}
-
+{% block title %}
+  Add barcode · PHARMANEX
+{% endblock %}
 {% block content %}
-    <h1>Add barcode for {{ medicine.name }}</h1>
-
-    <form method="post" data-submit-form>
-        {% csrf_token %}
-        {% include "components/select.html" with name="medicine_unit" label="Unit" options=unit_options value=form.medicine_unit.value|stringformat:"s" error=form.medicine_unit.errors required=True %}
-        {% include "components/input.html" with name="barcode" label="Barcode" value=form.barcode.value error=form.barcode.errors required=True %}
-        {% include "components/button.html" with text="Save barcode" loading_text="Saving..." variant="primary" type="submit" %}
+  <div class="mx-auto min-w-0 max-w-7xl space-y-5">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <p class="operational-kicker">
+          Medicine → Unit → Barcode
+        </p>
+        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
+          Add barcode
+        </h1>
+        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
+          Link a scannable identifier to a unit of
+          {{ medicine.name }}
+          .
+        </p>
+      </div>
+      <div class="flex shrink-0 flex-wrap gap-2">
+      </div>
+    </header>
+    <form method="post" class="max-w-4xl rounded-workspace border border-slate-200 bg-white" data-submit-form novalidate>
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700" role="alert">
+          <p class="font-semibold">
+            Review the highlighted fields.
+          </p>
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+      <section class="border-b border-slate-200 p-5 sm:p-6">
+        <div class="mb-5">
+          <h2 class="text-sm font-semibold text-slate-900">
+            Barcode assignment
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Select an active unit, then enter its unique barcode.
+          </p>
+        </div>
+        <div class="grid min-w-0 gap-5 md:grid-cols-2">
+          {% include "components/select.html" with name=form.medicine_unit.html_name id=form.medicine_unit.id_for_label label="Unit" value=form.medicine_unit.value|stringformat:"s" error=form.medicine_unit.errors required=form.medicine_unit.field.required maxlength=form.medicine_unit.field.max_length  options=unit_options placeholder="Select unit…" only %}
+          {% include "components/input.html" with name=form.barcode.html_name id=form.barcode.id_for_label label="Barcode" value=form.barcode.value error=form.barcode.errors required=form.barcode.field.required maxlength=form.barcode.field.max_length autocomplete="off" only %}
+        </div>
+      </section>
+      <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">
+        {% if perms.catalog.view_medicine %}
+          {% url "catalog:medicine-detail" medicine.pk as cancel_url %}
+          {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %}
+        {% endif %}
+        {% include "components/button.html" with text="Save barcode" flat=True type="submit" variant="primary" loading_text="Saving…" %}
+      </footer>
     </form>
+  </div>
 {% endblock %}

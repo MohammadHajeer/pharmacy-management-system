@@ -18,6 +18,28 @@ from .forms import (
 from .models import Category, Manufacturer, Medicine, MedicineBarcode, MedicineUnit
 
 
+def _page_context(request, label, route, record=None, action=None):
+    root = {"label": label}
+    if (record or action) and request.user.has_perm(f"catalog.view_{route}"):
+        root["url"] = reverse(f"catalog:{route}-list")
+    breadcrumbs = [{"label": "Catalog"}, root]
+    if record:
+        item = {"label": record.name}
+        if action and request.user.has_perm("catalog.view_medicine"):
+            item["url"] = reverse("catalog:medicine-detail", args=[record.pk])
+        breadcrumbs.append(item)
+    if action:
+        breadcrumbs.append({"label": action})
+    return {
+        "breadcrumbs": breadcrumbs,
+        "status_options": [
+            {"value": "active", "label": "Active"},
+            {"value": "inactive", "label": "Inactive"},
+            {"value": "all", "label": "All statuses"},
+        ],
+    }
+
+
 def _status_filter(queryset, status):
     if status == "inactive":
         return queryset.filter(is_active=False)
@@ -40,7 +62,7 @@ def medicine_list(request):
         medicines = medicines.filter(
             Q(name__icontains=query)
             | Q(generic_name__icontains=query)
-            | Q(barcodes__barcode__iexact=query)
+            | Q(units__barcodes__barcode__iexact=query)
         ).distinct()
     medicines = _status_filter(medicines, status)
 
@@ -48,11 +70,7 @@ def medicine_list(request):
         request,
         "catalog/medicines/list.html",
         {
-            "page_context": "Medicines",
-            "breadcrumbs": [
-                {"label": "Catalog"},
-                {"label": "Medicines"},
-            ],
+            **_page_context(request, "Medicines", "medicine"),
             "medicines": medicines,
             "query": query,
             "status": status,
@@ -74,7 +92,12 @@ def medicine_detail(request, pk):
     return render(
         request,
         "catalog/medicines/detail.html",
-        {"medicine": medicine, "units": units, "barcodes": barcodes},
+        {
+            **_page_context(request, "Medicines", "medicine", record=medicine),
+            "medicine": medicine,
+            "units": units,
+            "barcodes": barcodes,
+        },
     )
 
 
@@ -116,12 +139,7 @@ def medicine_create(request):
         request,
         "catalog/medicines/form.html",
         {
-            "page_context": "Medicines",
-            "breadcrumbs": [
-                {"label": "Catalog"},
-                {"label": "Medicines", "url": reverse("catalog:medicine-list")},
-                {"label": "Add medicine"},
-            ],
+            **_page_context(request, "Medicines", "medicine", action="Add medicine"),
             "form": form,
             "medicine": None,
             "category_options": category_options,
@@ -145,6 +163,7 @@ def medicine_update(request, pk):
         request,
         "catalog/medicines/form.html",
         {
+            **_page_context(request, "Medicines", "medicine", record=medicine, action="Edit medicine"),
             "form": form,
             "medicine": medicine,
             "category_options": category_options,
@@ -192,7 +211,12 @@ def medicine_unit_create(request, medicine_pk):
     return render(
         request,
         "catalog/medicines/unit_form.html",
-        {"form": form, "medicine": medicine, "unit": None},
+        {
+            **_page_context(request, "Medicines", "medicine", record=medicine, action="Add unit"),
+            "form": form,
+            "medicine": medicine,
+            "unit": None,
+        },
     )
 
 
@@ -210,7 +234,12 @@ def medicine_unit_update(request, medicine_pk, pk):
     return render(
         request,
         "catalog/medicines/unit_form.html",
-        {"form": form, "medicine": medicine, "unit": unit},
+        {
+            **_page_context(request, "Medicines", "medicine", record=medicine, action="Edit unit"),
+            "form": form,
+            "medicine": medicine,
+            "unit": unit,
+        },
     )
 
 
@@ -262,7 +291,12 @@ def medicine_barcode_create(request, medicine_pk):
     return render(
         request,
         "catalog/medicines/barcode_form.html",
-        {"form": form, "medicine": medicine, "unit_options": unit_options},
+        {
+            **_page_context(request, "Medicines", "medicine", record=medicine, action="Add barcode"),
+            "form": form,
+            "medicine": medicine,
+            "unit_options": unit_options,
+        },
     )
 
 
@@ -289,7 +323,15 @@ def medicine_barcode_toggle_active(request, medicine_pk, pk):
 def category_list(request):
     status = request.GET.get("status", "active")
     categories = _status_filter(Category.objects.all().order_by("name"), status)
-    return render(request, "catalog/categories/list.html", {"categories": categories, "status": status})
+    return render(
+        request,
+        "catalog/categories/list.html",
+        {
+            **_page_context(request, "Categories", "category"),
+            "categories": categories,
+            "status": status,
+        },
+    )
 
 
 @login_required
@@ -300,7 +342,15 @@ def category_create(request):
         form.save()
         messages.success(request, "Category added successfully.")
         return redirect("catalog:category-list")
-    return render(request, "catalog/categories/form.html", {"form": form, "category": None})
+    return render(
+        request,
+        "catalog/categories/form.html",
+        {
+            **_page_context(request, "Categories", "category", action="Add category"),
+            "form": form,
+            "category": None,
+        },
+    )
 
 
 @login_required
@@ -312,7 +362,15 @@ def category_update(request, pk):
         form.save()
         messages.success(request, "Category updated successfully.")
         return redirect("catalog:category-list")
-    return render(request, "catalog/categories/form.html", {"form": form, "category": category})
+    return render(
+        request,
+        "catalog/categories/form.html",
+        {
+            **_page_context(request, "Categories", "category", action="Edit category"),
+            "form": form,
+            "category": category,
+        },
+    )
 
 
 @login_required
@@ -340,7 +398,11 @@ def manufacturer_list(request):
     return render(
         request,
         "catalog/manufacturers/list.html",
-        {"manufacturers": manufacturers, "status": status},
+        {
+            **_page_context(request, "Manufacturers", "manufacturer"),
+            "manufacturers": manufacturers,
+            "status": status,
+        },
     )
 
 
@@ -353,7 +415,13 @@ def manufacturer_create(request):
         messages.success(request, "Manufacturer added successfully.")
         return redirect("catalog:manufacturer-list")
     return render(
-        request, "catalog/manufacturers/form.html", {"form": form, "manufacturer": None}
+        request,
+        "catalog/manufacturers/form.html",
+        {
+            **_page_context(request, "Manufacturers", "manufacturer", action="Add manufacturer"),
+            "form": form,
+            "manufacturer": None,
+        },
     )
 
 
@@ -367,7 +435,13 @@ def manufacturer_update(request, pk):
         messages.success(request, "Manufacturer updated successfully.")
         return redirect("catalog:manufacturer-list")
     return render(
-        request, "catalog/manufacturers/form.html", {"form": form, "manufacturer": manufacturer}
+        request,
+        "catalog/manufacturers/form.html",
+        {
+            **_page_context(request, "Manufacturers", "manufacturer", action="Edit manufacturer"),
+            "form": form,
+            "manufacturer": manufacturer,
+        },
     )
 
 

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.catalog.models import Medicine, MedicineUnit
@@ -14,6 +15,18 @@ from apps.parties.models import Supplier
 from .forms import PurchaseInvoiceHeaderForm, PurchaseInvoiceLineFormSet
 from .models import PurchaseInvoice
 from .services import create_draft_purchase_invoice, post_purchase_invoice
+
+
+def _page_context(request, invoice=None, creating=False):
+    root = {"label": "Purchase Invoices"}
+    if (invoice or creating) and request.user.has_perm("purchasing.view_purchaseinvoice"):
+        root["url"] = reverse("purchasing:purchase-invoice-list")
+    breadcrumbs = [{"label": "Purchasing"}, root]
+    if creating:
+        breadcrumbs.append({"label": "New"})
+    elif invoice:
+        breadcrumbs.append({"label": invoice.invoice_number or "Draft invoice"})
+    return {"breadcrumbs": breadcrumbs}
 
 
 def _default_currency_code():
@@ -52,7 +65,14 @@ def _validation_error_message(error):
 @permission_required("purchasing.view_purchaseinvoice", raise_exception=True)
 def purchase_invoice_list(request):
     invoices = PurchaseInvoice.objects.select_related("supplier").order_by("-created_at")
-    return render(request, "purchasing/purchase_invoices/list.html", {"invoices": invoices})
+    return render(
+        request,
+        "purchasing/purchase_invoices/list.html",
+        {
+            **_page_context(request),
+            "invoices": invoices,
+        },
+    )
 
 
 @login_required
@@ -63,7 +83,11 @@ def purchase_invoice_detail(request, pk):
     return render(
         request,
         "purchasing/purchase_invoices/detail.html",
-        {"invoice": invoice, "lines": lines},
+        {
+            **_page_context(request, invoice=invoice),
+            "invoice": invoice,
+            "lines": lines,
+        },
     )
 
 
@@ -120,6 +144,7 @@ def purchase_invoice_create(request):
         request,
         "purchasing/purchase_invoices/form.html",
         {
+            **_page_context(request, creating=True),
             "header_form": header_form,
             "formset": formset,
             "supplier_options": supplier_options,

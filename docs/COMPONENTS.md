@@ -65,6 +65,8 @@ Select options are dictionaries with `value`, `label`, and an optional `disabled
 
 Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `placeholder`, `autocomplete`, `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `placeholder`, `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
 
+Numeric inputs also accept `step`, `min`, and `max` (including zero). Pass values matching the existing Django field; these attributes do not replace server-side validation.
+
 ## Checkbox
 
 ```django
@@ -169,8 +171,16 @@ The shared theme also defines `status`, `control`, `workspace`, and `dialog` rad
 
 Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `data-dirty-surface` elements. `form-dirty-state.js` toggles their presentation while preserving the existing form comparison and submit-button behavior.
 
+## Registry controls and ledgers
+
+Registry pages share `components/registry_filters.html`. It submits the existing GET parameters `q` and `status` together. Supply `query`, `status`, `status_options`, and a reversed `clear_url`; optional `search_label` and `search_placeholder` enable search only where supported. It composes the shared input, select, and buttons without JavaScript state.
+
+Use `ledger-scroll` around a `ledger-table` for a contained horizontal scroll region, with `tabindex="0"`, `role="region"`, and a descriptive `aria-label`. Tables retain captions and column headers. Use `ledger-number` on numeric cells and their headers for right alignment and tabular numerals. `registry-link` provides the shared record-link focus/hover treatment. These roles use existing theme colors and do not change the dashboard shell.
+
+Render empty states outside the table's scroll region so their text and permitted actions remain visible on narrow screens.
+
 ## Sidebar navigation
 
 Navigation is configured once in `config/navigation.py`; views do not pass link lists. When a routed feature is enabled, update its existing namespaced `url_name` (for example, `catalog:medicine-list`) and Django permission (for example, `catalog.view_medicine`). Do not create a duplicate app from a navigation label.
 
-`config/context_processors.py` hides links the current user cannot access, safely disables links whose URL does not exist yet, and marks items active by comparing the configured namespace with `request.resolver_match.namespace`. Use Django Groups and Permissions for roles—do not add a separate authorization system.
+`config/context_processors.py` hides links the current user cannot access and safely disables unavailable routes. For active state, configure `active_url_names` with exact local route names; both the namespace and route name must match `request.resolver_match`. An explicit set is authoritative. Without it, the processor matches the fully qualified destination route, then permits namespace fallback only if that namespace belongs to one configured area. Unavailable links never become active. Suppliers and Customers have separate route sets; Catalog and Purchasing include their nested routes. Prescribers has no sidebar entry and does not activate Suppliers or Customers. Permissions remain the security boundary; there are no group-name checks.
