@@ -15,7 +15,7 @@ from apps.inventory.services import get_fefo_eligible_batches
 from apps.purchasing.models import PurchaseInvoice
 
 
-def _chart(key, title, kicker, description, labels, values, tones, unit, *, horizontal=True):
+def _chart(key, title, kicker, description, labels, values, tones, unit, *, horizontal=False):
     return {
         "id": key, "title": title, "kicker": kicker, "description": description,
         "labels": labels, "values": values, "tones": tones, "unit": unit,
@@ -87,6 +87,14 @@ def _inventory_context(user, today):
         "Low stock includes positive sellable quantities at or below the medicine's "
         "threshold; an unset threshold uses the pharmacy default. Expiry today remains sellable."
     )
+    # Presentation emphasis only: preserve the existing stock partition and queries.
+    stock_focus = 2 if stock["out"] else 1 if stock["low"] else 0
+    stock_chart["focus_index"] = stock_focus
+    stock_chart["focus"] = {
+        "label": stock_chart["labels"][stock_focus],
+        "value": stock_chart["values"][stock_focus],
+        "tone": stock_chart["tones"][stock_focus],
+    }
     expiry_chart = _chart(
         "expiry-exposure-data", "Expiry Exposure", "Stock protection",
         "Batch cost layers with remaining quantity, including inactive batches and medicines.",
@@ -94,6 +102,13 @@ def _inventory_context(user, today):
         [tone for _, _, tone in buckets], "batches",
     )
     expiry_chart["context"] = f"Warning window: {warning_days} days, including today and the final day. Empty batches are excluded."
+    expiry_focus = next((index for index, value in enumerate(expiry_values) if value), 0)
+    expiry_chart["focus_index"] = expiry_focus
+    expiry_chart["focus"] = {
+        "label": expiry_chart["labels"][expiry_focus],
+        "value": expiry_values[expiry_focus],
+        "tone": expiry_chart["tones"][expiry_focus],
+    }
     kpis = [
         {"label": "Active Medicines", "value": stock["active"], "context": "Active catalog records, with or without stock", "tone": "neutral"},
         {"label": "Low Stock", "value": stock["low"], "context": "Positive sellable stock at or below threshold", "tone": "warning" if stock["low"] else "neutral"},
@@ -114,7 +129,8 @@ def _inventory_context(user, today):
     for batch in remaining_batches.filter(expiry_date__lte=today + timedelta(days=warning_days)).select_related("medicine").order_by("expiry_date", "pk")[:3]:
         expired = batch.expiry_date < today
         attention.append({
-            "title": f"{batch.medicine.name} · {batch.batch_number}",
+            "title": batch.medicine.name,
+            "batch_number": batch.batch_number,
             "detail": f"Expiry {batch.expiry_date:%d %b %Y} · {batch.quantity_available_base:,.3f} base units remaining",
             "status": "Expired" if expired else "Near expiry",
             "status_variant": "destructive" if expired else "warning", "group": "Expiry",
@@ -163,6 +179,10 @@ def _purchase_context():
     )
     chart["context"] = f"{months[0]:%b %Y}–{latest:%b %Y}: twelve months ending with the latest receipt, including months with no receipts."
     chart["summary"] = f"{sum(chart['values'])} posted purchase invoices across this twelve-month period."
+    chart["focus_index"] = len(months) - 1
+    chart["focus"] = {
+        "label": f"{latest:%b %Y}", "value": chart["values"][-1], "tone": "healthy",
+    }
     chart["rows"] = [
         {"month": label, "count": count}
         for label, count in zip(chart["labels"], chart["values"])

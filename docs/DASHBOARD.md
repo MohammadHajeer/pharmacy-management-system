@@ -69,6 +69,37 @@ library load, summaries remain visible and canvases remain hidden.
 No-data cards show a useful empty state. The activity ledger scrolls within its
 own keyboard-focusable region rather than widening the page.
 
+### Final console presentation
+
+The connected Daily Pulse and shared 72rem workspace width are unchanged.
+Stock Health uses a 192px plot; Expiry Exposure combines a compact 144px plot
+with a scope label and separate safe-stock count. Purchase Activity uses 160px
+on desktop and 176px on mobile. Charts stack below `xl` with a 16px internal gap.
+All plots use rounded vertical columns and existing theme tokens: medium teal
+for healthy stock, amber for warning, muted red for critical, and slate for
+later expiry exposure. Purchase columns use restrained teal with a deep-teal
+featured month. No mint/pastel bar fills or progress-style tracks remain.
+
+A dashboard-local Chart.js plugin labels exact counts above inventory columns
+and the featured purchase month. Expiry plots only the expired and warning-window
+buckets on a zero-based linear scale; the final neutral bucket remains visible
+as a separate labeled batch count and in the full accessible summary. No counts
+are recalculated, truncated, or represented by a broken axis. Integer ticks,
+restrained gridlines, and bordered slate tooltips keep the plots readable.
+Server-rendered focal chips select the first populated urgent condition (out before low before
+healthy; earliest expiry bucket first), or the latest receipt month. They reuse
+existing counts without adding queries or client-side business calculations.
+Exact summaries remain visible without JavaScript; detailed stock definitions
+and monthly counts use native keyboard-accessible disclosures.
+
+The follow-up rail and ledger split 38/62 at `xl`, then stack in that order.
+Batch identifiers are secondary text, and severity is shown with small dots and
+text badges rather than full-row colored borders. The four-column ledger keeps
+amount/currency beneath the reference and status beneath the event. References
+are visually ellipsized, with full link text, a title, and wrapping on keyboard
+focus; stored identifiers and destination URLs are unchanged. All party names,
+dates, times, and timezones remain visible. Smaller screens use local scrolling.
+
 ## Verification
 
 Use isolated SQLite, never the shared Neon database, for automated tests:

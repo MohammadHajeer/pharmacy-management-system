@@ -85,6 +85,84 @@ class DashboardQueryTests(TestCase):
         self.assertTrue(context["stock_chart_data"]["has_data"])
         self.assertTrue(all(item["status"] == "Out of stock" for item in context["attention_items"] if item["group"] == "Stock"))
 
+    def test_stock_focal_chip_tracks_the_most_urgent_populated_category(self):
+        self.grant("inventory.view_medicinebatch")
+        self.batch(self.medicine("Healthy"), quantity="10")
+        for expected_index, expected_label, expected_tone in (
+            (0, "Healthy", "healthy"), (1, "Low stock", "warning"), (2, "Out of stock", "danger"),
+        ):
+            if expected_index == 1:
+                self.batch(self.medicine("Low"), quantity="1")
+            elif expected_index == 2:
+                self.medicine("Out")
+            chart = dashboard_context(self.user)["stock_chart_data"]
+            with self.subTest(label=expected_label):
+                self.assertEqual(chart["focus_index"], expected_index)
+                self.assertEqual(chart["focus"], {"label": expected_label, "value": 1, "tone": expected_tone})
+                self.assertEqual(chart["focus"]["value"], chart["values"][expected_index])
+
+    def test_expiry_focal_chip_tracks_existing_configurable_buckets(self):
+        self.grant("inventory.view_medicinebatch")
+        PharmacySettings.objects.update(expiry_warning_days=0)
+        medicine = self.medicine()
+        for days, expected_index, expected_label in ((1, 2, "1+ days"), (0, 1, "Today"), (-1, 0, "Expired")):
+            self.batch(medicine, days=days)
+            chart = dashboard_context(self.user)["expiry_chart_data"]
+            with self.subTest(label=expected_label):
+                self.assertEqual(chart["focus_index"], expected_index)
+                self.assertEqual(chart["focus"]["label"], expected_label)
+                self.assertEqual(chart["focus"]["value"], chart["values"][expected_index])
+
+    def test_expiry_safe_bucket_is_separately_labeled_and_all_counts_remain_accessible(self):
+        self.grant("inventory.view_medicinebatch")
+        medicine = self.medicine()
+        self.batch(medicine, days=100)
+        self.client.force_login(self.user)
+        for warning_days, safe_label in ((0, "1+ days"), (15, "16+ days"), (90, "91+ days")):
+            PharmacySettings.objects.update(expiry_warning_days=warning_days)
+            response = self.client.get(reverse("dashboard:home"))
+            with self.subTest(warning_days=warning_days):
+                chart = response.context["expiry_chart_data"]
+                self.assertEqual(chart["values"][-1], 1)
+                self.assertFalse(chart["horizontal"])
+                self.assertFalse(response.context["stock_chart_data"]["horizontal"])
+                self.assertContains(response, f"Beyond warning window · {safe_label}")
+                self.assertContains(response, f"{safe_label}: 1 batches.")
+                self.assertContains(response, "Expired &amp; within warning window")
+                self.assertContains(response, 'aria-describedby="expiry-exposure-data-summary expiry-exposure-data-scope"')
+
+    def test_follow_up_separates_and_escapes_batch_identifier_without_a_new_link(self):
+        self.grant("inventory.view_medicinebatch")
+        medicine = self.medicine("Medicine with a long descriptive name")
+        batch = self.batch(medicine, days=-1)
+        batch.batch_number = 'LOT-<script>alert("batch")</script>'
+        batch.save(update_fields=["batch_number"])
+        item = next(item for item in dashboard_context(self.user)["attention_items"] if item["group"] == "Expiry")
+        self.assertEqual(item["title"], medicine.name)
+        self.assertEqual(item["batch_number"], batch.batch_number)
+        self.assertNotIn("url", item)
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertContains(response, "LOT-&lt;script&gt;")
+        self.assertNotContains(response, '<script>alert("batch")</script>')
+
+    def test_ledger_retains_reference_amount_status_and_full_timestamp_in_four_columns(self):
+        self.grant("purchasing.view_purchaseinvoice")
+        reference = 'PUR-0123456789ABCDEF0123456789ABCDEF'
+        invoice = self.purchase(reference, timezone.now())
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertContains(response, f'title="{reference}"')
+        self.assertContains(response, f'>{reference}</a>')
+        self.assertContains(response, reverse("purchasing:purchase-invoice-detail", args=[invoice.pk]))
+        self.assertContains(response, "USD 42.50")
+        self.assertContains(response, "Posted")
+        self.assertContains(response, "Historical supplier")
+        self.assertContains(response, '<time datetime="')
+        self.assertContains(response, 'scope="col"', count=4)
+        self.assertContains(response, 'tabindex="0" role="region" aria-label="Recent activity ledger"')
+        self.assertContains(response, "focus:whitespace-normal focus:wrap-anywhere")
+
     def test_expiry_includes_remaining_inactive_stock_and_inclusive_boundaries(self):
         self.grant("inventory.view_medicinebatch")
         medicine = self.medicine()
@@ -188,6 +266,9 @@ class DashboardQueryTests(TestCase):
         self.assertEqual(sum(chart["values"]), 7)
         self.assertEqual(len(chart["values"]), 12)
         self.assertIn(0, chart["values"])
+        self.assertEqual(chart["focus_index"], 11)
+        self.assertEqual(chart["focus"]["value"], chart["values"][-1])
+        self.assertEqual(chart["focus"]["label"], chart["labels"][-1])
 
     def test_purchase_chart_is_omitted_without_multiple_months(self):
         self.grant("purchasing.view_purchaseinvoice")
