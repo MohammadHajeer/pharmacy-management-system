@@ -5,6 +5,24 @@
 
 ---
 
+# Introduction
+
+## Business Problem
+
+The pharmacy needs one connected and reliable system for the operational flow from supplier purchasing and batch receipt through inventory, POS sales, invoicing, payments, returns/refunds, and reporting. These activities share stock, expiry, acquisition-cost, payment, and balance data; if they are handled as disconnected workflows, the pharmacy cannot reliably preserve FEFO allocation, prevent invalid stock changes, or trace financial and inventory effects back to their source transactions. Phase 1 therefore addresses the need for a single authoritative workflow built on the repository's existing Django foundation and shared Neon/PostgreSQL database.
+
+## Business Objectives
+
+- Deliver the minimum complete supplier-to-report pharmacy workflow defined by this BRD within the approved Phase 1 scope.
+- Maintain accurate batch-aware inventory, block expired-stock sales, and allocate sale quantities using FEFO.
+- Preserve traceable inventory and financial history through source-linked stock movements, invoice snapshots, separate payments, and controlled return/refund records.
+- Represent customer receivables and supplier payables accurately through unpaid, partially paid, and paid states.
+- Enforce the approved role-based access model using the existing Django authentication, Groups, Permissions, sessions, and server-side authorization checks.
+- Produce usable invoices/receipts and basic operational and financial reports from real stored transactions.
+- Extend the existing Django 6.1 modular-monolith architecture without replacing its authentication, UI foundation, app ownership, or database conventions.
+
+---
+
 # 1. Source of Truth and Precedence
 
 The existing repository implementation is authoritative whenever this BRD conflicts with an older proposal or technical specification.
