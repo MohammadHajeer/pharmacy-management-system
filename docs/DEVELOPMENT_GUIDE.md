@@ -15,6 +15,10 @@ npm run dev
 
 `npm run dev` starts the Django development server and Tailwind watcher. The local application is available at `http://127.0.0.1:8000/`.
 
+It first builds CSS and copies the installed Chart.js browser assets. For direct
+`runserver` use or deployment, run `npm run build` before serving/collecting static
+files. See [`DASHBOARD.md`](DASHBOARD.md) for dashboard definitions and asset loading.
+
 ## Project structure
 
 ```text

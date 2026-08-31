@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import resolve, reverse
 
-from apps.dashboard import views as dashboard_views
+from . import sample_data
 
 
 class DashboardPreviewViewTests(TestCase):
@@ -28,19 +28,19 @@ class DashboardPreviewViewTests(TestCase):
         self.assertTemplateUsed(response, "dashboard_preview/index.html")
         self.assertContains(response, "Visual comparison")
 
-    def test_preview_reuses_canonical_dashboard_mock_records(self):
+    def test_preview_keeps_its_own_illustrative_records(self):
         self.client.force_login(self.user)
 
         response = self.client.get(self.preview_url)
 
-        self.assertEqual(response.context["kpis"], list(dashboard_views.SAMPLE_KPIS))
+        self.assertEqual(response.context["kpis"], list(sample_data.SAMPLE_KPIS))
         self.assertEqual(
             response.context["recent_activity"],
-            list(dashboard_views.SAMPLE_RECENT_ACTIVITY),
+            list(sample_data.SAMPLE_RECENT_ACTIVITY),
         )
         self.assertEqual(
             response.context["attention_items"],
-            list(dashboard_views.SAMPLE_ATTENTION_ITEMS),
+            list(sample_data.SAMPLE_ATTENTION_ITEMS),
         )
 
     def test_preview_matches_existing_dashboard_auth_boundary(self):

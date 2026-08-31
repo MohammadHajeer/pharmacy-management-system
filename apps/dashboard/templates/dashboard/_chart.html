@@ -1,0 +1,31 @@
+<article class="workspace-surface min-w-0 {% if not chart.horizontal %}xl:col-span-2{% endif %}" aria-labelledby="{{ chart.id }}-heading">
+  <header class="px-5 pt-5 sm:px-6">
+    <p class="operational-kicker">{{ chart.kicker }}</p>
+    <h3 id="{{ chart.id }}-heading" class="mt-1 text-lg font-semibold tracking-tight text-slate-950">{{ chart.title }}</h3>
+    <p class="mt-1 text-sm leading-6 text-slate-500">{{ chart.description }}</p>
+  </header>
+  <div class="px-5 pb-5 sm:px-6">
+    {% if chart.has_data %}
+      <div class="relative mt-4 h-56 min-w-0" data-chart-container hidden>
+        <canvas data-dashboard-chart="{{ chart.id }}" role="img" aria-labelledby="{{ chart.id }}-heading" aria-describedby="{{ chart.id }}-summary"></canvas>
+      </div>
+      {{ chart|json_script:chart.id }}
+      <p class="mt-4 text-xs leading-5 text-slate-600" id="{{ chart.id }}-summary">{{ chart.summary }}</p>
+      {% if chart.rows %}
+        <details class="mt-2 text-xs text-slate-600">
+          <summary class="cursor-pointer rounded-sm py-1 font-semibold text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600">Monthly counts</summary>
+          <table class="mt-2 w-full max-w-sm text-left tabular-nums">
+            <caption class="sr-only">Posted purchase invoices by month</caption>
+            <thead><tr class="border-b border-slate-200"><th scope="col" class="py-2 font-semibold">Month</th><th scope="col" class="py-2 text-right font-semibold">Invoices</th></tr></thead>
+            <tbody>{% for row in chart.rows %}<tr class="border-b border-slate-100"><th scope="row" class="py-1.5 font-normal">{{ row.month }}</th><td class="py-1.5 text-right">{{ row.count }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      {% endif %}
+    {% else %}
+      <div class="operational-empty mt-4">
+        <p class="text-sm font-semibold text-slate-800">{% if chart.unit == 'medicines' %}No active medicines are available yet.{% else %}No batches with remaining stock are available.{% endif %}</p>
+      </div>
+    {% endif %}
+    <p class="mt-3 text-xs leading-5 text-slate-500">{{ chart.context }}</p>
+  </div>
+</article>

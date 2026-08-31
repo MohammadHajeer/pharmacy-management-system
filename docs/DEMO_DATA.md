@@ -148,9 +148,13 @@ There are no supplier payments, sales, returns, or manual-adjustment movements.
   cause an error, not deletion, automatic repair, or adoption of ordinary records.
 - There is intentionally no reset flag or alternative random-seed namespace.
 
-The dashboard currently uses hard-coded sample KPIs/activity/alerts. This command
-does not replace that presentation data with database queries. Database-driven
-catalog, purchasing and stock lookup screens can use the seeded records now.
+The dashboard now reads inventory metrics, stock health, expiry exposure, and
+posted purchasing history directly from the database. Its stock-health totals
+include **active medicines only**, unlike the all-catalog seed summary above.
+Expiry exposure counts every batch cost layer with positive remaining quantity,
+including inactive records. Both views age naturally with the data; do not expect
+the original seed summary to stay equal to today's dashboard. See
+[`DASHBOARD.md`](DASHBOARD.md) for definitions, permissions, and frontend builds.
 
 ## Isolated verification
 

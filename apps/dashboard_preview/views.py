@@ -2,33 +2,33 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
-from apps.dashboard import views as dashboard_views
+from . import sample_data
 
 
 @never_cache
 @login_required
 def dashboard_preview_view(request):
-    """Render the isolated visual preview with the canonical dashboard mock data."""
+    """Keep the isolated visual comparison independent of the live dashboard."""
     return render(
         request,
         "dashboard_preview/index.html",
         {
             "page_context": "Dashboard preview",
             "dashboard_data_notice": (
-                "Illustrative values for the Phase 1 layout; live dashboard "
-                "queries are not connected yet."
+                "Illustrative values for visual comparison only. "
+                "Open Dashboard for live operational data."
             ),
-            "kpis": dashboard_views._visible_items(
+            "kpis": sample_data._visible_items(
                 request.user,
-                dashboard_views.SAMPLE_KPIS,
+                sample_data.SAMPLE_KPIS,
             ),
-            "recent_activity": dashboard_views._visible_items(
+            "recent_activity": sample_data._visible_items(
                 request.user,
-                dashboard_views.SAMPLE_RECENT_ACTIVITY,
+                sample_data.SAMPLE_RECENT_ACTIVITY,
             ),
-            "attention_items": dashboard_views._visible_items(
+            "attention_items": sample_data._visible_items(
                 request.user,
-                dashboard_views.SAMPLE_ATTENTION_ITEMS,
+                sample_data.SAMPLE_ATTENTION_ITEMS,
             ),
         },
     )
