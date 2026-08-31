@@ -27,7 +27,11 @@ function setup(href, { hasSearch = true, storageBlocked = false } = {}) {
       select.value = query.get("status") || "active";
     },
   });
-  const document = listeners({ querySelectorAll: () => [form], activeElement: null });
+  const navigationEvents = [];
+  const document = listeners({
+    querySelectorAll: () => [form], activeElement: null,
+    dispatchEvent(event) { navigationEvents.push(event); return true; },
+  });
   if (search) {
     search.focus = () => { document.activeElement = search; };
     search.setSelectionRange = (start, end) => { search.selectionStart = start; search.selectionEnd = end; };
@@ -45,6 +49,7 @@ function setup(href, { hasSearch = true, storageBlocked = false } = {}) {
   const timers = new Map();
   const context = vm.createContext({
     document, window, sessionStorage, URL,
+    CustomEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } },
     FormData: class {
       constructor() { this.entries = [search, select].filter(Boolean).map(({ name, value }) => [name, value]); }
       keys() { return this.entries.map(([name]) => name).values(); }
@@ -56,7 +61,7 @@ function setup(href, { hasSearch = true, storageBlocked = false } = {}) {
   vm.runInContext(script, context);
   document.emit("DOMContentLoaded");
   return {
-    search, select, form, document, window, navigations,
+    search, select, form, document, window, navigations, navigationEvents,
     advance(ms) {
       now += ms;
       for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); timer.callback(); }
@@ -91,6 +96,20 @@ test("Enter applies immediately and cancels pending debounce", () => {
   assert.equal(ui.navigations[0].searchParams.get("q"), "Supply & Co");
   assert.equal(ui.navigations[0].searchParams.has("page"), false);
   ui.advance(500);
+  assert.equal(ui.navigations.length, 1);
+});
+
+test("filters announce the final URL and respect a pending global navigation", () => {
+  const ui = setup("https://example.test/catalog/medicines/?page=2");
+  ui.search.value = "Example";
+  ui.form.emit("submit");
+  assert.equal(ui.navigationEvents[0].type, "pharmanex:before-navigate");
+  assert.equal(ui.navigationEvents[0].cancelable, true);
+  assert.equal(ui.navigationEvents[0].detail.url, ui.navigations[0].href);
+  ui.document.dispatchEvent = () => false;
+  ui.search.value = "Must not replace pending navigation";
+  ui.search.emit("input");
+  ui.advance(350);
   assert.equal(ui.navigations.length, 1);
 });
 

@@ -37,6 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (url.href === window.location.href) return;
 
+      if (!document.dispatchEvent(new CustomEvent("pharmanex:before-navigate", {
+        cancelable: true,
+        detail: { url: url.href },
+      }))) return;
+
       try {
         sessionStorage.removeItem(focusKey);
         if (search && document.activeElement === search) {

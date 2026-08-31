@@ -9,6 +9,19 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_navigation_loading_is_shared_by_dashboard_pages_only(self):
+        request = RequestFactory().get("/catalog/medicines/")
+        request.user = AnonymousUser()
+        dashboard = render_to_string("layouts/dashboard.html", request=request)
+        self.assertEqual(dashboard.count('src="/static/js/navigation-loading.js"'), 1)
+        self.assertEqual(dashboard.count('data-navigation-workspace'), 1)
+        self.assertIn('data-navigation-sidebar', dashboard)
+        self.assertIn('class="navigation-progress ', dashboard)
+        self.assertNotIn('data-navigation-pending', dashboard)
+        auth = render_to_string("layouts/auth.html", request=request)
+        self.assertNotIn('navigation-loading.js', auth)
+        self.assertNotIn('navigation-progress', auth)
+
     def test_registry_filters_have_get_fallback_and_only_show_useful_reset(self):
         for query_string, query, status, show_clear in (
             ("", "", "active", False),

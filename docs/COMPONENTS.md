@@ -18,6 +18,41 @@ Use the auth layout for login and password-related screens. It provides a center
 {% block content %}...{% endblock %}
 ```
 
+## Navigation loading
+
+The dashboard layout loads `static/js/navigation-loading.js`, includes the shared
+`components/navigation_loading.html` indicator, and marks the main workspace with
+`data-navigation-workspace`. A normal same-origin link or valid native form submit
+sets `data-navigation-pending` on the document and `aria-busy` on the workspace.
+The thin teal bar advances without claiming a real percentage; reduced motion
+uses a static bar. Workspace opacity becomes 0.85 and pointer interaction is
+blocked; sidebar links are lightly muted and repeat navigations are canceled.
+The sidebar and topbar keep their layout, and keyboard focus is not moved.
+
+Modified clicks, other browsing targets, downloads, non-HTTP/external URLs,
+same-page anchors, disabled links, and modal/button triggers are excluded.
+Canceled events are checked after dispatch. Forms retain native validation,
+submitter overrides, CSRF-protected POSTs, and existing button/dirty behavior.
+There is no page fetching, routing, or HTML replacement in this helper.
+
+Registry filters dispatch a cancelable `pharmanex:before-navigate` document event
+with `detail: { url }` immediately before their existing `location.assign` flow.
+If dispatch returns false, they must not navigate. This shares the lock without
+changing debounce, serialization, or query preservation. Other genuine scripted
+full-page navigations can use the same event. Put `data-navigation-loading="off"`
+on a link, form, submitter, or containing element for interactions handled entirely
+by a local component (such as downloads or non-navigating forms).
+
+Initialization and every `pageshow` reset the indicator and lock, including
+Back/Forward cache restoration. A 15-second safety timeout releases the UI if the
+document stays open; this is not a request timeout and never cancels the request.
+The reset event `pharmanex:navigation-reset` restores shared submitting buttons;
+those buttons also recover on canceled submits, `pageshow`, and their own timeout
+on auth pages. Dirty forms re-evaluate their current values without clearing them.
+
+Run the dependency-free frontend tests with
+`node --test apps/dashboard/tests_js/*.test.cjs`.
+
 ## Breadcrumb context
 
 Dashboard-shell views provide explicit breadcrumb labels in page context; the topbar never derives labels from route names. Keep the final item unlinked, and only provide earlier-item URLs that are real and permitted for the current user:

@@ -1,6 +1,6 @@
 {% load static %}
 
-<aside id="dashboard-sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col overflow-hidden border-r border-sidebar-800 bg-sidebar-900 text-sidebar-100 shadow-xl shadow-sidebar-950/20 transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Primary navigation">
+<aside id="dashboard-sidebar" data-navigation-sidebar class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col overflow-hidden border-r border-sidebar-800 bg-sidebar-900 text-sidebar-100 shadow-xl shadow-sidebar-950/20 transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Primary navigation">
   <div class="flex shrink-0 items-center justify-between px-5 max-lg:pr-2">
     <a href="{% url 'dashboard:home' %}" class="flex min-w-0 w-full items-center rounded-lg px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900" aria-label="Pharmanex home">
       <img src="{% static 'logo-white.png' %}" alt="Pharmanex" class="object-contain">

@@ -53,6 +53,38 @@
 }
 
 @layer components {
+  .navigation-progress {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .navigation-progress__bar {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  [data-navigation-pending] .navigation-progress {
+    visibility: visible;
+  }
+
+  [data-navigation-pending] .navigation-progress__bar {
+    animation: navigation-progress 15s ease-out forwards;
+  }
+
+  [data-navigation-pending] [data-navigation-workspace] {
+    opacity: 0.85;
+  }
+
+  [data-navigation-pending] [data-navigation-workspace],
+  [data-navigation-pending] [data-navigation-workspace] * {
+    pointer-events: none;
+  }
+
+  [data-navigation-pending] [data-navigation-sidebar] a[href] {
+    opacity: 0.85;
+    cursor: wait;
+  }
+
   /* Main workspace width matches the Settings configuration console. */
   .workspace-container {
     @apply mx-auto w-full min-w-0 max-w-6xl;
@@ -154,7 +186,19 @@
   }
 }
 
+@keyframes navigation-progress {
+  0% { transform: scaleX(0.12); }
+  6% { transform: scaleX(0.68); }
+  40% { transform: scaleX(0.85); }
+  100% { transform: scaleX(0.94); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  [data-navigation-pending] .navigation-progress__bar {
+    animation: none;
+    transform: scaleX(0.68);
+  }
+
   .app-toast {
     transition-duration: 1ms !important;
   }
