@@ -3,6 +3,8 @@ from decimal import Decimal
 from django import forms
 from django.utils import timezone
 
+from apps.core.models import PaymentMethod
+
 from .models import CustomerPayment, SupplierPayment
 
 ZERO_MONEY = Decimal("0.00")
@@ -19,6 +21,9 @@ class _PaymentFormMixin:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["payment_method"].queryset = PaymentMethod.objects.filter(
+            is_active=True
+        ).order_by("name", "id")
         if not self.is_bound and not self.initial.get("paid_at"):
             self.initial["paid_at"] = timezone.now()
 

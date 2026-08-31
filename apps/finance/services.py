@@ -183,6 +183,21 @@ def reverse_customer_payment(*, actor, payment, data=None):
             form.add_error(None, "Only a posted payment can be reversed.")
             return form, None
 
+        remaining_paid_total = _active_payments_total(
+            invoice.payments.exclude(pk=locked_payment.pk)
+        )
+        if (
+            invoice.status == SalesInvoice.Status.COMPLETED
+            and invoice.customer_id is None
+            and remaining_paid_total < invoice.grand_total
+        ):
+            form.add_error(
+                None,
+                "A payment cannot be reversed when it would leave a completed "
+                "walk-in sale with an outstanding balance.",
+            )
+            return form, None
+
         locked_payment.status = PaymentStatus.REVERSED
         locked_payment.reversed_by = actor
         locked_payment.reversed_at = timezone.now()

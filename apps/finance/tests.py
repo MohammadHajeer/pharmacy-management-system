@@ -272,6 +272,20 @@ class CustomerPaymentServiceTests(_FinanceFixtureMixin, TestCase):
         self.assertIsNone(payment)
         self.assertIn("reference", form.errors)
 
+    def test_inactive_payment_method_is_rejected(self):
+        self.payment_method.is_active = False
+        self.payment_method.save(update_fields=["is_active"])
+
+        form, payment = post_customer_payment(
+            actor=self.finance_user,
+            sales_invoice=self.sales_invoice,
+            data=self._payment_data(),
+        )
+
+        self.assertIsNone(payment)
+        self.assertIn("payment_method", form.errors)
+        self.assertEqual(CustomerPayment.objects.count(), 0)
+
     def test_zero_or_negative_amount_is_rejected(self):
         form, payment = post_customer_payment(
             actor=self.finance_user,
@@ -336,6 +350,57 @@ class CustomerPaymentServiceTests(_FinanceFixtureMixin, TestCase):
         self.assertIsNone(result)
         payment.refresh_from_db()
         self.assertEqual(payment.status, PaymentStatus.REVERSED)
+
+    def test_walk_in_payment_reversal_that_would_create_balance_is_rejected(self):
+        source_line = self.sales_invoice.lines.get()
+        walk_in_invoice = SalesInvoice.objects.create(
+            invoice_number="SAL-WALKIN-REVERSAL",
+            status=SalesInvoice.Status.COMPLETED,
+            customer=None,
+            pharmacist=self.pharmacist,
+            currency_code="USD",
+            subtotal=Decimal("100.00"),
+            grand_total=Decimal("100.00"),
+            paid_total=Decimal("100.00"),
+            balance_due=Decimal("0.00"),
+            payment_status=SalesInvoice.PaymentStatus.PAID,
+            completed_at=timezone.now(),
+        )
+        SalesInvoiceLine.objects.create(
+            sales_invoice=walk_in_invoice,
+            medicine=source_line.medicine,
+            medicine_description_snapshot=source_line.medicine_description_snapshot,
+            medicine_unit=source_line.medicine_unit,
+            unit_name_snapshot=source_line.unit_name_snapshot,
+            quantity=source_line.quantity,
+            conversion_to_base_snapshot=source_line.conversion_to_base_snapshot,
+            requested_quantity_base=source_line.requested_quantity_base,
+            unit_price=source_line.unit_price,
+            line_total=source_line.line_total,
+        )
+        payment = CustomerPayment.objects.create(
+            sales_invoice=walk_in_invoice,
+            customer=None,
+            payment_method=self.payment_method,
+            amount=Decimal("100.00"),
+            processed_by=self.finance_user,
+            paid_at=timezone.now(),
+        )
+
+        form, result = reverse_customer_payment(
+            actor=self.finance_user,
+            payment=payment,
+            data={"reversal_reason": "Entered in error."},
+        )
+
+        self.assertIsNone(result)
+        self.assertIn("__all__", form.errors)
+        payment.refresh_from_db()
+        walk_in_invoice.refresh_from_db()
+        self.assertEqual(payment.status, PaymentStatus.POSTED)
+        self.assertEqual(walk_in_invoice.paid_total, Decimal("100.00"))
+        self.assertEqual(walk_in_invoice.balance_due, Decimal("0.00"))
+        self.assertEqual(walk_in_invoice.payment_status, SalesInvoice.PaymentStatus.PAID)
 
     def test_reversal_requires_permission(self):
         _, payment = post_customer_payment(
@@ -413,6 +478,20 @@ class SupplierPaymentServiceTests(_FinanceFixtureMixin, TestCase):
         self.assertEqual(
             self.purchase_invoice.payment_status, PurchaseInvoice.PaymentStatus.PAID
         )
+
+    def test_inactive_payment_method_is_rejected(self):
+        self.payment_method.is_active = False
+        self.payment_method.save(update_fields=["is_active"])
+
+        form, payment = post_supplier_payment(
+            actor=self.finance_user,
+            purchase_invoice=self.purchase_invoice,
+            data=self._payment_data(),
+        )
+
+        self.assertIsNone(payment)
+        self.assertIn("payment_method", form.errors)
+        self.assertEqual(SupplierPayment.objects.count(), 0)
 
     def test_payment_exceeding_balance_is_rejected(self):
         post_supplier_payment(
