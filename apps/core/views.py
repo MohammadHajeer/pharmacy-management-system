@@ -13,6 +13,13 @@ from .services import (
 )
 
 
+def _settings_breadcrumbs(request, *labels):
+    settings = {"label": "Settings"}
+    if labels and request.user.has_perm("core.change_pharmacysettings"):
+        settings["url"] = reverse("core:settings")
+    return [settings, *({"label": label} for label in labels)]
+
+
 def _settings_page_context(
     form,
     *,
@@ -81,6 +88,7 @@ def _settings_page_context(
 
     return {
         "page_context": "Settings",
+        "breadcrumbs": [{"label": "Settings"}],
         "form": form,
         "selected_tax_rate": selected_tax_rate,
         "tax_rate_options": tax_rate_options,
@@ -148,7 +156,16 @@ def tax_rate_create(request):
     return render(
         request,
         "core/tax_rates/form.html",
-        {"page_context": "Add tax rate", "form": form, "is_editing": False},
+        {
+            "page_context": "Add tax rate",
+            "breadcrumbs": _settings_breadcrumbs(
+                request,
+                "Tax rates",
+                "Add tax rate",
+            ),
+            "form": form,
+            "is_editing": False,
+        },
     )
 
 
@@ -179,7 +196,16 @@ def tax_rate_edit(request, pk):
     return render(
         request,
         "core/tax_rates/form.html",
-        {"page_context": "Edit tax rate", "form": form, "is_editing": True},
+        {
+            "page_context": "Edit tax rate",
+            "breadcrumbs": _settings_breadcrumbs(
+                request,
+                "Tax rates",
+                tax_rate.name,
+            ),
+            "form": form,
+            "is_editing": True,
+        },
     )
 
 
@@ -204,7 +230,16 @@ def payment_method_create(request):
     return render(
         request,
         "core/payment_methods/form.html",
-        {"page_context": "Add payment method", "form": form, "is_editing": False},
+        {
+            "page_context": "Add payment method",
+            "breadcrumbs": _settings_breadcrumbs(
+                request,
+                "Payment methods",
+                "Add payment method",
+            ),
+            "form": form,
+            "is_editing": False,
+        },
     )
 
 
@@ -235,5 +270,14 @@ def payment_method_edit(request, pk):
     return render(
         request,
         "core/payment_methods/form.html",
-        {"page_context": "Edit payment method", "form": form, "is_editing": True},
+        {
+            "page_context": "Edit payment method",
+            "breadcrumbs": _settings_breadcrumbs(
+                request,
+                "Payment methods",
+                payment_method.name,
+            ),
+            "form": form,
+            "is_editing": True,
+        },
     )

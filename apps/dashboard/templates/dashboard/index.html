@@ -1,323 +1,177 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 
-{% block title %}Dashboard | Pharmacy Management{% endblock %}
+{% block title %}Dashboard | PHARMANEX{% endblock %}
 
 {% block content %}
-  <div class="mx-auto max-w-7xl">
-
-    {# Page introduction #}
-    <header>
-      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-primary-700">
-        Today's activity
-      </p>
-
-      <h1 class="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950">
-        Pharmacy overview
-      </h1>
-
-      <p class="mt-1 text-sm leading-6 text-slate-500">
-        Monitor today's pharmacy activity, transactions, and operational alerts.
-      </p>
+  <div class="workspace-container">
+    <header class="max-w-3xl">
+      <p class="operational-kicker">Clinical operations console</p>
+      <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Pharmacy overview</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">A focused view of current inventory, receiving activity, and operational follow-up.</p>
     </header>
 
-
-    {# Overview / KPI cards #}
-    <section class="mt-7" aria-labelledby="overview-heading">
-      <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <h2
-          id="overview-heading"
-          class="text-sm font-semibold text-slate-900"
-        >
-          Overview
-        </h2>
-
+    <section class="workspace-surface mt-7" aria-labelledby="daily-pulse-heading">
+      <header class="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div>
+          <p class="operational-kicker">Today</p>
+          <h2 id="daily-pulse-heading" class="mt-1 text-lg font-semibold tracking-tight text-slate-950">Daily Pulse</h2>
+          <p class="mt-1 text-sm leading-6 text-slate-500">The permitted measures shaping today's workload.</p>
+        </div>
         {% if dashboard_data_notice %}
-          <p class="text-xs leading-5 text-slate-400">
-            {{ dashboard_data_notice }}
-          </p>
+          <p class="max-w-md border-l-2 border-sky-300 pl-3 text-xs leading-5 text-slate-500">{{ dashboard_data_notice }}</p>
         {% endif %}
-      </div>
+      </header>
 
       {% if kpis %}
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
+        <dl class="grid gap-px border-t border-slate-200 bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
           {% for kpi in kpis %}
-            <article
-              class="group relative min-h-40 overflow-hidden rounded-2xl border p-5 transition duration-200 hover:-translate-y-0.5
-              {% if forloop.counter == 1 %}
-                border-primary-100 bg-primary-50/80
-              {% elif forloop.counter == 2 %}
-                border-amber-100 bg-amber-50/75
-              {% elif forloop.counter == 3 %}
-                border-rose-100 bg-rose-50/75
-              {% else %}
-                border-sky-100 bg-sky-50/75
-              {% endif %}"
-            >
-              {# Decorative shape #}
-              <div
-                class="absolute -right-8 -top-8 size-28 rounded-full bg-white/50 transition-transform duration-300 group-hover:scale-110"
-                aria-hidden="true"
-              ></div>
-
-              <div class="relative flex h-full flex-col">
-                <div class="flex items-center justify-between gap-3">
-                  <p
-                    class="text-[11px] font-semibold uppercase tracking-widest
-                    {% if forloop.counter == 1 %}
-                      text-primary-700
-                    {% elif forloop.counter == 2 %}
-                      text-amber-700
-                    {% elif forloop.counter == 3 %}
-                      text-rose-700
-                    {% else %}
-                      text-sky-700
-                    {% endif %}"
-                  >
-                    {{ kpi.label }}
-                  </p>
-
-                  <span
-                    class="size-2.5 rounded-full
-                    {% if forloop.counter == 1 %}
-                      bg-primary-500
-                    {% elif forloop.counter == 2 %}
-                      bg-amber-400
-                    {% elif forloop.counter == 3 %}
-                      bg-rose-400
-                    {% else %}
-                      bg-sky-400
-                    {% endif %}"
-                    aria-hidden="true"
-                  ></span>
+            <div class="min-h-36 bg-white px-5 py-5 sm:px-6">
+              <div class="flex items-start gap-3">
+                <span class="mt-0.5 h-8 w-1 shrink-0 rounded-status {% if kpi.tone == 'destructive' %}bg-red-500{% elif kpi.tone == 'warning' %}bg-amber-400{% else %}bg-slate-300{% endif %}" aria-hidden="true"></span>
+                <div class="min-w-0">
+                  <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] {% if kpi.tone == 'destructive' %}text-red-700{% elif kpi.tone == 'warning' %}text-amber-800{% else %}text-slate-500{% endif %}">{{ kpi.label }}</dt>
+                  <dd class="mt-3 text-2xl font-semibold tracking-tight text-slate-950 tabular-nums">{{ kpi.value }}</dd>
+                  {% if kpi.context %}<p class="mt-2 text-xs leading-5 text-slate-500">{{ kpi.context }}</p>{% endif %}
                 </div>
-
-                <p class="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
-                  {{ kpi.value }}
-                </p>
-
-                {% if kpi.context %}
-                  <p class="mt-auto pt-3 text-xs leading-5 text-slate-500">
-                    {{ kpi.context }}
-                  </p>
-                {% endif %}
               </div>
-            </article>
+            </div>
           {% endfor %}
-
-        </div>
-
+        </dl>
       {% else %}
-        <div
-          class="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-10 text-center"
-        >
-          <p class="text-sm font-semibold text-slate-700">
-            No summary metrics are available.
-          </p>
-
-          <p class="mt-1 text-sm text-slate-500">
-            Your assigned permissions do not currently include dashboard metric data.
-          </p>
+        <div class="border-t border-slate-200 p-4 sm:p-5">
+          <div class="operational-empty">
+            <p class="text-sm font-semibold text-slate-800">No daily measures are available.</p>
+            <p class="mt-1 text-sm leading-6 text-slate-500">This account does not currently have permission to view dashboard metric data. Operational measures will appear here when access is assigned.</p>
+          </div>
         </div>
       {% endif %}
     </section>
 
+    {% if charts %}
+      <section class="mt-6" aria-labelledby="analytics-heading">
+        <h2 id="analytics-heading" class="mb-3 text-sm font-semibold text-slate-700">Operational Analytics</h2>
+        <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+          {% for chart in charts %}
+            {% include "dashboard/_chart.html" with chart=chart only %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
 
-    {# Lower dashboard #}
-    <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,1fr)]">
-
-      {# Recent activity #}
-      <section
-        class="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white"
-        aria-labelledby="recent-activity-heading"
-      >
-        <header class="flex items-start justify-between gap-4 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
+    <div class="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(19rem,0.65fr)_minmax(0,1.55fr)]">
+      <section class="workspace-surface border-l-4 border-l-amber-500" aria-labelledby="attention-heading">
+        <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-6">
           <div>
-            <h2
-              id="recent-activity-heading"
-              class="text-base font-semibold tracking-tight text-slate-950"
-            >
-              Recent Activity
-            </h2>
-
-            <p class="mt-1 text-sm leading-6 text-slate-500">
-              Latest permitted sales, purchasing, and payment activity.
-            </p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Follow-up queue</p>
+            <h2 id="attention-heading" class="mt-1 text-lg font-semibold tracking-tight text-slate-950">Attention Required</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">Up to three urgent stock and three expiry records. Empty stock comes first; expiry is oldest first.</p>
           </div>
+          {% if attention_items %}
+            <span class="inline-flex min-w-7 items-center justify-center rounded-status bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200 tabular-nums" aria-label="{{ attention_items|length }} attention items">{{ attention_items|length }}</span>
+          {% endif %}
+        </header>
 
-          <span
-            class="hidden rounded-full bg-primary-50 px-3 py-1.5 text-[11px] font-semibold text-primary-700 sm:inline-flex"
-          >
-            Latest
-          </span>
+        {% if attention_items %}
+          {% regroup attention_items by group as attention_groups %}
+          <div class="divide-y divide-slate-200">
+            {% for attention_group in attention_groups %}
+              <section aria-labelledby="attention-group-{{ attention_group.grouper|slugify }}">
+                <header class="flex items-center gap-2 bg-slate-50/80 px-5 py-2.5 sm:px-6">
+                  <span class="text-slate-500" aria-hidden="true">
+                    {% if attention_group.grouper == "Stock" %}
+                      {% include "components/icon.html" with name="inventory" class="size-4" only %}
+                    {% elif attention_group.grouper == "Expiry" %}
+                      {% include "components/icon.html" with name="medicines" class="size-4" only %}
+                    {% else %}
+                      {% include "components/icon.html" with name="payments" class="size-4" only %}
+                    {% endif %}
+                  </span>
+                  <h3 id="attention-group-{{ attention_group.grouper|slugify }}" class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">{{ attention_group.grouper }}</h3>
+                </header>
+                <ul class="divide-y divide-slate-100" role="list">
+                  {% for item in attention_group.list %}
+                    <li class="relative px-5 py-3.5 sm:px-6">
+                      <span class="absolute inset-y-3 left-0 w-0.5 {% if item.status_variant == 'destructive' %}bg-red-500{% elif item.status_variant == 'warning' %}bg-amber-400{% else %}bg-primary-500{% endif %}" aria-hidden="true"></span>
+                      <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="break-words text-sm font-semibold text-slate-900">{% if item.url %}<a href="{{ item.url }}" class="registry-link">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}</p>
+                          <p class="mt-1 text-xs leading-5 text-slate-500">{{ item.detail }}</p>
+                        </div>
+                        <div class="shrink-0">{% include "components/badge.html" with text=item.status variant=item.status_variant only %}</div>
+                      </div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </section>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-4 sm:p-5">
+            <div class="operational-empty">
+              <p class="text-sm font-semibold text-slate-800">No attention items are available.</p>
+              <p class="mt-1 text-sm leading-6 text-slate-500">There are no stock or expiry records requiring attention within your permitted data.</p>
+            </div>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="workspace-surface min-w-0" aria-labelledby="recent-activity-heading">
+        <header class="border-b border-slate-200 px-5 py-5 sm:px-6">
+          <p class="operational-kicker">Operational ledger</p>
+          <h2 id="recent-activity-heading" class="mt-1 text-lg font-semibold tracking-tight text-slate-950">Recent Activity</h2>
+          <p class="mt-1 text-sm leading-6 text-slate-500">The five latest posted purchase receipts you can access.</p>
         </header>
 
         {% if recent_activity %}
-          <div class="overflow-x-auto px-2 pb-2 sm:px-3">
-            <table class="min-w-full text-left text-sm">
-              <caption class="sr-only">
-                Recent pharmacy activity available to the signed-in user
-              </caption>
-
-              <thead>
-                <tr
-                  class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400"
-                >
-                  <th scope="col" class="px-3 py-3 sm:px-4">
-                    Activity
-                  </th>
-
-                  <th scope="col" class="px-3 py-3">
-                    Time
-                  </th>
-
-                  <th scope="col" class="px-3 py-3 text-right">
-                    Amount
-                  </th>
-
-                  <th scope="col" class="px-3 py-3 text-right sm:px-4">
-                    Status
-                  </th>
+          <div class="ledger-scroll" tabindex="0" role="region" aria-label="Recent activity ledger">
+            <table class="min-w-180 w-full text-left text-sm">
+              <caption class="sr-only">Recent pharmacy activity available to the signed-in user</caption>
+              <thead class="bg-slate-50/80">
+                <tr class="text-[10px] font-semibold uppercase tracking-[0.11em] text-slate-500">
+                  <th scope="col" class="px-5 py-2.5 sm:px-6">Reference</th>
+                  <th scope="col" class="px-4 py-2.5">Event</th>
+                  <th scope="col" class="px-4 py-2.5">Party</th>
+                  <th scope="col" class="px-4 py-2.5">Time</th>
+                  <th scope="col" class="px-4 py-2.5 text-right">Amount</th>
+                  <th scope="col" class="px-5 py-2.5 text-right sm:px-6">Status</th>
                 </tr>
               </thead>
-
-              <tbody>
+              <tbody class="divide-y divide-slate-100">
                 {% for item in recent_activity %}
-                  <tr
-                    class="group border-t border-slate-100 transition-colors hover:bg-primary-50/40"
-                  >
-                    <td class="rounded-l-xl px-3 py-4 sm:px-4">
-                      <div class="flex items-center gap-3">
-
-                        <span
-                          class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-50"
-                          aria-hidden="true"
-                        >
-                          <span class="size-2 rounded-full bg-primary-500"></span>
-                        </span>
-
-                        <div class="min-w-0">
-                          <p class="truncate font-semibold text-slate-900">
-                            {{ item.activity }}
-                          </p>
-
-                          <p class="mt-0.5 whitespace-nowrap text-xs text-slate-400">
-                            {{ item.reference }} · {{ item.party }}
-                          </p>
-                        </div>
-
+                  <tr class="transition-colors hover:bg-slate-50/80">
+                    <td class="whitespace-nowrap px-5 py-3.5 text-xs font-semibold text-primary-700 tabular-nums sm:px-6"><a href="{{ item.url }}" class="registry-link">{{ item.reference }}</a></td>
+                    <td class="whitespace-nowrap px-4 py-3.5">
+                      <div class="flex items-center gap-2.5">
+                        <span class="flex size-7 shrink-0 items-center justify-center rounded-control bg-slate-100 text-slate-600" aria-hidden="true">{% include "components/icon.html" with name=item.icon class="size-3.5" only %}</span>
+                        <span class="font-semibold text-slate-900">{{ item.activity }}</span>
                       </div>
                     </td>
-
-                    <td class="whitespace-nowrap px-3 py-4 text-slate-500">
-                      {{ item.when }}
-                    </td>
-
-                    <td class="whitespace-nowrap px-3 py-4 text-right font-semibold text-slate-900">
-                      {{ item.amount }}
-                    </td>
-
-                    <td class="rounded-r-xl whitespace-nowrap px-3 py-4 text-right sm:px-4">
-                      {% include "components/badge.html" with text=item.status variant=item.status_variant only %}
-                    </td>
+                    <td class="whitespace-nowrap px-4 py-3.5 text-slate-600">{{ item.party }}</td>
+                    <td class="whitespace-nowrap px-4 py-3.5 text-slate-500 tabular-nums"><time datetime="{{ item.when|date:'c' }}">{{ item.when|date:"d M Y, H:i T" }}</time></td>
+                    <td class="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-slate-900 tabular-nums">{{ item.amount }}</td>
+                    <td class="whitespace-nowrap px-5 py-3.5 text-right sm:px-6">{% include "components/badge.html" with text=item.status variant=item.status_variant only %}</td>
                   </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
-
         {% else %}
-          <div class="px-5 py-12 text-center sm:px-6">
-            <p class="text-sm font-semibold text-slate-700">
-              No recent activity is available.
-            </p>
-
-            <p class="mt-1 text-sm leading-6 text-slate-500">
-              Activity will appear here when permitted transaction data is connected.
-            </p>
+          <div class="p-4 sm:p-5">
+            <div class="operational-empty">
+              <p class="text-sm font-semibold text-slate-800">No recent activity is available.</p>
+              <p class="mt-1 text-sm leading-6 text-slate-500">No posted purchase receipts are available within your permitted data.</p>
+            </div>
           </div>
         {% endif %}
       </section>
-
-
-      {# Attention required #}
-      <section
-        class="overflow-hidden rounded-2xl border border-amber-100/80 bg-amber-50/40"
-        aria-labelledby="attention-heading"
-      >
-        <header class="flex items-start justify-between gap-4 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
-          <div>
-            <h2
-              id="attention-heading"
-              class="text-base font-semibold tracking-tight text-slate-950"
-            >
-              Attention Required
-            </h2>
-
-            <p class="mt-1 text-sm leading-6 text-slate-500">
-              Operational items that may need follow-up.
-            </p>
-          </div>
-
-          {% if attention_items %}
-            <span
-              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-100"
-              aria-label="{{ attention_items|length }} attention items"
-            >
-              {{ attention_items|length }}
-            </span>
-          {% endif %}
-        </header>
-
-        {% if attention_items %}
-          <ul class="space-y-2 px-3 pb-3 sm:px-4 sm:pb-4" role="list">
-            {% for item in attention_items %}
-              <li
-                class="rounded-xl border border-white/90 bg-white/85 p-4 transition-colors hover:bg-white"
-              >
-                <div class="flex items-start gap-3">
-
-                  <span
-                    class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-50 ring-1 ring-inset ring-amber-100"
-                    aria-hidden="true"
-                  >
-                    <span class="size-2 rounded-full bg-amber-500"></span>
-                  </span>
-
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-start justify-between gap-3">
-                      <p class="truncate text-sm font-semibold text-slate-900">
-                        {{ item.title }}
-                      </p>
-
-                      <div class="shrink-0">
-                        {% include "components/badge.html" with text=item.status variant=item.status_variant only %}
-                      </div>
-                    </div>
-
-                    <p class="mt-1 text-xs leading-5 text-slate-500">
-                      {{ item.detail }}
-                    </p>
-                  </div>
-
-                </div>
-              </li>
-            {% endfor %}
-          </ul>
-
-        {% else %}
-          <div class="px-5 py-12 text-center sm:px-6">
-            <p class="text-sm font-semibold text-slate-700">
-              No attention items are available.
-            </p>
-
-            <p class="mt-1 text-sm leading-6 text-slate-500">
-              Alerts will appear here when permitted operational data is connected.
-            </p>
-          </div>
-        {% endif %}
-      </section>
-
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% if charts %}
+    <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}" defer></script>
+    <script src="{% static 'js/dashboard-charts.js' %}" defer></script>
+  {% endif %}
 {% endblock %}

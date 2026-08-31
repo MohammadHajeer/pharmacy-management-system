@@ -411,6 +411,7 @@ class CoreSettingsViewTests(TestCase):
         response = self.client.get(reverse("core:settings"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["breadcrumbs"], [{"label": "Settings"}])
         self.assertContains(response, "Pharmacy information")
         self.assertContains(response, "Business configuration")
         self.assertContains(response, "Tax rates")
@@ -427,12 +428,112 @@ class CoreSettingsViewTests(TestCase):
         self.assertContains(response, "data-custom-select-trigger", html=False)
         self.assertContains(response, "data-dirty-form")
         self.assertContains(response, "data-dirty-submit")
+        self.assertContains(response, "data-dirty-indicator")
+        self.assertContains(response, "data-pristine-indicator")
+        self.assertContains(response, "data-dirty-surface")
+        self.assertContains(response, 'href="#pharmacy-information"', html=False)
+        self.assertContains(response, "Rate / code")
+        self.assertContains(response, "Identifier")
         self.assertRegex(
             response.content.decode(),
             r'<button type="submit" disabled[^>]+data-dirty-submit',
         )
         self.assertContains(response, 'data-modal-open="tax-rate-create"')
         self.assertContains(response, 'data-modal-open="payment-method-create"')
+        self.assertContains(response, 'aria-current="page" title="Settings"', html=False)
+        self.assertContains(response, "data-account-identity", html=False)
+        self.assertContains(response, "Owner / Admin")
+        self.assertNotContains(response, "Pharmacy operations")
+        self.assertContains(
+            response,
+            'id="tax-rate-create-is-active"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="payment-method-create-requires-reference"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="payment-method-create-is-active"',
+            html=False,
+        )
+
+    def test_nested_settings_breadcrumb_link_respects_settings_permission(self):
+        response = self.client.get(reverse("core:tax-rate-create"))
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('href="/settings/"', breadcrumb_html)
+        self.assertIn("Tax rates", breadcrumb_html)
+        self.assertIn("Add tax rate", breadcrumb_html)
+
+        self.client.force_login(self.add_only_user)
+        response = self.client.get(reverse("core:tax-rate-create"))
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('href="/settings/"', breadcrumb_html)
+        self.assertIn("Settings", breadcrumb_html)
+
+    def test_snapshot_keeps_saved_defaults_after_invalid_post(self):
+        tax = TaxRate.objects.create(
+            code="VAT", name="VAT", rate_percent="11.0000", is_active=False,
+        )
+        PharmacySettings.objects.create(
+            pharmacy_name="Saved Pharmacy", currency_code="USD",
+            default_tax_rate=tax, expiry_warning_days=30,
+            default_low_stock_threshold="20.125",
+        )
+
+        for response in (
+            self.client.get(reverse("core:settings")),
+            self.client.post(reverse("core:settings"), pharmacy_settings_data(
+                currency_code="US1", expiry_warning_days="60",
+                default_low_stock_threshold="10.000",
+            )),
+        ):
+            with self.subTest(bound=response.context["form"].is_bound):
+                snapshot = response.content.decode().split(
+                    'aria-label="Configuration snapshot"', 1,
+                )[1].split("</section>", 1)[0]
+                self.assertIn("USD", snapshot)
+                self.assertIn("VAT · 11%", snapshot)
+                self.assertIn("(Inactive)", snapshot)
+                self.assertIn("30 days", snapshot)
+                self.assertIn("20.125", snapshot)
+                self.assertNotIn("US1", snapshot)
+                self.assertContains(response, "Saved default", count=2)
+
+        self.assertContains(response, 'value="US1"')
+        self.assertContains(response, 'value="60"')
+        self.assertIn("currency_code", response.context["form"].errors)
+
+    def test_snapshot_handles_unconfigured_settings_and_zero_thresholds(self):
+        response = self.client.get(reverse("core:settings"))
+        self.assertContains(response, "No settings saved yet")
+        self.assertContains(response, "Not configured", count=3)
+        self.assertContains(response, "No default tax</dd>")
+
+        PharmacySettings.objects.create(
+            pharmacy_name="Saved Pharmacy", currency_code="USD",
+            expiry_warning_days=0, default_low_stock_threshold="0.000",
+        )
+        response = self.client.get(reverse("core:settings"))
+        self.assertNotContains(response, "Not configured")
+        self.assertContains(response, "0 days")
+        self.assertContains(response, "No default tax</dd>")
+        snapshot = response.content.decode().split(
+            'aria-label="Configuration snapshot"', 1,
+        )[1].split("</section>", 1)[0]
+        self.assertIn('>0 <span', snapshot)
 
     def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
         self.client.logout()

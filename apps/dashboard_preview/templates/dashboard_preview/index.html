@@ -1,0 +1,1049 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="View-only pharmacy dashboard design comparison">
+    <title>Dashboard Preview | Pharmacy Management</title>
+    <link rel="icon" href="{% static 'logo-icon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <style>
+      :root {
+        --preview-bg: #eef5fa;
+        --preview-surface: #ffffff;
+        --preview-surface-muted: #f8fbfd;
+        --preview-primary: #128ed4;
+        --preview-primary-strong: #087fc4;
+        --preview-primary-soft: #dff2fc;
+        --preview-primary-pale: #cfeefc;
+        --preview-primary-mid: #b8e5fb;
+        --preview-primary-border: #cce8f8;
+        --preview-primary-surface: #f8fdff;
+        --preview-sky: #69cef5;
+        --preview-text: #17233b;
+        --preview-text-secondary: #445269;
+        --preview-text-tertiary: #56637a;
+        --preview-muted: #748196;
+        --preview-muted-strong: #637087;
+        --preview-muted-control: #657187;
+        --preview-muted-soft: #98a4b4;
+        --preview-muted-faint: #8a96a8;
+        --preview-border: #e2ebf3;
+        --preview-line: #dce5ec;
+        --preview-success: #40c98a;
+        --preview-success-soft: #e4fbf1;
+        --preview-success-strong: #199b62;
+        --preview-warning: #eead57;
+        --preview-warning-soft: #fff5e5;
+        --preview-warning-strong: #c17a24;
+        --preview-danger: #f18476;
+        --preview-danger-soft: #fff0ed;
+        --preview-danger-strong: #dc6557;
+        --preview-mint-pale: #e3f8f1;
+        --preview-mint: #99e4ca;
+        --preview-radius: 16px;
+        --preview-shadow: 0 2px 8px rgb(32 73 108 / 0.07), 0 16px 34px rgb(32 73 108 / 0.04);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        background: var(--preview-bg);
+        color: var(--preview-text);
+        font-family: ui-rounded, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .preview-shell {
+        display: grid;
+        width: 100%;
+        min-height: 100dvh;
+        grid-template-columns: 236px minmax(0, 1fr);
+      }
+
+      .preview-visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+
+      .preview-sidebar {
+        position: sticky;
+        top: 0;
+        min-width: 0;
+        height: 100dvh;
+        overflow-y: auto;
+        border-right: 1px solid var(--preview-border);
+        background: var(--preview-surface);
+        padding: 24px 14px;
+      }
+
+      .preview-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 0 12px;
+        color: var(--preview-text);
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .preview-brand img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+      }
+
+      .preview-nav {
+        margin-top: 34px;
+      }
+
+      .preview-nav__section {
+        margin: 22px 14px 8px;
+        color: var(--preview-muted-soft);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .preview-nav__item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 42px;
+        margin: 3px 0;
+        border-radius: 12px;
+        padding: 9px 14px;
+        color: var(--preview-text-tertiary);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .preview-nav__item svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .preview-nav__item--active {
+        background: var(--preview-primary-soft);
+        color: var(--preview-primary-strong);
+      }
+
+      .preview-main {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 18px clamp(16px, 2.4vw, 34px) 38px;
+      }
+
+      .preview-topbar {
+        display: flex;
+        min-height: 64px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border: 1px solid var(--preview-border);
+        border-radius: var(--preview-radius);
+        background: var(--preview-surface);
+        padding: 10px 14px 10px 18px;
+        box-shadow: var(--preview-shadow);
+      }
+
+      .preview-topbar__context {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .preview-menu-glyph {
+        display: grid;
+        width: 24px;
+        gap: 4px;
+      }
+
+      .preview-menu-glyph span {
+        display: block;
+        width: 14px;
+        height: 1.5px;
+        border-radius: 999px;
+        background: var(--preview-muted);
+      }
+
+      .preview-context-label {
+        overflow: hidden;
+        color: var(--preview-muted);
+        font-size: 12px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .preview-topbar__tools {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 9px;
+      }
+
+      .preview-search {
+        display: flex;
+        width: min(260px, 24vw);
+        min-height: 38px;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--preview-border);
+        border-radius: 999px;
+        background: var(--preview-surface);
+        padding: 0 14px;
+      }
+
+      .preview-search::before {
+        width: 12px;
+        height: 12px;
+        flex: 0 0 auto;
+        border: 1.8px solid var(--preview-muted-strong);
+        border-radius: 50%;
+        box-shadow: 7px 7px 0 -5px var(--preview-muted-strong);
+        content: "";
+      }
+
+      .preview-search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--preview-muted);
+        font-size: 12px;
+      }
+
+      .preview-icon-button,
+      .preview-action {
+        min-height: 38px;
+        border: 0;
+        border-radius: 10px;
+        cursor: default;
+      }
+
+      .preview-icon-button {
+        width: 38px;
+        background: var(--preview-surface-muted);
+        color: var(--preview-muted-strong);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .preview-action {
+        background: var(--preview-primary);
+        padding: 0 15px;
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .preview-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        padding-left: 4px;
+      }
+
+      .preview-avatar {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 50%;
+        background: linear-gradient(145deg, var(--preview-primary-soft), var(--preview-primary-mid));
+        color: var(--preview-primary-strong);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .preview-user__name {
+        max-width: 120px;
+        overflow: hidden;
+        font-size: 12px;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .preview-user__role {
+        color: var(--preview-muted);
+        font-size: 10px;
+      }
+
+      .preview-content {
+        width: min(100%, 1500px);
+        min-width: 0;
+        max-width: 100%;
+        margin: 20px auto 0;
+      }
+
+      .preview-comparison-label {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border: 1px solid var(--preview-primary-border);
+        border-radius: 999px;
+        background: var(--preview-primary-surface);
+        padding: 0 11px;
+        color: var(--preview-primary-strong);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .preview-overview {
+        display: grid;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        grid-template-columns: minmax(0, 1.35fr) minmax(420px, 1fr);
+        gap: 18px;
+        margin-top: 12px;
+      }
+
+      .preview-card {
+        min-width: 0;
+        max-width: 100%;
+        border: 1px solid var(--preview-border);
+        border-radius: var(--preview-radius);
+        background: var(--preview-surface);
+        box-shadow: var(--preview-shadow);
+      }
+
+      .preview-welcome {
+        position: relative;
+        min-height: 284px;
+        overflow: hidden;
+        padding: clamp(24px, 3vw, 36px);
+      }
+
+      .preview-welcome::after {
+        position: absolute;
+        right: -80px;
+        bottom: -140px;
+        width: 340px;
+        height: 340px;
+        border: 48px solid var(--preview-primary-pale);
+        border-radius: 50%;
+        content: "";
+      }
+
+      .preview-welcome::before {
+        position: absolute;
+        right: 112px;
+        bottom: 38px;
+        width: 118px;
+        height: 118px;
+        border-radius: 36% 64% 61% 39% / 45% 40% 60% 55%;
+        background: linear-gradient(145deg, var(--preview-mint-pale), var(--preview-mint));
+        content: "";
+        transform: rotate(-12deg);
+      }
+
+      .preview-welcome__content {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 620px;
+      }
+
+      .preview-eyebrow {
+        margin: 0;
+        color: var(--preview-primary-strong);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .preview-welcome h1 {
+        max-width: 620px;
+        margin: 8px 0 0;
+        font-size: clamp(25px, 2.5vw, 38px);
+        line-height: 1.16;
+        letter-spacing: -0.035em;
+      }
+
+      .preview-welcome__copy {
+        max-width: 590px;
+        margin: 10px 0 0;
+        color: var(--preview-muted);
+        font-size: 13px;
+      }
+
+      .preview-quick-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 26px;
+      }
+
+      .preview-quick-actions button {
+        min-height: 38px;
+        border: 1px solid var(--preview-border);
+        border-radius: 10px;
+        background: white;
+        padding: 0 14px;
+        color: var(--preview-text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .preview-quick-actions button:first-child {
+        border-color: var(--preview-primary);
+        background: var(--preview-primary);
+        color: white;
+      }
+
+      .preview-notice {
+        margin: 22px 0 0;
+        color: var(--preview-muted-faint);
+        font-size: 11px;
+        overflow-wrap: anywhere;
+      }
+
+      .preview-kpis {
+        display: grid;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .preview-kpi {
+        min-height: 133px;
+        padding: 20px;
+      }
+
+      .preview-kpi__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .preview-kpi__label {
+        margin: 0;
+        color: var(--preview-text-secondary);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .preview-kpi__value {
+        margin: 0;
+        color: var(--preview-text);
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      .preview-kpi__context {
+        margin: 4px 0 0;
+        color: var(--preview-muted);
+        font-size: 11px;
+      }
+
+      .preview-spark {
+        display: flex;
+        height: 34px;
+        align-items: end;
+        gap: 6px;
+        margin-top: 14px;
+      }
+
+      .preview-spark span {
+        width: 7px;
+        border-radius: 999px;
+        background: var(--preview-line);
+      }
+
+      .preview-spark span::after {
+        display: block;
+        width: 100%;
+        height: 35%;
+        margin-top: 65%;
+        border-radius: inherit;
+        background: var(--preview-primary);
+        content: "";
+      }
+
+      .preview-spark span:nth-child(1) { height: 22px; }
+      .preview-spark span:nth-child(2) { height: 31px; }
+      .preview-spark span:nth-child(3) { height: 25px; }
+      .preview-spark span:nth-child(4) { height: 29px; }
+      .preview-spark span:nth-child(5) { height: 34px; }
+      .preview-spark span:nth-child(6) { height: 25px; }
+      .preview-spark span:nth-child(7) { height: 30px; }
+
+      .preview-lower {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .preview-panel {
+        padding: 22px;
+      }
+
+      .preview-panel__header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .preview-panel h2 {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
+      }
+
+      .preview-panel__subtitle {
+        margin: 4px 0 0;
+        color: var(--preview-muted);
+        font-size: 11px;
+      }
+
+      .preview-select {
+        min-height: 34px;
+        border: 1px solid var(--preview-border);
+        border-radius: 9px;
+        background: white;
+        padding: 0 11px;
+        color: var(--preview-muted-control);
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .preview-chart {
+        position: relative;
+        height: 228px;
+        overflow: hidden;
+        border-left: 1px solid var(--preview-border);
+        border-bottom: 1px solid var(--preview-border);
+        background-image:
+          linear-gradient(to right, transparent calc(25% - 1px), var(--preview-border) 25%, transparent calc(25% + 1px)),
+          linear-gradient(to right, transparent calc(50% - 1px), var(--preview-border) 50%, transparent calc(50% + 1px)),
+          linear-gradient(to right, transparent calc(75% - 1px), var(--preview-border) 75%, transparent calc(75% + 1px)),
+          linear-gradient(to bottom, transparent calc(33.33% - 1px), var(--preview-border) 33.33%, transparent calc(33.33% + 1px)),
+          linear-gradient(to bottom, transparent calc(66.66% - 1px), var(--preview-border) 66.66%, transparent calc(66.66% + 1px));
+      }
+
+      .preview-chart__line {
+        position: absolute;
+        inset: auto -8% 22% -8%;
+        height: 74%;
+        border: 3px solid var(--preview-primary);
+        border-color: var(--preview-primary) transparent transparent transparent;
+        border-radius: 48% 55% 0 0;
+        transform: rotate(-4deg);
+      }
+
+      .preview-chart__line--soft {
+        inset: auto -10% 8% 2%;
+        height: 58%;
+        border-color: var(--preview-sky) transparent transparent transparent;
+        border-radius: 56% 42% 0 0;
+        transform: rotate(3deg);
+      }
+
+      .preview-chart__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin-top: 14px;
+        color: var(--preview-muted);
+        font-size: 11px;
+      }
+
+      .preview-chart__legend span::before {
+        display: inline-block;
+        width: 16px;
+        height: 3px;
+        margin-right: 7px;
+        border-radius: 999px;
+        background: var(--preview-primary);
+        content: "";
+        vertical-align: middle;
+      }
+
+      .preview-chart__legend span:last-child::before {
+        background: var(--preview-sky);
+      }
+
+      .preview-attention-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .preview-attention-item {
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 11px;
+        align-items: center;
+        border-radius: 12px;
+        background: var(--preview-surface-muted);
+        padding: 11px;
+      }
+
+      .preview-attention-icon {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--preview-warning-soft);
+        color: var(--preview-warning-strong);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .preview-attention-item h3 {
+        overflow: hidden;
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .preview-attention-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .preview-attention-item p {
+        margin: 2px 0 0;
+        color: var(--preview-muted);
+        font-size: 10px;
+      }
+
+      .preview-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 0 8px;
+        font-size: 10px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .preview-badge--success {
+        background: var(--preview-success-soft);
+        color: var(--preview-success-strong);
+      }
+
+      .preview-badge--warning,
+      .preview-badge--secondary {
+        background: var(--preview-warning-soft);
+        color: var(--preview-warning-strong);
+      }
+
+      .preview-badge--destructive {
+        background: var(--preview-danger-soft);
+        color: var(--preview-danger-strong);
+      }
+
+      .preview-table-card {
+        margin-top: 18px;
+        overflow: hidden;
+      }
+
+      .preview-table-card .preview-panel__header {
+        margin: 0;
+        padding: 22px 22px 10px;
+      }
+
+      .preview-table-wrap {
+        overflow-x: auto;
+        padding: 0 16px 16px;
+      }
+
+      .preview-table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      .preview-table th {
+        padding: 13px 12px;
+        color: var(--preview-muted-strong);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .preview-table td {
+        border-top: 1px solid var(--preview-border);
+        padding: 14px 12px;
+        color: var(--preview-text-tertiary);
+        font-size: 12px;
+      }
+
+      .preview-activity-name {
+        color: var(--preview-text);
+        font-weight: 700;
+      }
+
+      .preview-reference {
+        display: inline-flex;
+        min-width: 70px;
+        color: var(--preview-primary-strong);
+        font-weight: 800;
+      }
+
+      .preview-amount {
+        color: var(--preview-text);
+        font-weight: 800;
+      }
+
+      .preview-empty {
+        border: 1px dashed var(--preview-border);
+        border-radius: 12px;
+        padding: 32px 18px;
+        color: var(--preview-muted);
+        text-align: center;
+      }
+
+      @media (max-width: 1180px) {
+        .preview-overview,
+        .preview-lower {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-welcome {
+          min-height: 250px;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .preview-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-sidebar {
+          position: static;
+          max-width: 100%;
+          height: auto;
+          overflow: hidden;
+          padding: 12px 14px;
+        }
+
+        .preview-brand {
+          min-height: 36px;
+        }
+
+        .preview-nav {
+          display: flex;
+          gap: 7px;
+          margin-top: 10px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+
+        .preview-nav__section {
+          display: none;
+        }
+
+        .preview-nav__item {
+          flex: 0 0 auto;
+          min-height: 38px;
+          margin: 0;
+          padding: 8px 11px;
+        }
+
+        .preview-main {
+          width: 100vw;
+          max-width: 100vw;
+          padding-top: 12px;
+        }
+
+        .preview-topbar,
+        .preview-content {
+          width: calc(100vw - 24px);
+          max-width: calc(100vw - 24px);
+        }
+
+        .preview-topbar {
+          align-items: flex-start;
+        }
+
+        .preview-search,
+        .preview-icon-button,
+        .preview-action,
+        .preview-user__details,
+        .preview-context-label {
+          display: none;
+        }
+
+        .preview-kpis {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-quick-actions button {
+          flex: 1 1 140px;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .preview-main {
+          padding-inline: 12px;
+        }
+
+        .preview-topbar {
+          min-height: 58px;
+        }
+
+        .preview-action {
+          display: none;
+        }
+
+        .preview-icon-button {
+          display: none;
+        }
+
+        .preview-user {
+          padding-left: 0;
+        }
+
+        .preview-kpis {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-welcome::before,
+        .preview-welcome::after {
+          opacity: 0.45;
+        }
+
+        .preview-panel,
+        .preview-table-card .preview-panel__header {
+          padding: 18px;
+        }
+
+        .preview-table-wrap {
+          padding-inline: 8px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-shell">
+      <aside class="preview-sidebar" aria-label="Preview navigation">
+        <div class="preview-brand">
+          <img src="{% static 'logo-icon.png' %}" alt="">
+          <span>Pharmacy Admin</span>
+        </div>
+
+        <nav class="preview-nav">
+          {% regroup dashboard_navigation by section as navigation_sections %}
+          {% for section in navigation_sections %}
+            <p class="preview-nav__section">{{ section.grouper }}</p>
+            {% for item in section.list %}
+              <span class="preview-nav__item{% if item.label == 'Dashboard' %} preview-nav__item--active{% endif %}"{% if item.label == 'Dashboard' %} aria-current="page"{% endif %}>
+                {% include "components/icon.html" with name=item.icon only %}
+                <span>{{ item.label }}</span>
+              </span>
+            {% endfor %}
+          {% endfor %}
+        </nav>
+      </aside>
+
+      <main class="preview-main">
+        <header class="preview-topbar">
+          <div class="preview-topbar__context">
+            <span class="preview-menu-glyph" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="preview-context-label">Pharmacy operations</span>
+          </div>
+
+          <div class="preview-topbar__tools">
+            <label class="preview-search">
+              <span class="preview-visually-hidden">Search preview</span>
+              <input type="text" placeholder="Search pharmacy records" disabled>
+            </label>
+            <button class="preview-icon-button" type="button" disabled aria-label="Preview alerts">Alerts</button>
+            <button class="preview-action" type="button" disabled>New sale</button>
+            <div class="preview-user">
+              <span class="preview-avatar" aria-hidden="true">{{ request.user.username|first|upper }}</span>
+              <div class="preview-user__details">
+                <div class="preview-user__name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="preview-user__role">Signed-in user</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="preview-content">
+          <span class="preview-comparison-label">Visual comparison</span>
+
+          <section class="preview-overview" aria-labelledby="preview-dashboard-heading">
+            <article class="preview-card preview-welcome">
+              <div class="preview-welcome__content">
+                <p class="preview-eyebrow">Today at the pharmacy</p>
+                <h1 id="preview-dashboard-heading">Pharmacy overview</h1>
+                <p class="preview-welcome__copy">Monitor permitted sales, inventory alerts, payments, and recent operational activity in one place.</p>
+                <div class="preview-quick-actions" aria-label="Non-functional preview actions">
+                  <button type="button" disabled>Start a sale</button>
+                  <button type="button" disabled>Receive stock</button>
+                  <button type="button" disabled>Record prescription</button>
+                </div>
+                {% if dashboard_data_notice %}<p class="preview-notice">{{ dashboard_data_notice }}</p>{% endif %}
+              </div>
+            </article>
+
+            <div class="preview-kpis" aria-label="Dashboard summary">
+              {% for kpi in kpis %}
+                <article class="preview-card preview-kpi">
+                  <div class="preview-kpi__header">
+                    <div>
+                      <p class="preview-kpi__label">{{ kpi.label }}</p>
+                      <p class="preview-kpi__context">{{ kpi.context }}</p>
+                    </div>
+                    <p class="preview-kpi__value">{{ kpi.value }}</p>
+                  </div>
+                  <div class="preview-spark" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                </article>
+              {% empty %}
+                <div class="preview-empty">No summary metrics are available for this account.</div>
+              {% endfor %}
+            </div>
+          </section>
+
+          <div class="preview-lower">
+            <section class="preview-card preview-panel" aria-labelledby="activity-trend-heading">
+              <header class="preview-panel__header">
+                <div>
+                  <h2 id="activity-trend-heading">Activity trend</h2>
+                  <p class="preview-panel__subtitle">Static visual treatment for dashboard comparison</p>
+                </div>
+                <button class="preview-select" type="button" disabled>This week</button>
+              </header>
+              <div class="preview-chart" role="img" aria-label="Decorative two-line activity chart for visual comparison">
+                <span class="preview-chart__line"></span>
+                <span class="preview-chart__line preview-chart__line--soft"></span>
+              </div>
+              <div class="preview-chart__legend"><span>Transactions</span><span>Operational activity</span></div>
+            </section>
+
+            <section class="preview-card preview-panel" aria-labelledby="attention-heading">
+              <header class="preview-panel__header">
+                <div>
+                  <h2 id="attention-heading">Attention required</h2>
+                  <p class="preview-panel__subtitle">Permitted alerts from the existing dashboard data</p>
+                </div>
+                {% if attention_items %}<span class="preview-badge preview-badge--warning">{{ attention_items|length }} items</span>{% endif %}
+              </header>
+              {% if attention_items %}
+                <ul class="preview-attention-list">
+                  {% for item in attention_items %}
+                    <li class="preview-attention-item">
+                      <span class="preview-attention-icon" aria-hidden="true">{{ forloop.counter|stringformat:"02d" }}</span>
+                      <div>
+                        <div class="preview-attention-row">
+                          <h3>{{ item.title }}</h3>
+                          <span class="preview-badge preview-badge--{{ item.status_variant }}">{{ item.status }}</span>
+                        </div>
+                        <p>{{ item.detail }}</p>
+                      </div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="preview-empty">No attention items are available for this account.</div>
+              {% endif %}
+            </section>
+          </div>
+
+          <section class="preview-card preview-table-card" aria-labelledby="recent-activity-heading">
+            <header class="preview-panel__header">
+              <div>
+                <h2 id="recent-activity-heading">Recent activity</h2>
+                <p class="preview-panel__subtitle">Latest permitted sales, purchasing, and payment records</p>
+              </div>
+              <button class="preview-select" type="button" disabled>View records</button>
+            </header>
+            {% if recent_activity %}
+              <div class="preview-table-wrap">
+                <table class="preview-table">
+                  <caption class="preview-visually-hidden">Recent pharmacy activity available to the signed-in user</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Reference</th>
+                      <th scope="col">Activity</th>
+                      <th scope="col">Party</th>
+                      <th scope="col">Time</th>
+                      <th scope="col">Amount</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in recent_activity %}
+                      <tr>
+                        <td><span class="preview-reference">{{ item.reference }}</span></td>
+                        <td><span class="preview-activity-name">{{ item.activity }}</span></td>
+                        <td>{{ item.party }}</td>
+                        <td>{{ item.when }}</td>
+                        <td><span class="preview-amount">{{ item.amount }}</span></td>
+                        <td><span class="preview-badge preview-badge--{{ item.status_variant }}">{{ item.status }}</span></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="preview-empty">No recent activity is available for this account.</div>
+            {% endif %}
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

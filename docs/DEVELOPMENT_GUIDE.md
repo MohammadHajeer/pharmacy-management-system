@@ -15,6 +15,10 @@ npm run dev
 
 `npm run dev` starts the Django development server and Tailwind watcher. The local application is available at `http://127.0.0.1:8000/`.
 
+It first builds CSS and copies the installed Chart.js browser assets. For direct
+`runserver` use or deployment, run `npm run build` before serving/collecting static
+files. See [`DASHBOARD.md`](DASHBOARD.md) for dashboard definitions and asset loading.
+
 ## Project structure
 
 ```text
@@ -129,7 +133,7 @@ Configure sidebar items once in `config/navigation.py`. `config/context_processo
 - resolves each namespaced URL;
 - leaves not-yet-implemented routes disabled;
 - filters items by Django permission; and
-- marks the current namespace active.
+- matches explicit `active_url_names` within the current namespace, falling back to namespace matching only for a uniquely configured area.
 
 Do not pass duplicate link lists from views or hardcode them in feature templates. When a feature becomes available, set its `url_name`, preserve its `namespace`, and set its Django permission when the model permission exists.
 
@@ -164,6 +168,11 @@ uv run manage.py seed_dev_auth
 The command creates/fetches the four users/groups and assigns `finance.view_financial_reports` only to Owner / Admin and Accountant. It intentionally does not yet assign the remaining business permissions. Use the local admin at `http://127.0.0.1:8000/admin/` to attach the other permissions needed for the feature under test until deterministic permission provisioning is implemented. Test Owner/Admin as a normal group member, not only as a superuser, because the approved design grants full business access through group permissions.
 
 Use clearly fake data and unique local passwords. Never commit credentials, `.env` files, or `db.sqlite3`, and do not depend on another developer's local database. Automated tests must create their own users, groups, permissions, and records.
+
+For deterministic catalog and inventory development records, see
+[`DEMO_DATA.md`](DEMO_DATA.md). The guarded `seed_demo_data` command creates
+complete historical purchase fixtures without changing production posting rules.
+Review its prerequisites and database target before running it manually.
 
 ## Feature ownership
 

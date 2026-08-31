@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import AnonymousUser
 from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import resolve, reverse
@@ -8,6 +9,65 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_registry_filters_have_get_fallback_and_only_show_useful_reset(self):
+        for query_string, query, status, show_clear in (
+            ("", "", "active", False),
+            ("?q=Example", "Example", "active", True),
+            ("?status=inactive", "", "inactive", True),
+        ):
+            request = RequestFactory().get("/catalog/medicines/" + query_string)
+            request.user = AnonymousUser()
+            request.resolver_match = resolve("/catalog/medicines/")
+            rendered = render_to_string("components/registry_filters.html", {
+                "clear_url": "/catalog/medicines/", "search_label": "Search medicines",
+                "search_placeholder": "Name, generic name or barcode",
+                "query": query, "status": status,
+                "status_options": [{"value": "active", "label": "Active"}],
+            }, request=request)
+            with self.subTest(query_string=query_string):
+                self.assertIn('method="get" action="/catalog/medicines/"', rendered)
+                self.assertIn("data-registry-filter-form", rendered)
+                self.assertIn('name="q"', rendered)
+                self.assertIn("<noscript>", rendered)
+                self.assertIn("Apply filters", rendered)
+                self.assertEqual("Clear filters" in rendered, show_clear)
+                enhanced = rendered.split("<noscript>")[0] + rendered.split("</noscript>")[1]
+                self.assertNotIn('type="submit"', enhanced)
+
+    def test_numeric_input_preserves_zero_minimum_and_decimal_step(self):
+        rendered = render_to_string("components/input.html", {
+            "name": "unit_cost", "type": "number", "step": "0.0001", "min": 0, "max": 100,
+        })
+        self.assertIn('min="0"', rendered)
+        self.assertIn('max="100"', rendered)
+        self.assertIn('step="0.0001"', rendered)
+        ordinary = render_to_string("components/input.html", {"name": "name"})
+        self.assertNotIn('min="', ordinary)
+        self.assertNotIn('max="', ordinary)
+
+    def test_topbar_renders_explicit_breadcrumbs_not_raw_route_names(self):
+        request = RequestFactory().get("/catalog/medicines/")
+        request.user = AnonymousUser()
+        request.resolver_match = resolve("/catalog/medicines/")
+
+        rendered = render_to_string(
+            "components/topbar.html",
+            {
+                "breadcrumbs": [
+                    {"label": "Medicines", "url": "/catalog/medicines/"},
+                    {"label": "Panadol 500mg"},
+                ]
+            },
+            request=request,
+        )
+
+        self.assertIn('aria-label="Breadcrumb"', rendered)
+        self.assertIn('<a href="/catalog/medicines/"', rendered)
+        self.assertIn('aria-current="page"', rendered)
+        self.assertIn("Panadol 500mg", rendered)
+        self.assertNotIn("Pharmacy operations", rendered)
+        self.assertNotIn("medicine-list", rendered.lower())
+
     def test_icon_selects_named_path_and_applies_shared_svg_attributes(self):
         rendered = render_to_string(
             "components/icon.html",
@@ -67,6 +127,56 @@ class SharedComponentTests(SimpleTestCase):
         )
         self.assertIn('id="id_reference-help"', rendered)
         self.assertIn('id="id_reference-error"', rendered)
+
+    def test_checkbox_preserves_native_semantics_and_shared_visual_states(self):
+        rendered = render_to_string(
+            "components/checkbox.html",
+            {
+                "id": "id_is_active",
+                "name": "is_active",
+                "value": "yes",
+                "checked": True,
+                "required": True,
+                "label": "Active",
+                "description": "Available for new work.",
+                "error": "Review this setting.",
+                "aria_describedby": "options-help",
+            },
+        )
+
+        self.assertIn('for="id_is_active"', rendered)
+        self.assertIn('name="is_active"', rendered)
+        self.assertIn('type="checkbox"', rendered)
+        self.assertIn('value="yes"', rendered)
+        self.assertIn("checked", rendered)
+        self.assertIn("required", rendered)
+        self.assertIn('aria-invalid="true"', rendered)
+        self.assertIn(
+            'aria-describedby="options-help id_is_active-help id_is_active-error"',
+            rendered,
+        )
+        self.assertIn("appearance-none", rendered)
+        self.assertIn("ring-red-500", rendered)
+        self.assertIn("peer-checked:bg-primary-600", rendered)
+        self.assertIn("peer-focus-visible:ring-primary-600", rendered)
+        self.assertIn('id="id_is_active-help"', rendered)
+        self.assertIn('id="id_is_active-error"', rendered)
+
+    def test_checkbox_supports_disabled_checked_state(self):
+        rendered = render_to_string(
+            "components/checkbox.html",
+            {
+                "name": "is_active",
+                "checked": True,
+                "disabled": True,
+                "label": "Active",
+            },
+        )
+
+        self.assertIn("disabled", rendered)
+        self.assertIn("cursor-not-allowed", rendered)
+        self.assertIn("border-slate-300 bg-slate-300", rendered)
+        self.assertIn("opacity-100", rendered)
 
     def test_textarea_and_select_share_accessible_supporting_text(self):
         textarea = render_to_string(
@@ -153,6 +263,46 @@ class SharedComponentTests(SimpleTestCase):
 
 
 class DashboardNavigationTests(TestCase):
+    def test_shared_namespaces_match_only_the_configured_area(self):
+        from uuid import UUID
+
+        from apps.catalog.urls import urlpatterns as catalog_routes
+        from apps.parties.urls import urlpatterns as party_routes
+        from apps.purchasing.urls import urlpatterns as purchase_routes
+
+        user = get_user_model().objects.create_superuser(username="navigation-admin")
+        for namespace, routes in (
+            ("catalog", catalog_routes),
+            ("parties", party_routes),
+            ("purchasing", purchase_routes),
+        ):
+            for route in routes:
+                kwargs = {key: UUID(int=1) for key in route.pattern.converters}
+                url = reverse(f"{namespace}:{route.name}", kwargs=kwargs)
+                request = RequestFactory().get(url)
+                request.user = user
+                request.resolver_match = resolve(url)
+                if namespace == "catalog":
+                    expected = ["Medicines"]
+                elif namespace == "purchasing":
+                    expected = ["Purchases"]
+                elif route.name.startswith("supplier-"):
+                    expected = ["Suppliers"]
+                elif route.name.startswith("customer-"):
+                    expected = ["Customers"]
+                else:
+                    expected = []  # Prescribers has no sidebar entry.
+                with self.subTest(route=route.name):
+                    items = dashboard_navigation(request)["dashboard_navigation"]
+                    self.assertEqual([item["label"] for item in items if item["is_active"]], expected)
+
+    def test_unresolved_request_has_no_active_item(self):
+        request = RequestFactory().get("/")
+        request.user = AnonymousUser()
+        request.resolver_match = None
+        items = dashboard_navigation(request)["dashboard_navigation"]
+        self.assertFalse(any(item["is_active"] for item in items))
+
     role_permissions = {
         "Owner / Admin": "all",
         "Pharmacist": {
@@ -265,17 +415,31 @@ class DashboardNavigationTests(TestCase):
         items = self.navigation_for("Owner / Admin")
         dashboard = next(item for item in items if item["label"] == "Dashboard")
         medicines = next(item for item in items if item["label"] == "Medicines")
+        suppliers = next(item for item in items if item["label"] == "Suppliers")
+        customers = next(item for item in items if item["label"] == "Customers")
+        purchases = next(item for item in items if item["label"] == "Purchases")
         settings = next(item for item in items if item["label"] == "Settings")
         future_items = [
             item
             for item in items
             if item["label"]
-            not in {"Dashboard", "Medicines", "Settings", "Logout"}
+            not in {
+                "Dashboard",
+                "Medicines",
+                "Suppliers",
+                "Customers",
+                "Purchases",
+                "Settings",
+                "Logout",
+            }
         ]
 
         self.assertTrue(dashboard["is_active"])
         self.assertEqual(dashboard["url"], "/dashboard/")
         self.assertEqual(medicines["url"], "/catalog/medicines/")
+        self.assertEqual(suppliers["url"], "/parties/suppliers/")
+        self.assertEqual(customers["url"], "/parties/customers/")
+        self.assertEqual(purchases["url"], "/purchasing/invoices/")
         self.assertEqual(settings["url"], "/settings/")
         self.assertTrue(all(item["url"] is None for item in future_items))
 
@@ -336,10 +500,22 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(self.dashboard_url)
 
-        self.assertContains(response, "Overview of today's pharmacy activity.")
-        self.assertContains(response, "Today&#x27;s Sales")
+        self.assertEqual(response.context["breadcrumbs"], [{"label": "Dashboard"}])
+        self.assertContains(response, "Clinical operations console")
+        self.assertContains(response, "Daily Pulse")
+        self.assertContains(response, "Active Medicines")
         self.assertContains(response, "Recent Activity")
         self.assertContains(response, "Attention Required")
+        self.assertContains(response, "Operational ledger")
+        self.assertContains(response, "Stock")
+        self.assertContains(response, "Expiry")
+        self.assertContains(response, "Operational Analytics")
+        self.assertContains(response, 'aria-label="Breadcrumb"', html=False)
+        self.assertContains(response, 'aria-current="page" title="Dashboard"', html=False)
+        self.assertContains(response, "data-account-identity", html=False)
+        self.assertContains(response, "dashboard-user")
+        self.assertContains(response, "Staff member")
+        self.assertNotContains(response, "Pharmacy operations")
         self.assertNotContains(response, "Dashboard UI foundation")
         self.assertNotContains(response, ">Demo<")
         self.assertNotContains(response, "Form controls")
@@ -355,8 +531,8 @@ class DashboardViewTests(TestCase):
 
         self.assertContains(response, "Low Stock")
         self.assertContains(response, "Expiring Soon")
-        self.assertContains(response, "Purchase received")
-        self.assertContains(response, "Invoice PI-0298")
+        self.assertContains(response, "No recent activity is available.")
+        self.assertNotContains(response, "Invoice PI-0298")
         self.assertNotContains(response, "Today&#x27;s Sales")
         self.assertNotContains(response, "Receivables")
         self.assertNotContains(response, "Customer payment")
@@ -366,6 +542,6 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(self.dashboard_url)
 
-        self.assertContains(response, "No summary metrics are available.")
+        self.assertContains(response, "No daily measures are available.")
         self.assertContains(response, "No recent activity is available.")
         self.assertContains(response, "No attention items are available.")

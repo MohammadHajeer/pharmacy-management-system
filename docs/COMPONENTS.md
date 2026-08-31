@@ -18,6 +18,21 @@ Use the auth layout for login and password-related screens. It provides a center
 {% block content %}...{% endblock %}
 ```
 
+## Breadcrumb context
+
+Dashboard-shell views provide explicit breadcrumb labels in page context; the topbar never derives labels from route names. Keep the final item unlinked, and only provide earlier-item URLs that are real and permitted for the current user:
+
+```python
+return render(request, "catalog/medicines/list.html", {
+    "breadcrumbs": [
+        {"label": "Catalog"},
+        {"label": "Medicines"},
+    ],
+})
+```
+
+Simple pages use one item. When `breadcrumbs` is absent, the shell may display the existing explicit `page_context` value; it never falls back to `resolver_match.url_name`.
+
 ## Button
 
 ```django
@@ -49,6 +64,16 @@ Variants are `primary`, `secondary`, `outline`, `ghost`, and `destructive`. The 
 Select options are dictionaries with `value`, `label`, and an optional `disabled` value. Pass a bound field's `.errors` to show Django validation feedback.
 
 Inputs also accept `type`, `placeholder`, `autocomplete`, `maxlength`, `autofocus`, `required`, `disabled`, `readonly`, and `help_text`. Textareas accept `placeholder`, `autocomplete`, `maxlength`, `required`, `disabled`, `readonly`, and `help_text`; selects accept `placeholder`, `required`, `disabled`, and `help_text`. Form controls associate help and error copy through `aria-describedby`. Buttons accept `full_width=True` when a form action should fill its container.
+
+Numeric inputs also accept `step`, `min`, and `max` (including zero). Pass values matching the existing Django field; these attributes do not replace server-side validation.
+
+## Checkbox
+
+```django
+{% include "components/checkbox.html" with id="payment-method-is-active" name="is_active" label="Active" checked=form.is_active.value description="Inactive methods cannot be selected for new work." error=form.is_active.errors %}
+```
+
+Checkboxes accept `id`, `name`, `value`, `checked`, `disabled`, `required`, `label`, `description` (or `help_text`), `error`, `aria_invalid`, and `aria_describedby`. The native checkbox remains responsible for form submission and keyboard interaction; the shared visual control supplies the PHARMANEX checked, focus, disabled, and error states. Pass a bound field's `.value` and `.errors` to preserve Django validation responses.
 
 The select component progressively enhances its native `<select>` into the shared custom dropdown. Keep passing the original Django field `name`, current `value`, and `options` dictionaries; the native control remains the submitted form field and preserves required, disabled, initial-value, and validation behavior. The shared `static/js/custom-select.js` script is loaded by the base layout and provides click-outside closing plus Arrow Up, Arrow Down, Enter, Escape, Home, End, and Tab keyboard behavior. No page-specific JavaScript is needed.
 
@@ -134,8 +159,46 @@ messages.info(request, "The report is being prepared.")
 
 When a server-rendered message needs a separate title or a non-default display time, pass `toast_title` and `toast_duration` in the template context for that response. Untitled messages and existing button triggers keep their current behavior.
 
+## Clinical operations surfaces
+
+Use `workspace-container` on the outer feature-page wrapper, around the header,
+local navigation, filters, and workspace surfaces. It centers the page at Tailwind's
+`max-w-6xl` (72rem), matching Settings, and uses the available width on smaller
+screens. The dashboard layout owns responsive page padding; do not add another
+layer of horizontal padding or a page-specific maximum width to this wrapper.
+Keep narrower controls/forms inside the container where appropriate.
+
+Catalog pages include `catalog/_section_navigation.html` below their main header.
+The flat Medicines / Categories / Manufacturers links retain view-permission
+filtering and use exact namespaced `request.resolver_match.view_name` checks for
+the active section, including its create/edit/detail and medicine unit/barcode
+pages. The current section has `aria-current="page"` and a teal underline; these
+ordinary links wrap on small screens and remain independent of breadcrumbs.
+
+Dashboard and configuration workspaces can use the small shared presentation roles defined in `assets/css/input.css`:
+
+- `workspace-surface` for a connected, bordered workspace region;
+- `operational-kicker` for compact operational context labels;
+- `operational-empty` for readable, action-aware empty states.
+
+The shared theme also defines `status`, `control`, `workspace`, and `dialog` radius roles. Use the matching radius for the element's function rather than applying the largest radius to every region.
+
+Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `data-dirty-surface` elements. `form-dirty-state.js` toggles their presentation while preserving the existing form comparison and submit-button behavior.
+
+## Registry controls and ledgers
+
+Registry pages share `components/registry_filters.html`. Supply `query`, `status`, `status_options`, and a reversed `clear_url`; optional `search_label` and `search_placeholder` enable search only where supported. It composes the existing controls and remains a normal GET form.
+
+`static/js/registry-filters.js` enhances forms marked `data-registry-filter-form`: search input applies after 350 ms, Enter applies immediately, and the shared custom select's bubbling native `change` event applies immediately. Navigation sends the form's existing `q`/`status` values to Django, preserves unrelated URL parameters, and removes blank searches. These registries have no pagination parameter to reset. Search focus/caret are restored after navigation when session storage is available; no query/filter business logic runs in JavaScript. A conditional **Clear filters** link returns to the base route. A submit button exists only inside `noscript`, supporting Enter and status-only forms without JavaScript.
+
+Run the dependency-free interaction tests with `node --test apps/dashboard/tests_js/registry-filters.test.cjs`.
+
+Use `ledger-scroll` around a `ledger-table` for a contained horizontal scroll region, with `tabindex="0"`, `role="region"`, and a descriptive `aria-label`. Tables retain captions and column headers. Use `ledger-number` on numeric cells and their headers for right alignment and tabular numerals. `registry-link` provides the shared record-link focus/hover treatment. These roles use existing theme colors and do not change the dashboard shell.
+
+Render empty states outside the table's scroll region so their text and permitted actions remain visible on narrow screens.
+
 ## Sidebar navigation
 
 Navigation is configured once in `config/navigation.py`; views do not pass link lists. When a routed feature is enabled, update its existing namespaced `url_name` (for example, `catalog:medicine-list`) and Django permission (for example, `catalog.view_medicine`). Do not create a duplicate app from a navigation label.
 
-`config/context_processors.py` hides links the current user cannot access, safely disables links whose URL does not exist yet, and marks items active by comparing the configured namespace with `request.resolver_match.namespace`. Use Django Groups and Permissions for roles—do not add a separate authorization system.
+`config/context_processors.py` hides links the current user cannot access and safely disables unavailable routes. For active state, configure `active_url_names` with exact local route names; both the namespace and route name must match `request.resolver_match`. An explicit set is authoritative. Without it, the processor matches the fully qualified destination route, then permits namespace fallback only if that namespace belongs to one configured area. Unavailable links never become active. Suppliers and Customers have separate route sets; Catalog and Purchasing include their nested routes. Prescribers has no sidebar entry and does not activate Suppliers or Customers. Permissions remain the security boundary; there are no group-name checks.

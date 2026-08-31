@@ -1,0 +1,139 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}
+  Purchase Invoices · PHARMANEX
+{% endblock %}
+{% block content %}
+  <div class="workspace-container space-y-5">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <p class="operational-kicker">
+          Purchasing operations
+        </p>
+        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
+          Purchase Invoices
+        </h1>
+        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
+          Receive stock and track supplier purchase transactions.
+        </p>
+      </div>
+      <div class="flex shrink-0 flex-wrap gap-2">
+        {% if perms.purchasing.add_purchaseinvoice %}
+          {% url "purchasing:purchase-invoice-create" as create_url %}
+          {% include "components/button.html" with text="New purchase invoice" flat=True variant="primary" href=create_url %}
+        {% endif %}
+      </div>
+    </header>
+    <section class="workspace-surface">
+      <header class="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
+        <h2 class="text-sm font-semibold text-slate-900">
+          Purchase ledger
+        </h2>
+        <span class="text-xs text-slate-500">
+          Most recent first
+        </span>
+      </header>
+      {% if invoices %}
+        <div class="ledger-scroll" tabindex="0" role="region" aria-label="Purchase ledger">
+          <table class="ledger-table min-w-190">
+            <caption class="sr-only">
+              Supplier purchase invoices
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">
+                  Number
+                </th>
+                <th scope="col">
+                  Supplier
+                </th>
+                <th scope="col">
+                  Invoice date
+                </th>
+                <th scope="col">
+                  Status
+                </th>
+                <th scope="col" class="ledger-number">
+                  Grand total
+                </th>
+                <th scope="col">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for invoice in invoices %}
+                <tr>
+                  <td>
+                    <a class="registry-link" href="{% url 'purchasing:purchase-invoice-detail' invoice.pk %}">
+                      {{ invoice.invoice_number|default:"Draft invoice" }}
+                    </a>
+                    {% if not invoice.invoice_number %}
+                      <p class="mt-1 text-xs text-slate-500">
+                        Created
+                        {{ invoice.created_at|date:"d M Y, H:i" }}
+                      </p>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="font-medium text-slate-800">
+                      {% if invoice.status == "DRAFT" %}
+                        {{ invoice.supplier.name }}
+                      {% else %}
+                        {{ invoice.supplier_name_snapshot|default:"—" }}
+                      {% endif %}
+                    </span>
+                    {% if invoice.supplier_invoice_reference %}
+                      <p class="mt-1 text-xs text-slate-500">
+                        {{ invoice.supplier_invoice_reference }}
+                      </p>
+                    {% endif %}
+                  </td>
+                  <td class="whitespace-nowrap tabular-nums">
+                    {{ invoice.invoice_date|date:"d M Y" }}
+                  </td>
+                  <td>
+                    {% if invoice.status == "POSTED" %}
+                      {% include "components/badge.html" with text="Posted" variant="primary" only %}
+                    {% elif invoice.status == "VOID" %}
+                      {% include "components/badge.html" with text="Void" variant="danger" only %}
+                    {% else %}
+                      {% include "components/badge.html" with text="Draft" variant="warning" only %}
+                    {% endif %}
+                  </td>
+                  <td class="ledger-number font-semibold text-slate-900">
+                    {{ invoice.grand_total }}
+                    <span class="text-xs font-normal text-slate-500">
+                      {{ invoice.currency_code }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    {% url "purchasing:purchase-invoice-detail" invoice.pk as detail_url %}
+                    {% include "components/button.html" with text="View" flat=True variant="ghost" size="sm" href=detail_url %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="operational-empty m-4 text-center sm:m-5">
+          <p class="font-semibold text-slate-800">
+            No purchase invoices yet
+          </p>
+          <p class="mt-1 text-sm text-slate-500">
+            Create a purchase draft to record supplier details, costs, and stock to receive.
+          </p>
+          <div class="mt-4">
+            {% if perms.purchasing.add_purchaseinvoice %}
+              {% url "purchasing:purchase-invoice-create" as create_url %}
+              {% include "components/button.html" with text="New purchase invoice" flat=True variant="primary" href=create_url %}
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+      <footer class="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+        Drafts do not change stock. Stock is received when an authorized user posts the invoice.
+      </footer>
+    </section>
+  </div>
+{% endblock %}

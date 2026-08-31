@@ -102,6 +102,41 @@
     .balance-track { height: 5px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #e9eff4; }
     .balance-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #2f9eb1); }
 
+    .coordination-panel {
+      margin-top: 12px;
+      padding: 18px;
+      border: 1px solid rgba(220,229,238,.9);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .coordination-heading { display: flex; gap: 18px; align-items: end; justify-content: space-between; margin-bottom: 13px; }
+    .coordination-heading h2 { margin: 0; font-size: 1rem; letter-spacing: -.02em; }
+    .coordination-heading p { margin: 0; color: var(--muted); font-size: .8rem; }
+    .pulse-grid, .next-ready-grid {
+      display: grid;
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--line);
+    }
+    .pulse-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .pulse-item { min-width: 0; padding: 13px 15px; background: #fbfdfe; }
+    .pulse-label { display: block; color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .pulse-value { display: block; margin-top: 2px; font-size: 1.45rem; font-weight: 850; letter-spacing: -.035em; }
+    .pulse-note { display: block; color: var(--muted); font-size: .75rem; }
+    .pulse-item.ready .pulse-value { color: var(--green); }
+    .pulse-item.blocked .pulse-value { color: var(--amber); }
+    .pulse-item.due .pulse-value { color: var(--blue); }
+    .pulse-item.overdue .pulse-value { color: #a33a32; }
+    .next-ready-heading { margin: 17px 0 8px; color: var(--muted); font-size: .76rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .next-ready-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .next-ready-item { min-width: 0; padding: 13px 15px; background: #fff; }
+    .next-ready-member { display: block; color: var(--muted); font-size: .73rem; font-weight: 800; }
+    .next-ready-task { display: block; margin-top: 4px; font-size: .83rem; font-weight: 800; line-height: 1.35; }
+    .next-ready-meta { display: block; margin-top: 4px; color: var(--muted); font-size: .72rem; }
+
     .toolbar {
       position: sticky;
       top: 10px;
@@ -373,6 +408,7 @@
 
     @media (max-width: 980px) {
       .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .next-ready-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .context-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 720px) {
@@ -380,6 +416,8 @@
       main { padding-inline: 13px; }
       .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .metric:first-child { grid-column: 1 / -1; }
+      .pulse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .coordination-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
       .toolbar { position: static; align-items: stretch; flex-direction: column; }
       .tabs { width: 100%; }
       .tab { flex: 1; }
@@ -393,6 +431,8 @@
     @media (max-width: 430px) {
       .summary-grid { grid-template-columns: 1fr; }
       .metric:first-child { grid-column: auto; }
+      .pulse-grid, .next-ready-grid { grid-template-columns: 1fr; }
+      .coordination-panel { padding: 13px; }
       .panel { padding: 17px; }
       .onboarding-grid { grid-template-columns: 1fr; }
       .member-control { align-items: stretch; flex-direction: column; }
@@ -418,6 +458,16 @@
 
   <main>
     <section class="summary-grid" id="summary" aria-label="Plan summary"></section>
+
+    <section class="coordination-panel" aria-labelledby="coordination-title">
+      <div class="coordination-heading">
+        <h2 id="coordination-title">Delivery pulse</h2>
+        <p>Live from task status, dependencies, and due dates.</p>
+      </div>
+      <div class="pulse-grid" id="coordination-metrics" aria-live="polite"></div>
+      <h3 class="next-ready-heading">Next ready task by member</h3>
+      <div class="next-ready-grid" id="next-ready-tasks"></div>
+    </section>
 
     <div class="toolbar" aria-label="Dashboard view controls">
       <div class="tabs" role="group" aria-label="View mode">
@@ -696,7 +746,7 @@
         "E2-T06": ["E2-T01", "E2-T04", "E2-T05"],
         "E2-T07": ["E2-T01", "E2-T02", "E2-T04", "E2-T05"],
 
-        "E3-T03": ["E2-T02"],
+        "E3-T03": ["E2-T02", "E4-T01"],
         "E3-T04": ["E3-T01", "E3-T02", "E3-T03"],
         "E3-T05": ["E3-T03"],
         "E3-T06": ["E3-T01", "E3-T02", "E3-T03", "E3-T05"],
@@ -928,6 +978,57 @@
         document.getElementById("summary").innerHTML = metrics.join("");
       }
 
+      function localDateKey(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function renderCoordination() {
+        const today = localDateKey();
+        const unfinished = tasks.filter(task => storedState(task.TaskId) !== "done");
+        const ready = unfinished.filter(task => displayState(task.TaskId) === "ready");
+        const blocked = unfinished.filter(task => displayState(task.TaskId) === "blocked");
+        const dueToday = unfinished.filter(task => task["Sprint/Due Date"] === today);
+        const overdue = unfinished.filter(task => task["Sprint/Due Date"] && task["Sprint/Due Date"] < today);
+        const metrics = [
+          ["ready", "Ready to start", ready.length, "No unfinished dependencies"],
+          ["blocked", "Blocked", blocked.length, "Waiting on prerequisite work"],
+          ["due", "Due today", dueToday.length, formatDate(today)],
+          ["overdue", "Overdue", overdue.length, "Unfinished past due date"]
+        ];
+        document.getElementById("coordination-metrics").innerHTML = metrics.map(([className, label, value, note]) => `
+          <article class="pulse-item ${className}">
+            <span class="pulse-label">${label}</span>
+            <span class="pulse-value">${value}</span>
+            <span class="pulse-note">${escapeHtml(note)}</span>
+          </article>
+        `).join("");
+
+        document.getElementById("next-ready-tasks").innerHTML = members.map(member => {
+          const assigned = tasks.filter(task => task.Assignee === member);
+          const nextTask = assigned
+            .filter(task => displayState(task.TaskId) === "ready")
+            .sort((left, right) => left["Sprint/Due Date"].localeCompare(right["Sprint/Due Date"]))[0];
+          if (nextTask) {
+            return `<article class="next-ready-item">
+              <span class="next-ready-member">${escapeHtml(member)}</span>
+              <span class="next-ready-task">${escapeHtml(nextTask.Summary)}</span>
+              <span class="next-ready-meta">${escapeHtml(nextTask.TaskId)} | Due ${escapeHtml(formatDate(nextTask["Sprint/Due Date"]))}</span>
+            </article>`;
+          }
+          const allDone = assigned.every(task => storedState(task.TaskId) === "done");
+          const blockedCount = assigned.filter(task => displayState(task.TaskId) === "blocked").length;
+          const note = allDone ? "All assigned work is done" : `${blockedCount} blocked ${blockedCount === 1 ? "task" : "tasks"}`;
+          return `<article class="next-ready-item">
+            <span class="next-ready-member">${escapeHtml(member)}</span>
+            <span class="next-ready-task">No task ready to start</span>
+            <span class="next-ready-meta">${escapeHtml(note)}</span>
+          </article>`;
+        }).join("");
+      }
+
       function taskTitle(taskId) {
         return taskById.get(taskId)?.Summary || taskId;
       }
@@ -1038,6 +1139,7 @@
 
       function refreshDashboard() {
         renderSummary();
+        renderCoordination();
         renderBoard(true);
         applyView();
       }
@@ -1186,6 +1288,7 @@
       normalizeStatuses();
       renderDiagnostics();
       renderSummary();
+      renderCoordination();
       renderBoard();
       applyView();
     })();

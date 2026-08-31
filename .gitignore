@@ -23,6 +23,7 @@ db.sqlite3
 # Node and generated frontend assets
 node_modules/
 static/css/output.css
+static/vendor/chartjs/
 staticfiles/
 
 # Operating system files

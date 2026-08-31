@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "predev": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/output.css",
+    "predev": "npm run build:js && npm run build:css",
+    "build:js": "node scripts/build-js.cjs",
+    "build": "npm run build:js && npm run build:css",
     "dev": "concurrently --hide \"TW-WATCH\" --names \"DJANGO,TW-INFO,TW-WATCH\" --prefix \"[{name}]\" \"uv run python -u manage.py runserver\" \"echo Tailwind watcher is running in the background\" \"npm run dev:css\"",
     "dev:css": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/output.css --watch",
     "build:css": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./static/css/output.css --minify",
@@ -28,5 +30,8 @@
     "@tailwindcss/cli": "^4.3.3",
     "concurrently": "^10.0.5",
     "tailwindcss": "^4.3.3"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1"
   }
 }

@@ -4,15 +4,7 @@
   {% include "components/input.html" with id=field_prefix|add:"-name" name="name" label="Name" value=form.name.value error=form.name.errors required=True maxlength=100 %}
   <fieldset class="space-y-4">
     <legend class="sr-only">Payment method options</legend>
-    <label class="flex items-start gap-3 text-sm text-slate-700" for="{{ field_prefix }}-requires-reference">
-      <input id="{{ field_prefix }}-requires-reference" name="requires_reference" type="checkbox" {% if form.requires_reference.value %}checked{% endif %} {% if form.requires_reference.errors %}aria-invalid="true" aria-describedby="{{ field_prefix }}-requires-reference-error"{% endif %} class="mt-0.5 size-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600">
-      <span><span class="font-medium">Require a payment reference</span><span class="mt-1 block text-slate-500">Use for card, bank, or other traceable payments.</span></span>
-    </label>
-    {% if form.requires_reference.errors %}<p id="{{ field_prefix }}-requires-reference-error" class="text-sm text-red-600" role="alert">{{ form.requires_reference.errors|striptags }}</p>{% endif %}
-    <label class="flex items-start gap-3 text-sm text-slate-700" for="{{ field_prefix }}-is-active">
-      <input id="{{ field_prefix }}-is-active" name="is_active" type="checkbox" {% if form.is_active.value %}checked{% endif %} {% if form.is_active.errors %}aria-invalid="true" aria-describedby="{{ field_prefix }}-is-active-error"{% endif %} class="mt-0.5 size-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600">
-      <span><span class="font-medium">Active</span><span class="mt-1 block text-slate-500">Inactive methods remain in payment history but cannot be selected for new work.</span></span>
-    </label>
-    {% if form.is_active.errors %}<p id="{{ field_prefix }}-is-active-error" class="text-sm text-red-600" role="alert">{{ form.is_active.errors|striptags }}</p>{% endif %}
+    {% include "components/checkbox.html" with id=field_prefix|add:"-requires-reference" name="requires_reference" label="Require a payment reference" checked=form.requires_reference.value description="Use for card, bank, or other traceable payments." error=form.requires_reference.errors only %}
+    {% include "components/checkbox.html" with id=field_prefix|add:"-is-active" name="is_active" label="Active" checked=form.is_active.value description="Inactive methods remain in payment history but cannot be selected for new work." error=form.is_active.errors only %}
   </fieldset>
 </div>

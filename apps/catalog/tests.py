@@ -1,14 +1,55 @@
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+from django.urls import reverse
 
-from .models import MedicineUnit
+from .models import Category, Manufacturer, Medicine, MedicineUnit
 from .unit_economics import (
     acquisition_cost_per_base_unit,
     base_quantity,
     selected_unit_selling_price,
 )
+
+
+class MedicineListViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="catalog-user")
+        self.url = reverse("catalog:medicine-list")
+
+    def test_medicine_list_requires_its_existing_permission(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_medicine_list_uses_explicit_catalog_breadcrumbs(self):
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="view_medicine",
+            )
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+        breadcrumb_html = response.content.decode().split(
+            'aria-label="Breadcrumb"',
+            1,
+        )[1].split("</nav>", 1)[0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["breadcrumbs"],
+            [{"label": "Catalog"}, {"label": "Medicines"}],
+        )
+        self.assertIn("Catalog", breadcrumb_html)
+        self.assertIn('aria-current="page" title="Medicines"', breadcrumb_html)
+        self.assertNotIn("medicine-list", breadcrumb_html.lower())
+        self.assertNotIn('href="/catalog/medicines/"', breadcrumb_html)
 
 
 class MedicineUnitValidationTests(SimpleTestCase):
@@ -17,6 +58,72 @@ class MedicineUnitValidationTests(SimpleTestCase):
 
         with self.assertRaises(ValidationError):
             unit.clean()
+
+
+class MedicineBaseUnitWorkflowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.category = Category.objects.create(name="Workflow category")
+        cls.manufacturer = Manufacturer.objects.create(name="Workflow manufacturer")
+        cls.user = get_user_model().objects.create_user(username="medicine-workflow-user")
+        cls.user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="add_medicine",
+            ),
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="change_medicineunit",
+            ),
+            Permission.objects.get(
+                content_type__app_label="catalog",
+                codename="view_medicine",
+            ),
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def create_medicine(self):
+        response = self.client.post(
+            reverse("catalog:medicine-create"),
+            {
+                "name": "Workflow medicine",
+                "generic_name": "",
+                "category": self.category.pk,
+                "manufacturer": self.manufacturer.pk,
+                "strength": "",
+                "dosage_form": "",
+                "low_stock_threshold_base": "0.000",
+                "default_selling_price": "1.0000",
+                "base_unit_name": "Tablet",
+            },
+        )
+        return response, Medicine.objects.get(name="Workflow medicine")
+
+    def test_create_medicine_also_creates_its_single_active_base_unit(self):
+        response, medicine = self.create_medicine()
+
+        self.assertEqual(response.status_code, 302)
+        base_units = medicine.units.filter(is_active=True, is_base_unit=True)
+        self.assertEqual(base_units.count(), 1)
+        self.assertEqual(base_units.get().conversion_to_base, Decimal("1.000000"))
+
+    def test_active_base_unit_cannot_be_deactivated(self):
+        _, medicine = self.create_medicine()
+        base_unit = medicine.units.get(is_active=True, is_base_unit=True)
+
+        response = self.client.post(
+            reverse(
+                "catalog:medicine-unit-toggle-active",
+                args=[medicine.pk, base_unit.pk],
+            ),
+            follow=True,
+        )
+
+        base_unit.refresh_from_db()
+        self.assertTrue(base_unit.is_active)
+        self.assertContains(response, "The active base unit cannot be deactivated.")
 
 
 class UnitEconomicsTests(SimpleTestCase):
