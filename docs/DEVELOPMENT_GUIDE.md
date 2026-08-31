@@ -165,6 +165,11 @@ The command creates/fetches the four users/groups and assigns `finance.view_fina
 
 Use clearly fake data and unique local passwords. Never commit credentials, `.env` files, or `db.sqlite3`, and do not depend on another developer's local database. Automated tests must create their own users, groups, permissions, and records.
 
+For deterministic catalog and inventory development records, see
+[`DEMO_DATA.md`](DEMO_DATA.md). The guarded `seed_demo_data` command creates
+complete historical purchase fixtures without changing production posting rules.
+Review its prerequisites and database target before running it manually.
+
 ## Feature ownership
 
 Each ticket should identify one owning feature app and one primary developer. The owner is responsible for the feature's models, forms, views, URLs, templates, migrations, and tests through review.
