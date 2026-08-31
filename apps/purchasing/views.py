@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 
 from apps.catalog.models import Medicine, MedicineUnit
 from apps.core.models import PharmacySettings
+from apps.core.pagination import pagination_context
 from apps.inventory.services import InsufficientStockError, InvalidStockOperationError
 from apps.parties.models import Supplier
 
@@ -64,13 +65,13 @@ def _validation_error_message(error):
 @login_required
 @permission_required("purchasing.view_purchaseinvoice", raise_exception=True)
 def purchase_invoice_list(request):
-    invoices = PurchaseInvoice.objects.select_related("supplier").order_by("-created_at")
+    invoices = PurchaseInvoice.objects.select_related("supplier").order_by("-created_at", "-id")
     return render(
         request,
         "purchasing/purchase_invoices/list.html",
         {
             **_page_context(request),
-            "invoices": invoices,
+            **pagination_context(request, invoices, context_name="invoices"),
         },
     )
 

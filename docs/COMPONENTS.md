@@ -189,13 +189,47 @@ Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `
 
 Registry pages share `components/registry_filters.html`. Supply `query`, `status`, `status_options`, and a reversed `clear_url`; optional `search_label` and `search_placeholder` enable search only where supported. It composes the existing controls and remains a normal GET form.
 
-`static/js/registry-filters.js` enhances forms marked `data-registry-filter-form`: search input applies after 350 ms, Enter applies immediately, and the shared custom select's bubbling native `change` event applies immediately. Navigation sends the form's existing `q`/`status` values to Django, preserves unrelated URL parameters, and removes blank searches. These registries have no pagination parameter to reset. Search focus/caret are restored after navigation when session storage is available; no query/filter business logic runs in JavaScript. A conditional **Clear filters** link returns to the base route. A submit button exists only inside `noscript`, supporting Enter and status-only forms without JavaScript.
+`static/js/registry-filters.js` enhances forms marked `data-registry-filter-form`: search input applies after 350 ms, Enter applies immediately, and the shared custom select's bubbling native `change` event applies immediately. Navigation sends the form's existing `q`/`status` values to Django, preserves unrelated URL parameters, and removes blank searches and `page` so filters restart at page 1. Search focus/caret are restored after navigation when session storage is available; no query/filter business logic runs in JavaScript. A conditional **Clear filters** link returns to the base route, clearing filters and page state. A submit button exists only inside `noscript`, supporting Enter and status-only forms without JavaScript; GET forms must not include a hidden `page` field.
 
 Run the dependency-free interaction tests with `node --test apps/dashboard/tests_js/registry-filters.test.cjs`.
 
 Use `ledger-scroll` around a `ledger-table` for a contained horizontal scroll region, with `tabindex="0"`, `role="region"`, and a descriptive `aria-label`. Tables retain captions and column headers. Use `ledger-number` on numeric cells and their headers for right alignment and tabular numerals. `registry-link` provides the shared record-link focus/hover treatment. These roles use existing theme colors and do not change the dashboard shell.
 
 Render empty states outside the table's scroll region so their text and permitted actions remain visible on narrow screens.
+
+### Server-side pagination
+
+Large registries and transaction lists use **25 rows per page**, defined by
+`DEFAULT_PAGE_SIZE` in `apps/core/pagination.py`. Apply existing permissions and
+filters first, then pass an unevaluated queryset with deterministic ordering
+(including `id` as the final tie-breaker) to the shared helper:
+
+```python
+**pagination_context(request, medicines, context_name="medicines"),
+```
+
+This keeps the existing row context name as a sliced queryset and supplies
+`page_obj` and Django's elided `page_numbers`. Invalid page text resolves to page 1;
+negative and out-of-range numbers resolve to the last page via `Paginator.get_page()`.
+Include the footer outside the table scroll region, retaining request context:
+
+```django
+{% include "components/pagination.html" with label="medicines" %}
+```
+
+The component shows the **filtered** row range/count and uses Django's built-in
+`querystring` tag to replace only `page`, retaining all other parameters (including
+repeated values and sorting). One-page results show only the count; empty results
+retain the existing empty state without a footer. Mobile shows Previous / Page X
+of Y / Next; larger screens show an elided range with an accessible current page.
+On browser history restoration, the filter form resets to its server-rendered
+defaults so cached edits cannot disagree with the URL and displayed result page.
+
+Currently applied to Medicines, Customers, Suppliers, Prescribers, and Purchase
+Invoices. Small configuration lists, document line items, and dashboard recent
+subsets remain unpaginated. Inventory/history, payments, returns/refunds, reports,
+and sales history have no implemented list pages; prescription views currently
+lack templates. Apply this convention when those screens are implemented.
 
 ## Sidebar navigation
 

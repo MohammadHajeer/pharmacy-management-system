@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from apps.core.pagination import pagination_context
+
 from .forms import (
     CategoryForm,
     ManufacturerForm,
@@ -57,7 +59,7 @@ def medicine_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "active")
 
-    medicines = Medicine.objects.select_related("category", "manufacturer").order_by("name")
+    medicines = Medicine.objects.select_related("category", "manufacturer").order_by("name", "id")
     if query:
         medicines = medicines.filter(
             Q(name__icontains=query)
@@ -71,7 +73,7 @@ def medicine_list(request):
         "catalog/medicines/list.html",
         {
             **_page_context(request, "Medicines", "medicine"),
-            "medicines": medicines,
+            **pagination_context(request, medicines, context_name="medicines"),
             "query": query,
             "status": status,
         },

@@ -5,6 +5,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from apps.core.pagination import pagination_context
+
 from .forms import CustomerForm, PrescriberForm, SupplierForm
 from .models import Customer, Prescriber, Supplier
 
@@ -51,7 +53,7 @@ def _status_filter(queryset, status):
 def supplier_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "active")
-    suppliers = Supplier.objects.all().order_by("name")
+    suppliers = Supplier.objects.all().order_by("name", "id")
     suppliers = _search(suppliers, query, ["code", "name", "phone", "email"])
     suppliers = _status_filter(suppliers, status)
 
@@ -60,7 +62,7 @@ def supplier_list(request):
         "parties/suppliers/list.html",
         {
             **_page_context(request, "Suppliers", "supplier"),
-            "suppliers": suppliers,
+            **pagination_context(request, suppliers, context_name="suppliers"),
             "query": query,
             "status": status,
         },
@@ -130,7 +132,7 @@ def supplier_toggle_active(request, pk):
 def customer_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "active")
-    customers = Customer.objects.all().order_by("name")
+    customers = Customer.objects.all().order_by("name", "id")
     customers = _search(customers, query, ["code", "name", "phone", "email"])
     customers = _status_filter(customers, status)
 
@@ -139,7 +141,7 @@ def customer_list(request):
         "parties/customers/list.html",
         {
             **_page_context(request, "Customers", "customer"),
-            "customers": customers,
+            **pagination_context(request, customers, context_name="customers"),
             "query": query,
             "status": status,
         },
@@ -209,7 +211,7 @@ def customer_toggle_active(request, pk):
 def prescriber_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "active")
-    prescribers = Prescriber.objects.all().order_by("name")
+    prescribers = Prescriber.objects.all().order_by("name", "id")
     prescribers = _search(prescribers, query, ["name", "phone", "professional_identifier"])
     prescribers = _status_filter(prescribers, status)
 
@@ -218,7 +220,7 @@ def prescriber_list(request):
         "parties/prescribers/list.html",
         {
             **_page_context(request, "Prescribers", "prescriber"),
-            "prescribers": prescribers,
+            **pagination_context(request, prescribers, context_name="prescribers"),
             "query": query,
             "status": status,
         },

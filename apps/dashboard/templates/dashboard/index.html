@@ -95,7 +95,7 @@
                       <span class="absolute inset-y-3 left-0 w-0.5 {% if item.status_variant == 'destructive' %}bg-red-500{% elif item.status_variant == 'warning' %}bg-amber-400{% else %}bg-primary-500{% endif %}" aria-hidden="true"></span>
                       <div class="flex flex-wrap items-start justify-between gap-3">
                         <div class="min-w-0">
-                          <p class="break-words text-sm font-semibold text-slate-900">{% if item.url %}<a href="{{ item.url }}" class="registry-link">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}</p>
+                          <p class="wrap-break-word text-sm font-semibold text-slate-900">{% if item.url %}<a href="{{ item.url }}" class="registry-link">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}</p>
                           <p class="mt-1 text-xs leading-5 text-slate-500">{{ item.detail }}</p>
                         </div>
                         <div class="shrink-0">{% include "components/badge.html" with text=item.status variant=item.status_variant only %}</div>
