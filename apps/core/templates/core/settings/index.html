@@ -24,7 +24,7 @@
         </div>
         <div class="min-w-0 border-l border-slate-200 px-4 py-3">
           <dt class="text-xs text-slate-500">Default tax</dt>
-          <dd class="mt-1 break-words text-sm font-semibold text-slate-900 tabular-nums">{% if form.initial.default_tax_rate %}{% for row in tax_rate_rows %}{% if row.object.pk == form.initial.default_tax_rate %}{{ row.object.name }} · {{ row.object.rate_percent|floatformat:"-4" }}%{% if not row.object.is_active %} <span class="font-medium text-warning">(Inactive)</span>{% endif %}{% endif %}{% endfor %}{% else %}No default tax{% endif %}</dd>
+          <dd class="mt-1 wrap-break-word text-sm font-semibold text-slate-900 tabular-nums">{% if form.initial.default_tax_rate %}{% for row in tax_rate_rows %}{% if row.object.pk == form.initial.default_tax_rate %}{{ row.object.name }} · {{ row.object.rate_percent|floatformat:"-4" }}%{% if not row.object.is_active %} <span class="font-medium text-warning">(Inactive)</span>{% endif %}{% endif %}{% endfor %}{% else %}No default tax{% endif %}</dd>
         </div>
         <div class="min-w-0 border-t border-slate-200 px-4 py-3 lg:border-t-0 lg:border-l">
           <dt class="text-xs text-slate-500">Expiry warning</dt>
@@ -143,8 +143,8 @@
                 <ul class="divide-y divide-slate-100" aria-label="Configured tax rates">
                   {% for row in tax_rate_rows %}
                     <li class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(5rem,0.55fr)_6rem_3rem] sm:px-6">
-                      <div class="min-w-0"><p class="break-words text-sm font-semibold text-slate-900">{{ row.object.name }}</p>{% if row.object.pk == form.initial.default_tax_rate %}<p class="mt-0.5 text-xs font-medium text-primary-700">Saved default</p>{% endif %}</div>
-                      <p class="col-start-1 row-start-2 min-w-0 break-words text-xs font-medium text-slate-600 tabular-nums sm:col-auto sm:row-auto">{{ row.object.rate_percent|floatformat:"-4" }}% <span class="px-1 text-slate-300">/</span> {{ row.object.code }}</p>
+                      <div class="min-w-0"><p class="wrap-break-word text-sm font-semibold text-slate-900">{{ row.object.name }}</p>{% if row.object.pk == form.initial.default_tax_rate %}<p class="mt-0.5 text-xs font-medium text-primary-700">Saved default</p>{% endif %}</div>
+                      <p class="col-start-1 row-start-2 min-w-0 wrap-break-word text-xs font-medium text-slate-600 tabular-nums sm:col-auto sm:row-auto">{{ row.object.rate_percent|floatformat:"-4" }}% <span class="px-1 text-slate-300">/</span> {{ row.object.code }}</p>
                       <div class="col-start-2 row-start-1 sm:col-auto sm:row-auto">{% if row.object.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}</div>
                       <div class="col-start-2 row-start-2 text-right sm:col-auto sm:row-auto">{% if perms.core.change_taxrate %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id flat=True %}{% endif %}</div>
                     </li>
@@ -191,9 +191,9 @@
                   {% for row in payment_method_rows %}
                     <li class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(5rem,0.55fr)_6rem_3rem] sm:px-6">
                       <div class="min-w-0">
-                        <p class="break-words text-sm font-semibold text-slate-900">{{ row.object.name }}</p>{% if row.object.requires_reference %}<p class="mt-0.5 text-xs text-slate-500">Reference required</p>{% endif %}
+                        <p class="wrap-break-word text-sm font-semibold text-slate-900">{{ row.object.name }}</p>{% if row.object.requires_reference %}<p class="mt-0.5 text-xs text-slate-500">Reference required</p>{% endif %}
                       </div>
-                      <p class="col-start-1 row-start-2 min-w-0 break-words text-xs font-medium text-slate-600 sm:col-auto sm:row-auto">{{ row.object.code }}</p>
+                      <p class="col-start-1 row-start-2 min-w-0 wrap-break-word text-xs font-medium text-slate-600 sm:col-auto sm:row-auto">{{ row.object.code }}</p>
                       <div class="col-start-2 row-start-1 sm:col-auto sm:row-auto">{% if row.object.is_active %}{% include "components/badge.html" with text="Active" variant="success" %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" %}{% endif %}</div>
                       <div class="col-start-2 row-start-2 text-right sm:col-auto sm:row-auto">{% if perms.core.change_paymentmethod %}{% include "components/button.html" with text="Edit" variant="ghost" size="sm" modal_target=row.modal_id flat=True %}{% endif %}</div>
                     </li>
