@@ -1,0 +1,33 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Record {{ kind }} payment · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container space-y-5">
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0"><p class="operational-kicker">Financial operations</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Record {{ kind }} payment</h1><p class="mt-2 text-sm leading-6 text-slate-500">Select an invoice with an outstanding balance to review and pay.</p></div>
+    {% if list_url %}{% include "components/button.html" with text="Back to payments" href=list_url variant="secondary" flat=True only %}{% endif %}
+  </header>
+  {% include "finance/_navigation.html" %}
+  <section class="workspace-surface overflow-visible">
+    {% include "components/registry_filters.html" with clear_url=choose_url search_label="Find invoice" search_placeholder="Invoice number or party" %}
+    <h2 class="px-5 py-4 text-sm font-semibold text-slate-900">Invoices available for payment</h2>
+    {% if invoice_rows %}
+      <div class="relative ledger-scroll" tabindex="0" role="region" aria-label="Invoices available for payment">
+        <table class="ledger-table min-w-180">
+          <caption class="sr-only">Eligible {{ invoice_label|lower }}s with outstanding balances</caption>
+          <thead><tr><th scope="col">Invoice</th><th scope="col">{{ party_label }}</th><th scope="col" class="ledger-number">Total</th><th scope="col" class="ledger-number">Paid</th><th scope="col" class="ledger-number">Balance due</th><th scope="col">Actions</th></tr></thead>
+          <tbody>{% for row in invoice_rows %}<tr>
+            <td class="font-semibold text-slate-900">{{ row.invoice.invoice_number }}</td><td>{{ row.party.name|default:"Walk-in customer" }}</td>
+            <td class="ledger-number">{{ row.invoice.grand_total|floatformat:"2" }} {{ row.invoice.currency_code|default:currency_code }}</td>
+            <td class="ledger-number">{{ row.invoice.paid_total|floatformat:"2" }}</td>
+            <td class="ledger-number font-semibold text-slate-900">{{ row.balance|floatformat:"2" }} {{ row.invoice.currency_code|default:currency_code }}</td>
+            <td><a href="{{ row.record_url }}" class="registry-link whitespace-nowrap">Record payment<span class="sr-only"> for {{ row.invoice.invoice_number }}</span></a></td>
+          </tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="operational-empty m-5 text-center"><p class="font-semibold text-slate-800">{% if query %}No invoices match this search{% else %}No invoices available for payment{% endif %}</p><p class="mt-1 text-sm text-slate-500">Only {% if kind == "customer" %}completed sales{% else %}posted purchase{% endif %} invoices with a balance due appear here.</p></div>
+    {% endif %}
+    {% include "components/pagination.html" with label="invoices" %}
+  </section>
+</div>
+{% endblock %}

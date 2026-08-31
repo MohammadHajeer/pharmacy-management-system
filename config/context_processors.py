@@ -20,6 +20,10 @@ def dashboard_navigation(request):
 
         if permission and not request.user.has_perm(permission):
             continue
+        if configured_item.get("any_permissions") and not any(
+            request.user.has_perm(candidate) for candidate in configured_item["any_permissions"]
+        ):
+            continue
 
         item = configured_item.copy()
         item["url"] = None

@@ -1,82 +1,67 @@
-{% extends "layouts/dashboard.html" %}
-{% block title %}
-  {% if unit %}
-    Edit unit
-  {% else %}
-    Add unit
-  {% endif %}
-  · PHARMANEX
-{% endblock %}
-{% block content %}
-  <div class="workspace-container space-y-5">
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <p class="operational-kicker">
-          Medicine → Unit
-        </p>
-        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
-          {% if unit %}
-            Edit unit
-          {% else %}
-            Add unit
-          {% endif %}
-        </h1>
-        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
-          Configure a unit for
-          {{ medicine.name }}
-          .
+{% extends "layouts/dashboard.html" %} {% block title %} {% if unit %} Edit unit
+{% else %} Add unit {% endif %} · PHARMANEX {% endblock %} {% block content %}
+<div class="workspace-container space-y-5">
+  <header
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div class="min-w-0">
+      <p class="operational-kicker">Medicine → Unit</p>
+      <h1
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+      >
+        {% if unit %} Edit unit {% else %} Add unit {% endif %}
+      </h1>
+      <p
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+      >
+        Configure a unit for {{ medicine.name }} .
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2"></div>
+  </header>
+  {% include "catalog/_section_navigation.html" %}
+  <form
+    method="post"
+    class="max-w-4xl rounded-workspace border border-slate-200 bg-white"
+    data-submit-form
+    novalidate
+  >
+    {% csrf_token %} {% if form.errors %}
+    <div
+      class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700"
+      role="alert"
+    >
+      <p class="font-semibold">Review the highlighted fields.</p>
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+    <section class="border-b border-slate-200 p-5 sm:p-6">
+      <div class="mb-5">
+        <h2 class="text-sm font-semibold text-slate-900">Unit definition</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Quantity × conversion factor gives the quantity in base units.
         </p>
       </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
+      <div class="grid min-w-0 gap-5 md:grid-cols-2">
+        {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Unit name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length placeholder="e.g. Strip or box" only %} {% include "components/input.html" with name=form.conversion_to_base.html_name id=form.conversion_to_base.id_for_label label="Conversion to base unit" value=form.conversion_to_base.value error=form.conversion_to_base.errors required=form.conversion_to_base.field.required maxlength=form.conversion_to_base.field.max_length type="number" step="0.000001" min="0.000001" placeholder="Enter conversion factor" only %}
       </div>
-    </header>
-    {% include "catalog/_section_navigation.html" %}
-    <form method="post" class="max-w-4xl rounded-workspace border border-slate-200 bg-white" data-submit-form novalidate>
-      {% csrf_token %}
-      {% if form.errors %}
-        <div class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700" role="alert">
-          <p class="font-semibold">
-            Review the highlighted fields.
-          </p>
-          {{ form.non_field_errors }}
-        </div>
-      {% endif %}
-      <section class="border-b border-slate-200 p-5 sm:p-6">
-        <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Unit definition
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Quantity × conversion factor gives the quantity in base units.
-          </p>
-        </div>
-        <div class="grid min-w-0 gap-5 md:grid-cols-2">
-          {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Unit name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  placeholder="e.g. Strip or box" only %}
-          {% include "components/input.html" with name=form.conversion_to_base.html_name id=form.conversion_to_base.id_for_label label="Conversion to base unit" value=form.conversion_to_base.value error=form.conversion_to_base.errors required=form.conversion_to_base.field.required maxlength=form.conversion_to_base.field.max_length type="number" step="0.000001" min="0.000001" placeholder="Enter conversion factor" only %}
-        </div>
-      </section>
-      <section class="border-b border-slate-200 p-5 sm:p-6">
-        <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Operational use
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Keep one active base unit for this medicine.
-          </p>
-        </div>
-        <div class="grid gap-5 sm:grid-cols-2">
-          {% include "components/checkbox.html" with name=form.is_base_unit.html_name id=form.is_base_unit.id_for_label label="Base unit" checked=form.is_base_unit.value error=form.is_base_unit.errors description="The base unit must have a conversion factor of 1." only %}
-          {% include "components/checkbox.html" with name=form.purchase_allowed.html_name id=form.purchase_allowed.id_for_label label="Purchase allowed" checked=form.purchase_allowed.value error=form.purchase_allowed.errors description="Available when entering a purchase line." only %}
-          {% include "components/checkbox.html" with name=form.sale_allowed.html_name id=form.sale_allowed.id_for_label label="Sale allowed" checked=form.sale_allowed.value error=form.sale_allowed.errors description="Available for selling this medicine." only %}
-        </div>
-      </section>
-      <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">
-        {% if perms.catalog.view_medicine %}
-          {% url "catalog:medicine-detail" medicine.pk as cancel_url %}
-          {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %}
-        {% endif %}
-        {% include "components/button.html" with text="Save unit" flat=True type="submit" variant="primary" loading_text="Saving…" %}
-      </footer>
-    </form>
-  </div>
+    </section>
+    <section class="border-b border-slate-200 p-5 sm:p-6">
+      <div class="mb-5">
+        <h2 class="text-sm font-semibold text-slate-900">Operational use</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Keep one active base unit for this medicine.
+        </p>
+      </div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        {% include "components/checkbox.html" with name=form.is_base_unit.html_name id=form.is_base_unit.id_for_label label="Base unit" checked=form.is_base_unit.value error=form.is_base_unit.errors description="The base unit must have a conversion factor of 1." only %} {% include "components/checkbox.html" with name=form.purchase_allowed.html_name id=form.purchase_allowed.id_for_label label="Purchase allowed" checked=form.purchase_allowed.value error=form.purchase_allowed.errors description="Available when entering a purchase line." only %} {% include "components/checkbox.html" with name=form.sale_allowed.html_name id=form.sale_allowed.id_for_label label="Sale allowed" checked=form.sale_allowed.value error=form.sale_allowed.errors description="Available for selling this medicine." only %}
+      </div>
+    </section>
+    <footer
+      class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4"
+    >
+      {% if perms.catalog.view_medicine %} {% url "catalog:medicine-detail" medicine.pk as cancel_url %} {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %} {% endif %} {% include "components/button.html" with text="Save unit" flat=True type="submit" variant="primary" loading_text="Saving…" %}
+    </footer>
+  </form>
+</div>
 {% endblock %}

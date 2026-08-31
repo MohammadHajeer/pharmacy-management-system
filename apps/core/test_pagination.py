@@ -37,7 +37,7 @@ class PaginationComponentTests(SimpleTestCase):
         html = self.render_pagination(500, "?page=10")
         self.assertIn("Showing 226–250 of 500 medicines", html)
         self.assertIn('aria-label="Pagination"', html)
-        self.assertIn('aria-current="page" aria-label="Current page, page 10"', html)
+        self.assertRegex(html, r'aria-current="page"\s+aria-label="Current page, page 10"')
         self.assertIn("Page 10 of 20", html)
         self.assertIn("…", html)
         self.assertNotIn('aria-label="Page 4"', html)
@@ -47,7 +47,7 @@ class PaginationComponentTests(SimpleTestCase):
         for query, label in (("", "Previous page"), ("?page=2", "Next page")):
             with self.subTest(label=label):
                 html = self.render_pagination(30, query)
-                self.assertRegex(html, '<span[^>]+aria-disabled="true" aria-label="' + label + '"')
+                self.assertRegex(html, r'<span[^>]+aria-disabled="true"\s+aria-label="' + label + '"')
                 self.assertNotRegex(html, '<a[^>]+aria-label="' + label + '"')
 
     def test_single_page_has_count_without_navigation_and_empty_has_no_footer(self):

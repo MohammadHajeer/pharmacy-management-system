@@ -1,272 +1,232 @@
-{% extends "layouts/dashboard.html" %}
-{% block title %}
-  Purchase Invoice · PHARMANEX
-{% endblock %}
-{% block content %}
-  <div class="workspace-container space-y-5">
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <p class="operational-kicker">
-          Transaction document
-        </p>
-        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
-          Purchase Invoice
-        </h1>
-        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
-          {{ invoice.invoice_number|default:"Draft invoice · awaiting posting" }}
-        </p>
-      </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
-        {% url "purchasing:purchase-invoice-list" as list_url %}
-        {% include "components/button.html" with text="Back to purchases" flat=True href=list_url variant="secondary" %}
-      </div>
-    </header>
-    <section class="workspace-surface">
-      <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
-        <div class="flex items-center gap-3">
-          {% if invoice.status == "POSTED" %}
-            {% include "components/badge.html" with text="Posted" variant="primary" only %}
-          {% elif invoice.status == "VOID" %}
-            {% include "components/badge.html" with text="Void" variant="danger" only %}
-          {% else %}
-            {% include "components/badge.html" with text="Draft" variant="warning" only %}
-          {% endif %}
-          <span class="text-xs text-slate-500">
-            {% if invoice.status == "POSTED" %}
-              Posted
-              {{ invoice.posted_at|date:"d M Y, H:i" }}
-            {% else %}
-              Created
-              {{ invoice.created_at|date:"d M Y, H:i" }}
-            {% endif %}
-          </span>
-        </div>
-        <span class="font-mono text-xs text-slate-500">
-          {{ invoice.invoice_number|default:"Number assigned on posting" }}
+{% extends "layouts/dashboard.html" %} {% block title %} Purchase Invoice ·
+PHARMANEX {% endblock %} {% block content %}
+<div class="workspace-container space-y-5">
+  <header
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div class="min-w-0">
+      <p class="operational-kicker">Transaction document</p>
+      <h1
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+      >
+        Purchase Invoice
+      </h1>
+      <p
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+      >
+        {{ invoice.invoice_number|default:"Draft invoice · awaiting posting" }}
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2">
+      {% url "purchasing:purchase-invoice-list" as list_url %} {% include "components/button.html" with text="Back to purchases" flat=True href=list_url variant="secondary" %}
+    </div>
+  </header>
+  <section class="workspace-surface">
+    <header
+      class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4"
+    >
+      <div class="flex items-center gap-3">
+        {% if invoice.status == "POSTED" %} {% include "components/badge.html" with text="Posted" variant="primary" only %} {% elif invoice.status == "VOID" %} {% include "components/badge.html" with text="Void" variant="danger" only %} {% else %} {% include "components/badge.html" with text="Draft" variant="warning" only %} {% endif %}
+        <span class="text-xs text-slate-500">
+          {% if invoice.status == "POSTED" %} Posted {{ invoice.posted_at|date:"d M Y, H:i" }} {% else %} Created {{ invoice.created_at|date:"d M Y, H:i" }} {% endif %}
         </span>
-      </header>
-      <dl class="grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
-        <div>
-          <dt class="text-xs text-slate-500">
-            Supplier
-          </dt>
-          <dd class="mt-1.5 break-words text-sm font-medium text-slate-900">
-            {% if invoice.status == "DRAFT" %}
-              {{ invoice.supplier.name }}
-            {% else %}
-              {{ invoice.supplier_name_snapshot|default:"—" }}
-            {% endif %}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs text-slate-500">
-            Invoice date
-          </dt>
-          <dd class="mt-1.5 break-words text-sm font-medium text-slate-900">
-            {{ invoice.invoice_date|date:"d M Y" }}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs text-slate-500">
-            Due date
-          </dt>
-          <dd class="mt-1.5 break-words text-sm font-medium text-slate-900">
-            {{ invoice.due_date|date:"d M Y"|default:"Not specified" }}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs text-slate-500">
-            Supplier reference
-          </dt>
-          <dd class="mt-1.5 break-words text-sm font-medium text-slate-900">
-            {{ invoice.supplier_invoice_reference|default:"—" }}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs text-slate-500">
-            Currency
-          </dt>
-          <dd class="mt-1.5 break-words text-sm font-medium text-slate-900">
-            {{ invoice.currency_code }}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs text-slate-500">
-            Document state
-          </dt>
-          <dd class="mt-1.5 break-words text-sm font-medium text-slate-900">
-            {% if invoice.status == "POSTED" %}
-              Stock received · historical record
-            {% elif invoice.status == "VOID" %}
-              Void · historical record
-            {% else %}
-              Draft · stock not yet received
-            {% endif %}
-          </dd>
-        </div>
-      </dl>
-      <div class="border-t border-slate-200 px-5 py-4">
-        <h2 class="text-sm font-semibold text-slate-900">
-          Purchase lines
-        </h2>
-        <p class="mt-1 text-xs text-slate-500">
-          Quantities and costs are recorded in each selected unit.
-        </p>
       </div>
-      {% if lines %}
-        <div class="ledger-scroll" tabindex="0" role="region" aria-label="Invoice lines">
-          <table class="ledger-table min-w-250">
-            <caption class="sr-only">
-              Purchase invoice line details
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">
-                  Medicine / Batch
-                </th>
-                <th scope="col">
-                  Unit
-                </th>
-                <th scope="col" class="ledger-number">
-                  Qty
-                </th>
-                <th scope="col" class="ledger-number">
-                  Unit cost
-                </th>
-                <th scope="col" class="ledger-number">
-                  Discount
-                </th>
-                <th scope="col" class="ledger-number">
-                  Tax
-                </th>
-                <th scope="col" class="ledger-number">
-                  Line total
-                </th>
-                <th scope="col">
-                  Expiry
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for line in lines %}
-                <tr>
-                  <td>
-                    <p class="font-semibold text-slate-900">
-                      {{ line.medicine_description_snapshot }}
-                    </p>
-                    <p class="mt-1 text-xs text-slate-500">
-                      Batch
-                      {{ line.batch_number }}
-                    </p>
-                  </td>
-                  <td>
-                    {{ line.unit_name_snapshot }}
-                  </td>
-                  <td class="ledger-number">
-                    {{ line.quantity }}
-                  </td>
-                  <td class="ledger-number">
-                    {{ line.unit_cost }}
-                  </td>
-                  <td class="ledger-number">
-                    {{ line.discount_amount }}
-                  </td>
-                  <td class="ledger-number">
-                    {{ line.tax_amount }}
-                    <span class="block text-xs text-slate-500">
-                      {{ line.tax_rate_percent }}
-                      %
-                    </span>
-                  </td>
-                  <td class="ledger-number font-semibold text-slate-900">
-                    {{ line.line_total }}
-                  </td>
-                  <td class="whitespace-nowrap tabular-nums">
-                    {{ line.expiry_date|date:"d M Y" }}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="operational-empty m-4 text-center sm:m-5">
-          <p class="font-semibold text-slate-800">
-            No purchase lines
-          </p>
-          <p class="mt-1 text-sm text-slate-500">
-            This invoice has no recorded line items.
-          </p>
-        </div>
-      {% endif %}
-      <div class="grid border-t border-slate-200 md:grid-cols-2">
-        <div class="p-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Posting status
-          </h2>
-          {% if invoice.status == "DRAFT" %}
-            <p class="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              Review the supplier, unit costs, batch numbers, and expiry dates. Posting receives the stock and assigns an invoice number.
-            </p>
-            {% if perms.purchasing.post_purchaseinvoice %}
-              <form class="mt-4" method="post" action="{% url 'purchasing:purchase-invoice-post' invoice.pk %}" data-submit-form>
-                {% csrf_token %}
-                {% include "components/button.html" with text="Post invoice" flat=True type="submit" variant="primary" loading_text="Posting…" %}
-              </form>
-            {% else %}
-              <p class="mt-4 text-xs font-medium text-amber-700">
-                An authorized staff member must post this invoice.
+      <span class="font-mono text-xs text-slate-500">
+        {{ invoice.invoice_number|default:"Number assigned on posting" }}
+      </span>
+    </header>
+    <dl class="grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-500">Supplier</dt>
+        <dd class="mt-1.5 wrap-break-words text-sm font-medium text-slate-900">
+          {% if invoice.status == "DRAFT" %} {{ invoice.supplier.name }} {% else %} {{ invoice.supplier_name_snapshot|default:"—" }} {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500">Invoice date</dt>
+        <dd class="mt-1.5 wrap-break-words text-sm font-medium text-slate-900">
+          {{ invoice.invoice_date|date:"d M Y" }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500">Due date</dt>
+        <dd class="mt-1.5 wrap-break-words text-sm font-medium text-slate-900">
+          {{ invoice.due_date|date:"d M Y"|default:"Not specified" }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500">Supplier reference</dt>
+        <dd class="mt-1.5 wrap-break-word text-sm font-medium text-slate-900">
+          {{ invoice.supplier_invoice_reference|default:"—" }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500">Currency</dt>
+        <dd class="mt-1.5 wrap-break-word text-sm font-medium text-slate-900">
+          {{ invoice.currency_code }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500">Document state</dt>
+        <dd class="mt-1.5 wrap-break-word text-sm font-medium text-slate-900">
+          {% if invoice.status == "POSTED" %} Stock received · historical record
+          {% elif invoice.status == "VOID" %} Void · historical record {% else %} Draft · stock not yet received {% endif %}
+        </dd>
+      </div>
+    </dl>
+    <div class="border-t border-slate-200 px-5 py-4">
+      <h2 class="text-sm font-semibold text-slate-900">Purchase lines</h2>
+      <p class="mt-1 text-xs text-slate-500">
+        Quantities and costs are recorded in each selected unit.
+      </p>
+    </div>
+    {% if lines %}
+    <div
+      class="ledger-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Invoice lines"
+    >
+      <table class="ledger-table min-w-250">
+        <caption class="sr-only">
+          Purchase invoice line details
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Medicine / Batch</th>
+            <th scope="col">Unit</th>
+            <th scope="col" class="ledger-number">Qty</th>
+            <th scope="col" class="ledger-number">Unit cost</th>
+            <th scope="col" class="ledger-number">Discount</th>
+            <th scope="col" class="ledger-number">Tax</th>
+            <th scope="col" class="ledger-number">Line total</th>
+            <th scope="col">Expiry</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in lines %}
+          <tr>
+            <td>
+              <p class="font-semibold text-slate-900">
+                {{ line.medicine_description_snapshot }}
               </p>
-            {% endif %}
-          {% else %}
-            <p class="mt-2 text-sm leading-6 text-slate-500">
-              This is a read-only transaction record. Its recorded details and totals are preserved.
-            </p>
+              <p class="mt-1 text-xs text-slate-500">
+                Batch {{ line.batch_number }}
+              </p>
+            </td>
+            <td>{{ line.unit_name_snapshot }}</td>
+            <td class="ledger-number">{{ line.quantity }}</td>
+            <td class="ledger-number">{{ line.unit_cost }}</td>
+            <td class="ledger-number">{{ line.discount_amount }}</td>
+            <td class="ledger-number">
+              {{ line.tax_amount }}
+              <span class="block text-xs text-slate-500">
+                {{ line.tax_rate_percent }} %
+              </span>
+            </td>
+            <td class="ledger-number font-semibold text-slate-900">
+              {{ line.line_total }}
+            </td>
+            <td class="whitespace-nowrap tabular-nums">
+              {{ line.expiry_date|date:"d M Y" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="operational-empty m-4 text-center sm:m-5">
+      <p class="font-semibold text-slate-800">No purchase lines</p>
+      <p class="mt-1 text-sm text-slate-500">
+        This invoice has no recorded line items.
+      </p>
+    </div>
+    {% endif %}
+    <div class="grid border-t border-slate-200 md:grid-cols-2">
+      <div class="p-5">
+        <h2 class="text-sm font-semibold text-slate-900">Posting status</h2>
+        {% if invoice.status == "DRAFT" %}
+        <p class="mt-2 max-w-md text-sm leading-6 text-slate-500">
+          Review the supplier, unit costs, batch numbers, and expiry dates.
+          Posting receives the stock and assigns an invoice number.
+        </p>
+        {% if perms.purchasing.post_purchaseinvoice %}
+        <form
+          class="mt-4"
+          method="post"
+          action="{% url 'purchasing:purchase-invoice-post' invoice.pk %}"
+          data-submit-form
+        >
+          {% csrf_token %} {% include "components/button.html" with text="Post invoice" flat=True type="submit" variant="primary" loading_text="Posting…" %}
+        </form>
+        {% else %}
+        <p class="mt-4 text-xs font-medium text-amber-700">
+          An authorized staff member must post this invoice.
+        </p>
+        {% endif %} {% else %}
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          This is a read-only transaction record. Its recorded details and
+          totals are preserved.
+        </p>
+        {% endif %}
+      </div>
+      <section
+        class="border-t border-slate-200 bg-slate-50/70 p-5 md:border-l md:border-t-0"
+      >
+        <h2 class="text-sm font-semibold text-slate-900">Invoice summary</h2>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="text-slate-500">Subtotal</dt>
+            <dd class="tabular-nums text-slate-900">{{ invoice.subtotal }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-slate-500">Discount</dt>
+            <dd class="tabular-nums text-slate-900">
+              {{ invoice.discount_total }}
+            </dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-slate-500">Tax</dt>
+            <dd class="tabular-nums text-slate-900">{{ invoice.tax_total }}</dd>
+          </div>
+          <div
+            class="flex flex-wrap items-baseline justify-between gap-2 border-t border-slate-300 pt-4"
+          >
+            <dt class="font-semibold text-slate-900">Grand total</dt>
+            <dd class="text-xl font-semibold tabular-nums text-slate-950">
+              {{ invoice.grand_total }}
+              <span class="text-xs font-medium text-slate-500">
+                {{ invoice.currency_code }}
+              </span>
+            </dd>
+          </div>
+        </dl>
+        <dl class="mt-4 space-y-3 border-t border-slate-200 pt-4 text-sm">
+          <div class="flex flex-wrap justify-between gap-2">
+            <dt class="text-slate-500">Paid</dt>
+            <dd class="tabular-nums">
+              {{ invoice.paid_total|floatformat:"2" }} {{ invoice.currency_code }}
+            </dd>
+          </div>
+          <div class="flex flex-wrap justify-between gap-2">
+            <dt class="font-semibold text-slate-900">Balance due</dt>
+            <dd class="font-semibold tabular-nums text-slate-950">
+              {{ invoice.remaining_balance|floatformat:"2" }} {{ invoice.currency_code }}
+            </dd>
+          </div>
+        </dl>
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          {% if invoice.payment_status == "PAID" %} {% include "components/badge.html" with text="Paid" variant="success" only %} {% elif invoice.payment_status == "PARTIAL" %} {% include "components/badge.html" with text="Partially paid" variant="warning" only %} {% else %} {% include "components/badge.html" with text="Unpaid" variant="outline" only %} {% endif %} {% if perms.finance.post_supplierpayment and invoice.status == "POSTED" and invoice.remaining_balance > 0 %} {% url 'finance:supplier-payment-record' invoice.pk as payment_url %} {% include "components/button.html" with text="Record supplier payment" href=payment_url variant="primary" flat=True size="sm" only %} {% endif %} {% if perms.finance.view_supplierpayment %}
+          <a
+            href="{% url 'finance:supplier-invoice-detail' invoice.pk %}"
+            class="registry-link text-xs"
+            >Payment history</a
+          >
           {% endif %}
         </div>
-        <section class="border-t border-slate-200 bg-slate-50/70 p-5 md:border-l md:border-t-0">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Invoice summary
-          </h2>
-          <dl class="mt-4 space-y-3 text-sm">
-            <div class="flex justify-between gap-4">
-              <dt class="text-slate-500">
-                Subtotal
-              </dt>
-              <dd class="tabular-nums text-slate-900">
-                {{ invoice.subtotal }}
-              </dd>
-            </div>
-            <div class="flex justify-between gap-4">
-              <dt class="text-slate-500">
-                Discount
-              </dt>
-              <dd class="tabular-nums text-slate-900">
-                {{ invoice.discount_total }}
-              </dd>
-            </div>
-            <div class="flex justify-between gap-4">
-              <dt class="text-slate-500">
-                Tax
-              </dt>
-              <dd class="tabular-nums text-slate-900">
-                {{ invoice.tax_total }}
-              </dd>
-            </div>
-            <div class="flex flex-wrap items-baseline justify-between gap-2 border-t border-slate-300 pt-4">
-              <dt class="font-semibold text-slate-900">
-                Grand total
-              </dt>
-              <dd class="text-xl font-semibold tabular-nums text-slate-950">
-                {{ invoice.grand_total }}
-                <span class="text-xs font-medium text-slate-500">
-                  {{ invoice.currency_code }}
-                </span>
-              </dd>
-            </div>
-          </dl>
-        </section>
-      </div>
-    </section>
-  </div>
+      </section>
+    </div>
+  </section>
+</div>
 {% endblock %}

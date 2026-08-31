@@ -1,112 +1,91 @@
-{% extends "layouts/dashboard.html" %}
-{% block title %}
-  Categories · PHARMANEX
-{% endblock %}
-{% block content %}
-  <div class="workspace-container space-y-5">
-    {% url "catalog:category-create" as create_url %}
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <p class="operational-kicker">
-          Registry workspace
-        </p>
-        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
-          Categories
-        </h1>
-        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
-          Organize medicines into clear catalog categories.
-        </p>
-      </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
-        {% if perms.catalog.add_category %}
-          {% include "components/button.html" with text="Add category" flat=True href=create_url variant="primary" %}
+{% extends "layouts/dashboard.html" %} {% block title %} Categories · PHARMANEX
+{% endblock %} {% block content %}
+<div class="workspace-container space-y-5">
+  {% url "catalog:category-create" as create_url %}
+  <header
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div class="min-w-0">
+      <p class="operational-kicker">Registry workspace</p>
+      <h1
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+      >
+        Categories
+      </h1>
+      <p
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+      >
+        Organize medicines into clear catalog categories.
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2">
+      {% if perms.catalog.add_category %} {% include "components/button.html" with text="Add category" flat=True href=create_url variant="primary" %} {% endif %}
+    </div>
+  </header>
+  {% include "catalog/_section_navigation.html" %}
+  <section class="workspace-surface overflow-visible">
+    {% url "catalog:category-list" as clear_url %} {% include "components/registry_filters.html" with search_label="" search_placeholder="" %}
+    <div class="flex items-center justify-between gap-3 px-5 py-4">
+      <h2 class="text-sm font-semibold text-slate-900">Categories registry</h2>
+      <span class="text-xs text-slate-500"> Registry records </span>
+    </div>
+    {% if categories %}
+    <div
+      class="ledger-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Categories registry"
+    >
+      <table class="ledger-table min-w-120">
+        <caption class="sr-only">
+          Categories registry
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in categories %}
+          <tr>
+            <td class="font-semibold text-slate-900">{{ category.name }}</td>
+            <td>
+              {% if category.is_active %} {% include "components/badge.html" with text="Active" variant="primary" only %} {% else %} {% include "components/badge.html" with text="Inactive" variant="secondary" only %} {% endif %}
+            </td>
+            <td>
+              <div class="flex items-center justify-end gap-2">
+                {% if perms.catalog.change_category %} {% url "catalog:category-update" category.pk as edit_url %} {% include "components/button.html" with text="Edit" flat=True href=edit_url variant="ghost" size="sm" %}
+                <form
+                  method="post"
+                  action="{% url 'catalog:category-toggle-active' category.pk %}"
+                  data-submit-form
+                >
+                  {% csrf_token %} {% if category.is_active %} {% include "components/button.html" with text="Deactivate" flat=True variant="outline" size="sm" type="submit" %} {% else %} {% include "components/button.html" with text="Reactivate" flat=True variant="secondary" size="sm" type="submit" %} {% endif %}
+                </form>
+                {% else %}
+                <span class="text-xs text-slate-400"> View only </span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="operational-empty m-4 text-center sm:m-5">
+      <p class="font-semibold text-slate-800">No categories found</p>
+      <p class="mt-1 text-sm text-slate-500">
+        No records match the current status filter.
+      </p>
+      <div class="mt-4">
+        {% if perms.catalog.add_category %} {% include "components/button.html" with text="Add category" flat=True href=create_url variant="primary" %}
         {% endif %}
       </div>
-    </header>
-    {% include "catalog/_section_navigation.html" %}
-    <section class="workspace-surface overflow-visible">
-      {% url "catalog:category-list" as clear_url %}
-      {% include "components/registry_filters.html" with search_label="" search_placeholder="" %}
-      <div class="flex items-center justify-between gap-3 px-5 py-4">
-        <h2 class="text-sm font-semibold text-slate-900">
-          Categories registry
-        </h2>
-        <span class="text-xs text-slate-500">
-          Registry records
-        </span>
-      </div>
-      {% if categories %}
-        <div class="ledger-scroll" tabindex="0" role="region" aria-label="Categories registry">
-          <table class="ledger-table min-w-120">
-            <caption class="sr-only">
-              Categories registry
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">
-                  Name
-                </th>
-                <th scope="col">
-                  Status
-                </th>
-                <th scope="col">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for category in categories %}
-                <tr>
-                  <td class="font-semibold text-slate-900">
-                    {{ category.name }}
-                  </td>
-                  <td>
-                    {% if category.is_active %}
-                      {% include "components/badge.html" with text="Active" variant="primary" only %}
-                    {% else %}
-                      {% include "components/badge.html" with text="Inactive" variant="secondary" only %}
-                    {% endif %}
-                  </td>
-                  <td>
-                    <div class="flex items-center justify-end gap-2">
-                      {% if perms.catalog.change_category %}
-                        {% url "catalog:category-update" category.pk as edit_url %}
-                        {% include "components/button.html" with text="Edit" flat=True href=edit_url variant="ghost" size="sm" %}
-                        <form method="post" action="{% url 'catalog:category-toggle-active' category.pk %}" data-submit-form>
-                          {% csrf_token %}
-                          {% if category.is_active %}
-                            {% include "components/button.html" with text="Deactivate" flat=True variant="outline" size="sm" type="submit" %}
-                          {% else %}
-                            {% include "components/button.html" with text="Reactivate" flat=True variant="secondary" size="sm" type="submit" %}
-                          {% endif %}
-                        </form>
-                      {% else %}
-                        <span class="text-xs text-slate-400">
-                          View only
-                        </span>
-                      {% endif %}
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="operational-empty m-4 text-center sm:m-5">
-          <p class="font-semibold text-slate-800">
-            No categories found
-          </p>
-          <p class="mt-1 text-sm text-slate-500">
-            No records match the current status filter.
-          </p>
-          <div class="mt-4">
-            {% if perms.catalog.add_category %}
-              {% include "components/button.html" with text="Add category" flat=True href=create_url variant="primary" %}
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-    </section>
-  </div>
+    </div>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

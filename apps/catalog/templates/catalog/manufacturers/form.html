@@ -1,62 +1,54 @@
-{% extends "layouts/dashboard.html" %}
-{% block title %}
-  {% if manufacturer %}
-    Edit manufacturer
-  {% else %}
-    Add manufacturer
-  {% endif %}
-  · PHARMANEX
-{% endblock %}
-{% block content %}
-  <div class="workspace-container space-y-5">
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <p class="operational-kicker">
-          Catalog record
-        </p>
-        <h1 class="mt-1 wrap-break-word text-2xl font-semibold tracking-tight text-slate-950">
-          {% if manufacturer %}
-            Edit manufacturer
-          {% else %}
-            Add manufacturer
-          {% endif %}
-        </h1>
-        <p class="mt-2 max-w-2xl wrap-break-word text-sm leading-6 text-slate-500">
-          Maintain the reference data used by medicine definitions.
+{% extends "layouts/dashboard.html" %} {% block title %} {% if manufacturer %}
+Edit manufacturer {% else %} Add manufacturer {% endif %} · PHARMANEX {% endblock %} {% block content %}
+<div class="workspace-container space-y-5">
+  <header
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div class="min-w-0">
+      <p class="operational-kicker">Catalog record</p>
+      <h1
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+      >
+        {% if manufacturer %} Edit manufacturer {% else %} Add manufacturer {% endif %}
+      </h1>
+      <p
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+      >
+        Maintain the reference data used by medicine definitions.
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2"></div>
+  </header>
+  {% include "catalog/_section_navigation.html" %}
+  <form
+    method="post"
+    class="max-w-2xl rounded-workspace border border-slate-200 bg-white"
+    data-submit-form
+    novalidate
+  >
+    {% csrf_token %} {% if form.errors %}
+    <div
+      class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700"
+      role="alert"
+    >
+      <p class="font-semibold">Review the highlighted fields.</p>
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+    <section class="border-b border-slate-200 p-5 sm:p-6">
+      <div class="mb-5">
+        <h2 class="text-sm font-semibold text-slate-900">Record details</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Use a clear name that staff can recognize.
         </p>
       </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
-      </div>
-    </header>
-    {% include "catalog/_section_navigation.html" %}
-    <form method="post" class="max-w-2xl rounded-workspace border border-slate-200 bg-white" data-submit-form novalidate>
-      {% csrf_token %}
-      {% if form.errors %}
-        <div class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700" role="alert">
-          <p class="font-semibold">
-            Review the highlighted fields.
-          </p>
-          {{ form.non_field_errors }}
-        </div>
-      {% endif %}
-      <section class="border-b border-slate-200 p-5 sm:p-6">
-        <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Record details
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Use a clear name that staff can recognize.
-          </p>
-        </div>
-        {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Manufacturer name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  placeholder="Enter manufacturer name" only %}
-      </section>
-      <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">
-        {% if perms.catalog.view_manufacturer %}
-          {% url "catalog:manufacturer-list"  as cancel_url %}
-          {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %}
-        {% endif %}
-        {% include "components/button.html" with text="Save manufacturer" flat=True type="submit" variant="primary" loading_text="Saving…" %}
-      </footer>
-    </form>
-  </div>
+      {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Manufacturer name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length placeholder="Enter manufacturer name" only %}
+    </section>
+    <footer
+      class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4"
+    >
+      {% if perms.catalog.view_manufacturer %} {% url "catalog:manufacturer-list" as cancel_url %} {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %} {% endif %} {% include "components/button.html" with text="Save manufacturer" flat=True type="submit" variant="primary" loading_text="Saving…" %}
+    </footer>
+  </form>
+</div>
 {% endblock %}

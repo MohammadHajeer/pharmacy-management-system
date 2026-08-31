@@ -102,9 +102,10 @@ DASHBOARD_NAVIGATION = (
         "section": "Transactions",
         "label": "Payments",
         "icon": "payments",
-        "url_name": None,
+        "url_name": "finance:payment-list",
         "namespace": "finance",
-        "permission": "finance.view_customerpayment",
+        "permission": None,
+        "any_permissions": ("finance.view_customerpayment", "finance.view_supplierpayment"),
     },
     {
         "section": "Transactions",

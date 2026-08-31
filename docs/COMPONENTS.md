@@ -189,6 +189,11 @@ Dirty forms may include `data-dirty-indicator`, `data-pristine-indicator`, and `
 
 Registry pages share `components/registry_filters.html`. Supply `query`, `status`, `status_options`, and a reversed `clear_url`; optional `search_label` and `search_placeholder` enable search only where supported. It composes the existing controls and remains a normal GET form.
 
+Omit `status_options` for search-only registries. Feature-owned controls may be
+included through `extra_filters_template`; set `has_filters` when those controls
+are active so the shared Clear filters link remains available. Finance uses this
+for its payment-method filter with the same native-change navigation behavior.
+
 `static/js/registry-filters.js` enhances forms marked `data-registry-filter-form`: search input applies after 350 ms, Enter applies immediately, and the shared custom select's bubbling native `change` event applies immediately. Navigation sends the form's existing `q`/`status` values to Django, preserves unrelated URL parameters, and removes blank searches and `page` so filters restart at page 1. Search focus/caret are restored after navigation when session storage is available; no query/filter business logic runs in JavaScript. A conditional **Clear filters** link returns to the base route, clearing filters and page state. A submit button exists only inside `noscript`, supporting Enter and status-only forms without JavaScript; GET forms must not include a hidden `page` field.
 
 Run the dependency-free interaction tests with `node --test apps/dashboard/tests_js/registry-filters.test.cjs`.
@@ -225,14 +230,20 @@ of Y / Next; larger screens show an elided range with an accessible current page
 On browser history restoration, the filter form resets to its server-rendered
 defaults so cached edits cannot disagree with the URL and displayed result page.
 
-Currently applied to Medicines, Customers, Suppliers, Prescribers, and Purchase
-Invoices. Small configuration lists, document line items, and dashboard recent
-subsets remain unpaginated. Inventory/history, payments, returns/refunds, reports,
+Currently applied to Medicines, Customers, Suppliers, Prescribers, Purchase
+Invoices, and Finance payment registries, invoice selection, and invoice payment
+history. Small configuration lists, document line items, and dashboard recent
+subsets remain unpaginated. Inventory/history, returns/refunds, reports,
 and sales history have no implemented list pages; prescription views currently
 lack templates. Apply this convention when those screens are implemented.
 
 ## Sidebar navigation
 
 Navigation is configured once in `config/navigation.py`; views do not pass link lists. When a routed feature is enabled, update its existing namespaced `url_name` (for example, `catalog:medicine-list`) and Django permission (for example, `catalog.view_medicine`). Do not create a duplicate app from a navigation label.
+
+Items spanning separately permissioned workspaces may specify `any_permissions`:
+at least one must be granted, in addition to any singular `permission`. Payments
+uses this to admit customer-only or supplier-only viewers. Its finance landing
+route enforces the same check and redirects to an authorized registry.
 
 `config/context_processors.py` hides links the current user cannot access and safely disables unavailable routes. For active state, configure `active_url_names` with exact local route names; both the namespace and route name must match `request.resolver_match`. An explicit set is authoritative. Without it, the processor matches the fully qualified destination route, then permits namespace fallback only if that namespace belongs to one configured area. Unavailable links never become active. Suppliers and Customers have separate route sets; Catalog and Purchasing include their nested routes. Prescribers has no sidebar entry and does not activate Suppliers or Customers. Permissions remain the security boundary; there are no group-name checks.

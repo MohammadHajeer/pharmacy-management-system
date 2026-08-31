@@ -1,86 +1,74 @@
-{% extends "layouts/dashboard.html" %}
-{% block title %}
-  {% if prescriber %}
-    Edit prescriber
-  {% else %}
-    Add prescriber
-  {% endif %}
-  · PHARMANEX
-{% endblock %}
+{% extends "layouts/dashboard.html" %} {% block title %} {% if prescriber %}
+Edit prescriber {% else %} Add prescriber {% endif %} · PHARMANEX {% endblock %}
 {% block content %}
-  <div class="workspace-container space-y-5">
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <p class="operational-kicker">
-          Party record
-        </p>
-        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
-          {% if prescriber %}
-            Edit prescriber
-          {% else %}
-            Add prescriber
-          {% endif %}
-        </h1>
-        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
-          Maintain the existing prescriber master record.
+<div class="workspace-container space-y-5">
+  <header
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div class="min-w-0">
+      <p class="operational-kicker">Party record</p>
+      <h1
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+      >
+        {% if prescriber %} Edit prescriber {% else %} Add prescriber {% endif %}
+      </h1>
+      <p
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+      >
+        Maintain the existing prescriber master record.
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2"></div>
+  </header>
+  <form
+    method="post"
+    class="max-w-4xl rounded-workspace border border-slate-200 bg-white"
+    data-submit-form
+    novalidate
+  >
+    {% csrf_token %} {% if form.errors %}
+    <div
+      class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700"
+      role="alert"
+    >
+      <p class="font-semibold">Review the highlighted fields.</p>
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+    <section class="border-b border-slate-200 p-5 sm:p-6">
+      <div class="mb-5">
+        <h2 class="text-sm font-semibold text-slate-900">Record identity</h2>
+        <p class="mt-1 text-sm text-slate-500">Use a recognizable name.</p>
+      </div>
+      <div class="grid min-w-0 gap-5 md:grid-cols-2">
+        {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Prescriber name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length placeholder="Enter prescriber name" only %} {% include "components/input.html" with name=form.professional_identifier.html_name id=form.professional_identifier.id_for_label label="Professional identifier" value=form.professional_identifier.value error=form.professional_identifier.errors required=form.professional_identifier.field.required maxlength=form.professional_identifier.field.max_length placeholder="Enter professional identifier" only %}
+      </div>
+    </section>
+    <section class="border-b border-slate-200 p-5 sm:p-6">
+      <div class="mb-5">
+        <h2 class="text-sm font-semibold text-slate-900">
+          Contact information
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Optional details for staff follow-up.
         </p>
       </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
+      {% include "components/input.html" with name=form.phone.html_name id=form.phone.id_for_label label="Phone" value=form.phone.value error=form.phone.errors required=form.phone.field.required maxlength=form.phone.field.max_length type="tel" placeholder="Enter phone number" only %}
+    </section>
+    <section class="border-b border-slate-200 p-5 sm:p-6">
+      <div class="mb-5">
+        <h2 class="text-sm font-semibold text-slate-900">Additional details</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          These notes are for internal reference.
+        </p>
       </div>
-    </header>
-    <form method="post" class="max-w-4xl rounded-workspace border border-slate-200 bg-white" data-submit-form novalidate>
-      {% csrf_token %}
-      {% if form.errors %}
-        <div class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700" role="alert">
-          <p class="font-semibold">
-            Review the highlighted fields.
-          </p>
-          {{ form.non_field_errors }}
-        </div>
-      {% endif %}
-      <section class="border-b border-slate-200 p-5 sm:p-6">
-        <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Record identity
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Use a recognizable name.
-          </p>
-        </div>
-        <div class="grid min-w-0 gap-5 md:grid-cols-2">
-          {% include "components/input.html" with name=form.name.html_name id=form.name.id_for_label label="Prescriber name" value=form.name.value error=form.name.errors required=form.name.field.required maxlength=form.name.field.max_length  placeholder="Enter prescriber name" only %}
-          {% include "components/input.html" with name=form.professional_identifier.html_name id=form.professional_identifier.id_for_label label="Professional identifier" value=form.professional_identifier.value error=form.professional_identifier.errors required=form.professional_identifier.field.required maxlength=form.professional_identifier.field.max_length  placeholder="Enter professional identifier" only %}
-        </div>
-      </section>
-      <section class="border-b border-slate-200 p-5 sm:p-6">
-        <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Contact information
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Optional details for staff follow-up.
-          </p>
-        </div>
-        {% include "components/input.html" with name=form.phone.html_name id=form.phone.id_for_label label="Phone" value=form.phone.value error=form.phone.errors required=form.phone.field.required maxlength=form.phone.field.max_length type="tel" placeholder="Enter phone number" only %}
-      </section>
-      <section class="border-b border-slate-200 p-5 sm:p-6">
-        <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Additional details
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            These notes are for internal reference.
-          </p>
-        </div>
-        {% include "components/textarea.html" with name=form.notes.html_name id=form.notes.id_for_label label="Notes" value=form.notes.value error=form.notes.errors required=form.notes.field.required maxlength=form.notes.field.max_length rows="3" placeholder="Add internal notes" only %}
-      </section>
-      <footer class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4">
-        {% if perms.parties.view_prescriber %}
-          {% url "parties:prescriber-list"  as cancel_url %}
-          {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %}
-        {% endif %}
-        {% include "components/button.html" with text="Save prescriber" flat=True type="submit" variant="primary" loading_text="Saving…" %}
-      </footer>
-    </form>
-  </div>
+      {% include "components/textarea.html" with name=form.notes.html_name id=form.notes.id_for_label label="Notes" value=form.notes.value error=form.notes.errors required=form.notes.field.required maxlength=form.notes.field.max_length rows="3" placeholder="Add internal notes" only %}
+    </section>
+    <footer
+      class="flex flex-wrap items-center justify-end gap-2 rounded-b-workspace bg-slate-50 px-5 py-4"
+    >
+      {% if perms.parties.view_prescriber %} {% url "parties:prescriber-list" as cancel_url %} {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" %} {% endif %} {% include "components/button.html" with text="Save prescriber" flat=True type="submit" variant="primary" loading_text="Saving…" %}
+    </footer>
+  </form>
+</div>
 {% endblock %}

@@ -520,7 +520,7 @@ class CoreSettingsViewTests(TestCase):
         response = self.client.get(reverse("core:settings"))
         self.assertContains(response, "No settings saved yet")
         self.assertContains(response, "Not configured", count=3)
-        self.assertContains(response, "No default tax</dd>")
+        self.assertRegex(response.content.decode(), r"No default tax\s*</dd>")
 
         PharmacySettings.objects.create(
             pharmacy_name="Saved Pharmacy", currency_code="USD",
@@ -529,11 +529,11 @@ class CoreSettingsViewTests(TestCase):
         response = self.client.get(reverse("core:settings"))
         self.assertNotContains(response, "Not configured")
         self.assertContains(response, "0 days")
-        self.assertContains(response, "No default tax</dd>")
+        self.assertRegex(response.content.decode(), r"No default tax\s*</dd>")
         snapshot = response.content.decode().split(
             'aria-label="Configuration snapshot"', 1,
         )[1].split("</section>", 1)[0]
-        self.assertIn('>0 <span', snapshot)
+        self.assertRegex(snapshot, r">\s*0\s+<span")
 
     def test_anonymous_and_unauthorized_users_cannot_access_settings(self):
         self.client.logout()

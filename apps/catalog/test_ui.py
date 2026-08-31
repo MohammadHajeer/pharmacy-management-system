@@ -77,7 +77,7 @@ class CatalogWorkspaceTests(TestCase):
             with self.subTest(route=route):
                 response = self.client.get(reverse(f"catalog:{route}", args=args))
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.content.decode().count("<h1 "), 1)
+                self.assertEqual(len(re.findall(r"<h1\b", response.content.decode())), 1)
                 breadcrumbs = response.context["breadcrumbs"]
                 self.assertEqual(breadcrumbs[0]["label"], "Catalog")
                 self.assertNotIn("url", breadcrumbs[-1])

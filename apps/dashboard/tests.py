@@ -429,6 +429,7 @@ class DashboardNavigationTests(TestCase):
                 "Suppliers",
                 "Customers",
                 "Purchases",
+                "Payments",
                 "Settings",
                 "Logout",
             }
@@ -440,6 +441,7 @@ class DashboardNavigationTests(TestCase):
         self.assertEqual(suppliers["url"], "/parties/suppliers/")
         self.assertEqual(customers["url"], "/parties/customers/")
         self.assertEqual(purchases["url"], "/purchasing/invoices/")
+        self.assertEqual(next(item for item in items if item["label"] == "Payments")["url"], "/finance/")
         self.assertEqual(settings["url"], "/settings/")
         self.assertTrue(all(item["url"] is None for item in future_items))
 

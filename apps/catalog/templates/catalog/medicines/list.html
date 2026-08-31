@@ -1,125 +1,103 @@
-{% extends "layouts/dashboard.html" %}
-{% block title %}
-  Medicines · PHARMANEX
-{% endblock %}
-{% block content %}
-  <div class="workspace-container space-y-5">
-    {% url "catalog:medicine-create" as create_url %}
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <p class="operational-kicker">
-          Registry workspace
-        </p>
-        <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-slate-950">
-          Medicines
-        </h1>
-        <p class="mt-2 max-w-2xl break-words text-sm leading-6 text-slate-500">
-          Manage medicine definitions, units, barcodes, and selling configuration.
-        </p>
-      </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
-        {% if perms.catalog.add_medicine %}
-          {% include "components/button.html" with text="Add medicine" flat=True href=create_url variant="primary" %}
+{% extends "layouts/dashboard.html" %} {% block title %} Medicines · PHARMANEX
+{% endblock %} {% block content %}
+<div class="workspace-container space-y-5">
+  {% url "catalog:medicine-create" as create_url %}
+  <header
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div class="min-w-0">
+      <p class="operational-kicker">Registry workspace</p>
+      <h1
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+      >
+        Medicines
+      </h1>
+      <p
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+      >
+        Manage medicine definitions, units, barcodes, and selling configuration.
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2">
+      {% if perms.catalog.add_medicine %} {% include "components/button.html" with text="Add medicine" flat=True href=create_url variant="primary" %} {% endif %}
+    </div>
+  </header>
+  {% include "catalog/_section_navigation.html" %}
+  <section class="workspace-surface overflow-visible">
+    {% url "catalog:medicine-list" as clear_url %} {% include "components/registry_filters.html" with search_label="Search medicines" search_placeholder="Name, generic name or barcode" %}
+    <div class="flex items-center justify-between gap-3 px-5 py-4">
+      <h2 class="text-sm font-semibold text-slate-900">Medicine registry</h2>
+      <span class="text-xs text-slate-500"> Registry records </span>
+    </div>
+    {% if medicines %}
+    <div
+      class="ledger-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Medicine registry"
+    >
+      <table class="ledger-table min-w-190">
+        <caption class="sr-only">
+          Medicine registry
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Medicine</th>
+            <th scope="col">Category</th>
+            <th scope="col">Manufacturer</th>
+            <th scope="col" class="ledger-number">Selling price</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for medicine in medicines %}
+          <tr>
+            <td>
+              <a
+                class="registry-link"
+                href="{% url 'catalog:medicine-detail' medicine.pk %}"
+              >
+                {{ medicine.name }}
+              </a>
+              {% if medicine.generic_name %}
+              <p class="mt-1 text-xs text-slate-500">
+                {{ medicine.generic_name }}
+              </p>
+              {% endif %}
+            </td>
+            <td>{{ medicine.category }}</td>
+            <td>{{ medicine.manufacturer }}</td>
+            <td class="ledger-number font-medium text-slate-800">
+              {{ medicine.default_selling_price }}
+            </td>
+            <td>
+              {% if medicine.is_active %} {% include "components/badge.html" with text="Active" variant="primary" only %} {% else %} {% include "components/badge.html" with text="Inactive" variant="secondary" only %} {% endif %}
+            </td>
+            <td class="text-right">
+              {% url "catalog:medicine-detail" medicine.pk as detail_url %} {% include "components/button.html" with text="View" flat=True variant="ghost" size="sm" href=detail_url %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="operational-empty m-4 text-center sm:m-5">
+      <p class="font-semibold text-slate-800">No medicines found</p>
+      <p class="mt-1 text-sm text-slate-500">
+        No medicine records match the current filters.
+      </p>
+      <div class="mt-4">
+        {% if perms.catalog.add_medicine %} {% include "components/button.html" with text="Add medicine" flat=True href=create_url variant="primary" %}
         {% endif %}
       </div>
-    </header>
-    {% include "catalog/_section_navigation.html" %}
-    <section class="workspace-surface overflow-visible">
-      {% url "catalog:medicine-list" as clear_url %}
-      {% include "components/registry_filters.html" with search_label="Search medicines" search_placeholder="Name, generic name or barcode" %}
-      <div class="flex items-center justify-between gap-3 px-5 py-4">
-        <h2 class="text-sm font-semibold text-slate-900">
-          Medicine registry
-        </h2>
-        <span class="text-xs text-slate-500">
-          Registry records
-        </span>
-      </div>
-      {% if medicines %}
-        <div class="ledger-scroll" tabindex="0" role="region" aria-label="Medicine registry">
-          <table class="ledger-table min-w-190">
-            <caption class="sr-only">
-              Medicine registry
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">
-                  Medicine
-                </th>
-                <th scope="col">
-                  Category
-                </th>
-                <th scope="col">
-                  Manufacturer
-                </th>
-                <th scope="col" class="ledger-number">
-                  Selling price
-                </th>
-                <th scope="col">
-                  Status
-                </th>
-                <th scope="col">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for medicine in medicines %}
-                <tr>
-                  <td>
-                    <a class="registry-link" href="{% url 'catalog:medicine-detail' medicine.pk %}">
-                      {{ medicine.name }}
-                    </a>
-                    {% if medicine.generic_name %}
-                      <p class="mt-1 text-xs text-slate-500">
-                        {{ medicine.generic_name }}
-                      </p>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {{ medicine.category }}
-                  </td>
-                  <td>
-                    {{ medicine.manufacturer }}
-                  </td>
-                  <td class="ledger-number font-medium text-slate-800">
-                    {{ medicine.default_selling_price }}
-                  </td>
-                  <td>
-                    {% if medicine.is_active %}
-                      {% include "components/badge.html" with text="Active" variant="primary" only %}
-                    {% else %}
-                      {% include "components/badge.html" with text="Inactive" variant="secondary" only %}
-                    {% endif %}
-                  </td>
-                  <td class="text-right">
-                    {% url "catalog:medicine-detail" medicine.pk as detail_url %}
-                    {% include "components/button.html" with text="View" flat=True variant="ghost" size="sm" href=detail_url %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="operational-empty m-4 text-center sm:m-5">
-          <p class="font-semibold text-slate-800">
-            No medicines found
-          </p>
-          <p class="mt-1 text-sm text-slate-500">
-            No medicine records match the current filters.
-          </p>
-          <div class="mt-4">
-            {% if perms.catalog.add_medicine %}
-              {% include "components/button.html" with text="Add medicine" flat=True href=create_url variant="primary" %}
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-      {% include "components/pagination.html" with label="medicines" %}
-      <div class="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-        Selling prices are configured per base unit. Physical stock is managed separately.
-      </div>
-    </section>
-  </div>
+    </div>
+    {% endif %} {% include "components/pagination.html" with label="medicines" %}
+    <div class="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+      Selling prices are configured per base unit. Physical stock is managed
+      separately.
+    </div>
+  </section>
+</div>
 {% endblock %}

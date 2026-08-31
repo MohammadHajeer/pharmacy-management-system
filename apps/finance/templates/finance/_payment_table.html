@@ -1,0 +1,82 @@
+{% if rows %}
+<div
+  class="relative ledger-scroll"
+  tabindex="0"
+  role="region"
+  aria-label="{{ title }} ledger"
+>
+  <table class="ledger-table min-w-250">
+    <caption class="sr-only">
+      {{ title }} ledger
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Reference</th>
+        <th scope="col">Invoice</th>
+        <th scope="col">{{ party_label }}</th>
+        <th scope="col">Method</th>
+        <th scope="col">Paid at</th>
+        <th scope="col" class="ledger-number">Amount</th>
+        <th scope="col">Status</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="max-w-48 wrap-break-words text-xs">
+          {{ row.payment.reference|default:"No reference" }}
+        </td>
+        <td>
+          <a
+            class="registry-link whitespace-nowrap"
+            href="{{ row.invoice_url }}"
+            >{{ row.invoice.invoice_number|default:"Invoice" }}</a
+          >
+        </td>
+        <td class="max-w-56 wrap-break-words font-medium text-slate-900">
+          {{ row.party.name|default:"Walk-in customer" }}
+        </td>
+        <td>{{ row.payment.payment_method.name }}</td>
+        <td class="whitespace-nowrap text-xs tabular-nums">
+          {{ row.payment.paid_at|date:"d M Y" }}<span
+            class="mt-1 block text-slate-500"
+            >{{ row.payment.paid_at|date:"H:i T" }}</span
+          >
+        </td>
+        <td class="ledger-number font-semibold text-slate-900">
+          {{ row.payment.amount|floatformat:"2" }}
+          <span class="text-xs font-normal text-slate-500"
+            >{{ row.invoice.currency_code|default:currency_code }}</span
+          >
+        </td>
+        <td>
+          {% include "finance/_payment_status.html" with payment=row.payment only %}
+        </td>
+        <td>
+          <a href="{{ row.detail_url }}" class="registry-link"
+            >View<span class="sr-only">
+              payment for {{ row.invoice.invoice_number }} on {{ row.payment.paid_at }}</span
+            ></a
+          >
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="operational-empty m-4 text-center sm:m-5">
+  <p class="font-semibold text-slate-800">
+    {% if has_filters %}No payments match the current filters.{% else %}No {{ kind }} payments yet{% endif %}
+  </p>
+  <p class="mt-1 text-sm text-slate-500">
+    {% if has_filters %}Try another reference, invoice or payment method.{% else %}Payments recorded against {% if kind == "customer" %}sales{% else %}purchase{% endif %} invoices will appear here.{% endif %}
+  </p>
+  {% if has_filters %}
+  <div class="mt-3">
+    {% include "components/button.html" with text="Clear filters" href=list_url variant="ghost" flat=True only %}
+  </div>
+  {% endif %}
+</div>
+{% endif %} {% include "components/pagination.html" with label="payments" %}

@@ -1,0 +1,5 @@
+{% if payment.status == "POSTED" %}
+  {% include "components/badge.html" with text="Posted" variant="primary" only %}
+{% else %}
+  {% include "components/badge.html" with text="Reversed" variant="secondary" only %}
+{% endif %}
