@@ -161,6 +161,20 @@ When a server-rendered message needs a separate title or a non-default display t
 
 ## Clinical operations surfaces
 
+Use `workspace-container` on the outer feature-page wrapper, around the header,
+local navigation, filters, and workspace surfaces. It centers the page at Tailwind's
+`max-w-6xl` (72rem), matching Settings, and uses the available width on smaller
+screens. The dashboard layout owns responsive page padding; do not add another
+layer of horizontal padding or a page-specific maximum width to this wrapper.
+Keep narrower controls/forms inside the container where appropriate.
+
+Catalog pages include `catalog/_section_navigation.html` below their main header.
+The flat Medicines / Categories / Manufacturers links retain view-permission
+filtering and use exact namespaced `request.resolver_match.view_name` checks for
+the active section, including its create/edit/detail and medicine unit/barcode
+pages. The current section has `aria-current="page"` and a teal underline; these
+ordinary links wrap on small screens and remain independent of breadcrumbs.
+
 Dashboard and configuration workspaces can use the small shared presentation roles defined in `assets/css/input.css`:
 
 - `workspace-surface` for a connected, bordered workspace region;

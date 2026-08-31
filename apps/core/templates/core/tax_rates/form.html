@@ -3,14 +3,14 @@
 {% block title %}{% if is_editing %}Edit{% else %}Add{% endif %} tax rate | PHARMANEX{% endblock %}
 
 {% block content %}
-  <div class="mx-auto max-w-2xl space-y-6">
+  <div class="workspace-container space-y-6">
     <header>
       <p class="text-sm font-semibold uppercase tracking-wider text-primary-700">Settings</p>
       <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-950">{% if is_editing %}Edit tax rate{% else %}Add tax rate{% endif %}</h1>
       <p class="mt-2 text-sm leading-6 text-slate-600">Configure a reusable tax rate for pharmacy transactions.</p>
     </header>
 
-    <form method="post" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-submit-form novalidate>
+    <form method="post" class="max-w-2xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-submit-form novalidate>
       {% csrf_token %}
       <div class="space-y-5 p-5 sm:p-6">
         {% include "core/tax_rates/_form_fields.html" with form=form field_prefix="tax-rate-page" only %}

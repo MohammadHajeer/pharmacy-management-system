@@ -3,7 +3,7 @@
   Add barcode · PHARMANEX
 {% endblock %}
 {% block content %}
-  <div class="mx-auto min-w-0 max-w-7xl space-y-5">
+  <div class="workspace-container space-y-5">
     <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
         <p class="operational-kicker">
@@ -21,6 +21,7 @@
       <div class="flex shrink-0 flex-wrap gap-2">
       </div>
     </header>
+    {% include "catalog/_section_navigation.html" %}
     <form method="post" class="max-w-4xl rounded-workspace border border-slate-200 bg-white" data-submit-form novalidate>
       {% csrf_token %}
       {% if form.errors %}

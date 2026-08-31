@@ -53,6 +53,11 @@
 }
 
 @layer components {
+  /* Main workspace width matches the Settings configuration console. */
+  .workspace-container {
+    @apply mx-auto w-full min-w-0 max-w-6xl;
+  }
+
   .workspace-surface {
     @apply overflow-hidden rounded-workspace border border-slate-200/90 bg-white;
   }

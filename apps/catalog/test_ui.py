@@ -64,6 +64,7 @@ class CatalogWorkspaceTests(TestCase):
 
     def test_catalog_pages_render_with_explicit_breadcrumbs(self):
         routes = [
+            ("medicine-list", []), ("medicine-create", []),
             ("medicine-detail", [self.medicine.pk]), ("medicine-update", [self.medicine.pk]),
             ("medicine-unit-create", [self.medicine.pk]),
             ("medicine-unit-update", [self.medicine.pk, self.unit.pk]),
@@ -81,6 +82,14 @@ class CatalogWorkspaceTests(TestCase):
                 self.assertEqual(breadcrumbs[0]["label"], "Catalog")
                 self.assertNotIn("url", breadcrumbs[-1])
                 self.assertNotEqual(breadcrumbs[-1]["label"], route)
+                navigation = response.content.decode().split(
+                    'aria-label="Catalog sections"', 1,
+                )[1].split("</nav>", 1)[0]
+                active_links = re.findall(r'<a href="([^"]+)" aria-current="page"', navigation)
+                section = route.split("-", 1)[0]
+                self.assertEqual(active_links, [reverse(f"catalog:{section}-list")])
+                for label in ("Medicines", "Categories", "Manufacturers"):
+                    self.assertIn(f">{label}</a>", navigation)
 
     def test_view_only_users_cannot_see_write_actions(self):
         self.user.user_permissions.set(Permission.objects.filter(
@@ -90,6 +99,24 @@ class CatalogWorkspaceTests(TestCase):
         for text in ("Edit medicine", "Add unit", "Add barcode", "Deactivate"):
             self.assertNotContains(response, text)
         self.assertNotContains(self.client.get(reverse("catalog:medicine-list")), "Add medicine")
+
+        for section, permission in (
+            ("medicine", "view_medicine"),
+            ("category", "view_category"),
+            ("manufacturer", "view_manufacturer"),
+        ):
+            with self.subTest(section=section):
+                self.user.user_permissions.set(Permission.objects.filter(
+                    content_type__app_label="catalog", codename=permission,
+                ))
+                response = self.client.get(reverse(f"catalog:{section}-list"))
+                navigation = response.content.decode().split(
+                    'aria-label="Catalog sections"', 1,
+                )[1].split("</nav>", 1)[0]
+                self.assertEqual(
+                    re.findall(r'<a href="([^"]+)"', navigation),
+                    [reverse(f"catalog:{section}-list")],
+                )
 
     def test_unit_barcode_and_reference_post_flows(self):
         response = self.client.post(reverse("catalog:medicine-unit-create", args=[self.medicine.pk]), {
@@ -117,6 +144,7 @@ class CatalogWorkspaceTests(TestCase):
         ))
         response = self.client.get(reverse("catalog:medicine-create"))
         self.assertTrue(all("url" not in item for item in response.context["breadcrumbs"]))
+        self.assertNotContains(response, 'aria-label="Catalog sections"')
 
     def test_medicine_edit_keeps_the_existing_base_unit(self):
         url = reverse("catalog:medicine-update", args=[self.medicine.pk])

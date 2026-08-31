@@ -4,7 +4,7 @@
   · PHARMANEX
 {% endblock %}
 {% block content %}
-  <div class="mx-auto min-w-0 max-w-7xl space-y-5">
+  <div class="workspace-container space-y-5">
     <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
         <p class="operational-kicker">
@@ -32,6 +32,7 @@
         {% endif %}
       </div>
     </header>
+    {% include "catalog/_section_navigation.html" %}
     <div class="flex items-center gap-3">
       {% if medicine.is_active %}
         {% include "components/badge.html" with text="Active" variant="primary" only %}

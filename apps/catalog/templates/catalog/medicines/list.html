@@ -3,7 +3,7 @@
   Medicines · PHARMANEX
 {% endblock %}
 {% block content %}
-  <div class="mx-auto min-w-0 max-w-7xl space-y-5">
+  <div class="workspace-container space-y-5">
     {% url "catalog:medicine-create" as create_url %}
     <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
@@ -23,18 +23,7 @@
         {% endif %}
       </div>
     </header>
-    <div class="flex flex-wrap gap-4 text-sm">
-      {% if perms.catalog.view_category %}
-        <a class="registry-link" href="{% url 'catalog:category-list' %}">
-          Categories
-        </a>
-      {% endif %}
-      {% if perms.catalog.view_manufacturer %}
-        <a class="registry-link" href="{% url 'catalog:manufacturer-list' %}">
-          Manufacturers
-        </a>
-      {% endif %}
-    </div>
+    {% include "catalog/_section_navigation.html" %}
     <section class="workspace-surface overflow-visible">
       {% url "catalog:medicine-list" as clear_url %}
       {% include "components/registry_filters.html" with search_label="Search medicines" search_placeholder="Name, generic name or barcode" %}
