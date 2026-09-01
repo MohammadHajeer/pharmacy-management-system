@@ -9,7 +9,7 @@ targeted ``select_for_update()`` locking as required by the BRD/ERD.
 from dataclasses import dataclass
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import MedicineBatch, StockMovement
@@ -39,6 +39,51 @@ def _require_positive_quantity(quantity_base):
         raise InvalidStockOperationError("quantity_base must be a Decimal.")
     if quantity_base <= 0:
         raise InvalidStockOperationError("quantity_base must be greater than zero.")
+
+
+def _require_reference_number(reference_number):
+    if not isinstance(reference_number, str) or not reference_number.strip():
+        raise InvalidStockOperationError("reference_number is required.")
+
+
+def _create_stock_movement(
+    *,
+    actor,
+    medicine,
+    batch,
+    movement_type,
+    quantity_delta_base,
+    unit_cost_snapshot,
+    source_type,
+    source_id,
+    source_line_id,
+    reference_number,
+    occurred_at,
+):
+    if source_line_id is None:
+        raise InvalidStockOperationError(
+            "An authoritative source_line_id is required for Phase 1 stock movements."
+        )
+    if source_type != movement_type:
+        raise InvalidStockOperationError(
+            "source_type must match the authoritative stock movement type."
+        )
+    movement = StockMovement(
+        medicine=medicine,
+        batch=batch,
+        movement_type=movement_type,
+        quantity_delta_base=quantity_delta_base,
+        unit_cost_snapshot=unit_cost_snapshot,
+        source_type=source_type,
+        source_id=source_id,
+        source_line_id=source_line_id,
+        reference_number=reference_number,
+        performed_by=actor,
+        occurred_at=occurred_at,
+    )
+    movement.full_clean()
+    movement.save()
+    return movement
 
 
 def get_fefo_eligible_batches(medicine, *, as_of_date=None, lock=False):
@@ -73,6 +118,7 @@ def receive_purchase_stock(
     quantity_base,
     source_type,
     source_id,
+    reference_number,
     source_line_id=None,
     occurred_at=None,
 ):
@@ -84,36 +130,46 @@ def receive_purchase_stock(
     matching ``PURCHASE_RECEIPT`` movement in the same transaction.
     """
     _require_positive_quantity(quantity_base)
+    _require_reference_number(reference_number)
     occurred_at = occurred_at or timezone.now()
 
     with transaction.atomic():
-        batch = (
-            MedicineBatch.objects.select_for_update()
-            .filter(
-                medicine=medicine,
-                batch_number=batch_number,
-                expiry_date=expiry_date,
-                acquisition_cost_per_base_unit=acquisition_cost_per_base_unit,
-            )
-            .first()
-        )
+        batch_lookup = {
+            "medicine": medicine,
+            "batch_number": batch_number,
+            "expiry_date": expiry_date,
+            "acquisition_cost_per_base_unit": acquisition_cost_per_base_unit,
+        }
+        batch = MedicineBatch.objects.select_for_update().filter(**batch_lookup).first()
 
         if batch is None:
-            batch = MedicineBatch.objects.create(
-                medicine=medicine,
-                batch_number=batch_number,
-                expiry_date=expiry_date,
-                acquisition_cost_per_base_unit=acquisition_cost_per_base_unit,
-                quantity_available_base=Decimal("0.000"),
-                first_received_at=occurred_at,
-                is_active=True,
+            try:
+                with transaction.atomic():
+                    batch = MedicineBatch(
+                        **batch_lookup,
+                        quantity_available_base=Decimal("0.000"),
+                        first_received_at=occurred_at,
+                        is_active=True,
+                    )
+                    batch.full_clean()
+                    batch.save()
+            except IntegrityError:
+                # A concurrent receipt may have created this cost layer while
+                # this transaction was waiting. Lock that committed row before
+                # rechecking and increasing its quantity.
+                batch = MedicineBatch.objects.select_for_update().get(**batch_lookup)
+
+        if not batch.is_active:
+            raise InvalidStockOperationError(
+                "Purchased stock cannot be received into an inactive batch cost layer."
             )
 
         batch.quantity_available_base = batch.quantity_available_base + quantity_base
         batch.full_clean()
         batch.save(update_fields=["quantity_available_base", "updated_at"])
 
-        StockMovement.objects.create(
+        _create_stock_movement(
+            actor=actor,
             medicine=medicine,
             batch=batch,
             movement_type=StockMovement.MovementType.PURCHASE_RECEIPT,
@@ -122,8 +178,7 @@ def receive_purchase_stock(
             source_type=source_type,
             source_id=source_id,
             source_line_id=source_line_id,
-            reference_number="",
-            performed_by=actor,
+            reference_number=reference_number,
             occurred_at=occurred_at,
         )
 
@@ -137,7 +192,8 @@ def deduct_stock_fefo(
     quantity_base,
     source_type,
     source_id,
-    source_line_id=None,
+    source_line_id_factory,
+    reference_number,
     occurred_at=None,
     as_of_date=None,
 ):
@@ -145,11 +201,16 @@ def deduct_stock_fefo(
 
     Locks eligible batches in deterministic FEFO order, revalidates
     availability under the lock, then decrements across as many batches as
-    needed and writes one ``SALE`` movement per batch touched. Raises
-    ``InsufficientStockError`` and rolls back if eligible stock cannot cover
-    the request.
+    needed and writes one ``SALE`` movement per batch touched. The caller's
+    ``source_line_id_factory`` creates or identifies one authoritative sale
+    allocation for each locked batch allocation and returns its distinct UUID.
+    Raises ``InsufficientStockError`` and rolls back if eligible stock cannot
+    cover the request.
     """
     _require_positive_quantity(quantity_base)
+    _require_reference_number(reference_number)
+    if not callable(source_line_id_factory):
+        raise InvalidStockOperationError("source_line_id_factory must be callable.")
     occurred_at = occurred_at or timezone.now()
     as_of_date = as_of_date or timezone.localdate()
 
@@ -182,6 +243,7 @@ def deduct_stock_fefo(
                 f"units are available for medicine {medicine.pk}."
             )
 
+        source_line_ids = set()
         for allocation in allocations:
             batch = allocation.batch
             batch.quantity_available_base = (
@@ -190,7 +252,15 @@ def deduct_stock_fefo(
             batch.full_clean()
             batch.save(update_fields=["quantity_available_base", "updated_at"])
 
-            StockMovement.objects.create(
+            source_line_id = source_line_id_factory(allocation)
+            if source_line_id is None or source_line_id in source_line_ids:
+                raise InvalidStockOperationError(
+                    "Each FEFO allocation requires a distinct authoritative source line."
+                )
+            source_line_ids.add(source_line_id)
+
+            _create_stock_movement(
+                actor=actor,
                 medicine=medicine,
                 batch=batch,
                 movement_type=StockMovement.MovementType.SALE,
@@ -199,8 +269,7 @@ def deduct_stock_fefo(
                 source_type=source_type,
                 source_id=source_id,
                 source_line_id=source_line_id,
-                reference_number="",
-                performed_by=actor,
+                reference_number=reference_number,
                 occurred_at=occurred_at,
             )
 
@@ -214,6 +283,7 @@ def restock_customer_return(
     quantity_base,
     source_type,
     source_id,
+    reference_number,
     source_line_id=None,
     occurred_at=None,
 ):
@@ -224,10 +294,16 @@ def restock_customer_return(
     and writes the matching ``CUSTOMER_RETURN_RESTOCK`` movement.
     """
     _require_positive_quantity(quantity_base)
+    _require_reference_number(reference_number)
     occurred_at = occurred_at or timezone.now()
 
     with transaction.atomic():
         locked_batch = MedicineBatch.objects.select_for_update().get(pk=batch.pk)
+
+        if not locked_batch.is_active or locked_batch.expiry_date < timezone.localdate():
+            raise InvalidStockOperationError(
+                "Only active, unexpired stock can be returned to saleable inventory."
+            )
 
         locked_batch.quantity_available_base = (
             locked_batch.quantity_available_base + quantity_base
@@ -235,7 +311,8 @@ def restock_customer_return(
         locked_batch.full_clean()
         locked_batch.save(update_fields=["quantity_available_base", "updated_at"])
 
-        StockMovement.objects.create(
+        _create_stock_movement(
+            actor=actor,
             medicine=locked_batch.medicine,
             batch=locked_batch,
             movement_type=StockMovement.MovementType.CUSTOMER_RETURN_RESTOCK,
@@ -244,8 +321,7 @@ def restock_customer_return(
             source_type=source_type,
             source_id=source_id,
             source_line_id=source_line_id,
-            reference_number="",
-            performed_by=actor,
+            reference_number=reference_number,
             occurred_at=occurred_at,
         )
 
@@ -259,6 +335,7 @@ def deduct_supplier_return(
     quantity_base,
     source_type,
     source_id,
+    reference_number,
     source_line_id=None,
     occurred_at=None,
 ):
@@ -269,6 +346,7 @@ def deduct_supplier_return(
     ``SUPPLIER_RETURN`` movement.
     """
     _require_positive_quantity(quantity_base)
+    _require_reference_number(reference_number)
     occurred_at = occurred_at or timezone.now()
 
     with transaction.atomic():
@@ -287,7 +365,8 @@ def deduct_supplier_return(
         locked_batch.full_clean()
         locked_batch.save(update_fields=["quantity_available_base", "updated_at"])
 
-        StockMovement.objects.create(
+        _create_stock_movement(
+            actor=actor,
             medicine=locked_batch.medicine,
             batch=locked_batch,
             movement_type=StockMovement.MovementType.SUPPLIER_RETURN,
@@ -296,8 +375,7 @@ def deduct_supplier_return(
             source_type=source_type,
             source_id=source_id,
             source_line_id=source_line_id,
-            reference_number="",
-            performed_by=actor,
+            reference_number=reference_number,
             occurred_at=occurred_at,
         )
 
