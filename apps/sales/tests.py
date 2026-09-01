@@ -652,6 +652,64 @@ class SaleCompletionServiceTests(TestCase):
         self.assertEqual(self.second_batch.quantity_available_base, Decimal("7.000"))
         self.assertEqual(self.expired_batch.quantity_available_base, Decimal("100.000"))
 
+    def test_invoice_output_keeps_completion_snapshots_after_master_data_changes(self):
+        self.actor.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="sales",
+                codename__in={"view_salesinvoice", "view_salesinvoiceline"},
+            )
+        )
+        completed = complete_sale(
+            actor=self.actor,
+            sales_invoice_id=self.create_draft().pk,
+        ).invoice
+        line = completed.lines.get()
+        historical_values = {
+            "pharmacy": completed.pharmacy_name_snapshot,
+            "customer": completed.customer_name_snapshot,
+            "phone": completed.customer_phone_snapshot,
+            "medicine": line.medicine_description_snapshot,
+            "unit": line.unit_name_snapshot,
+        }
+
+        pharmacy = PharmacySettings.objects.get(singleton_key=1)
+        pharmacy.pharmacy_name = "Changed Pharmacy Master"
+        pharmacy.save(update_fields=["pharmacy_name", "updated_at"])
+        self.customer.name = "Changed Customer Master"
+        self.customer.phone = "555-0199"
+        self.customer.save(update_fields=["name", "phone", "updated_at"])
+        self.medicine.name = "Changed Medicine Master"
+        self.medicine.save(update_fields=["name", "updated_at"])
+        self.unit.name = "Changed Unit Master"
+        self.unit.save(update_fields=["name", "updated_at"])
+
+        self.client.force_login(self.actor)
+        detail_response = self.client.get(
+            reverse("sales:invoice-detail", args=[completed.pk])
+        )
+        print_response = self.client.get(
+            reverse("sales:invoice-print", args=[completed.pk])
+        )
+        receipt_response = self.client.get(
+            reverse("sales:invoice-print", args=[completed.pk]),
+            {"format": "receipt"},
+        )
+
+        for response in (detail_response, print_response, receipt_response):
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, historical_values["customer"])
+            self.assertContains(response, historical_values["phone"])
+            self.assertContains(response, historical_values["medicine"])
+            self.assertContains(response, historical_values["unit"])
+            self.assertNotContains(response, "Changed Customer Master")
+            self.assertNotContains(response, "555-0199")
+            self.assertNotContains(response, "Changed Medicine Master")
+            self.assertNotContains(response, "Changed Unit Master")
+
+        for response in (print_response, receipt_response):
+            self.assertContains(response, historical_values["pharmacy"])
+            self.assertNotContains(response, "Changed Pharmacy Master")
+
     def test_optional_initial_payment_uses_finance_service_and_updates_balance(self):
         invoice = self.create_draft()
 

@@ -28,7 +28,7 @@ This plan contains only work assigned to Malik. Other members' work appears only
 | 3 | `E3-T01` / work item `3100` | Deliver lightweight prescription workflows over the existing models | Done |
 | 4 | `E3-T02` / work item `3200` | Build server-side POS search, barcode, cart, and totals logic | Done |
 | 5 | `E3-T03` / work item `3300` | Complete sales atomically with deterministic FEFO row locks | Done |
-| 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Blocked — prior Malik milestones and Mhmd Hajeer's invoice-output dependency |
+| 6 | `E3-T06` / work item `3600` | Verify prescription, POS, sale-completion, and invoice behavior | Done |
 | 7 | `E1-T09` / work item `1800` | Coordinate final documentation and operational handoff | Blocked — Mhmd Hajeer's final integration milestone |
 
 ---
@@ -441,13 +441,13 @@ git status --short
 
 Confirm literally:
 
-- [ ] Tests cover barcode lookup, walk-in/saved customers, prescription warnings, rounding, FEFO multi-batch allocation, cost snapshots, payments, rollback, and permissions.
-- [ ] PostgreSQL concurrency tests prove deterministic locks prevent overselling.
-- [ ] Invoice output uses stored snapshots.
-- [ ] Tests create isolated data and do not depend on shared Neon state.
-- [ ] No production or unrelated file changed and there is no migration drift.
+- [x] Tests cover barcode lookup, walk-in/saved customers, prescription warnings, rounding, FEFO multi-batch allocation, cost snapshots, payments, rollback, and permissions.
+- [x] PostgreSQL concurrency tests prove deterministic locks prevent overselling.
+- [x] Invoice output uses stored snapshots.
+- [x] Tests create isolated data and do not depend on shared Neon state.
+- [x] No production or unrelated file changed and there is no migration drift.
 
-**Status:** Blocked — Malik's prerequisite milestones `E3-T01`, `E3-T02`, and `E3-T03` are Done, but Mhmd Hajeer owns unfinished `E3-T05` print-ready invoice/receipt output.
+**Status:** Done — all 58 `apps.prescriptions` and `apps.sales` tests passed against an isolated PostgreSQL test database in 957.929 seconds on 2026-09-01, including deterministic concurrent oversell prevention and the historical invoice/receipt snapshot regression. Django destroyed the isolated test database successfully; system checks and migration-drift checks also passed.
 
 ---
 
@@ -516,4 +516,4 @@ Confirm literally:
 
 ## Next executable milestone
 
-The next dependency-ordered milestone is **Milestone 6 — Sales and prescription verification (`E3-T06`)**. It is **blocked by Mhmd Hajeer**, owner of unfinished `E3-T05 — Deliver print-ready sales invoice and receipt output`. Do not stub or bypass that dependency; begin only after it is merged and Malik says `continue`.
+The next dependency-ordered milestone is **Milestone 7 — Final documentation and operational handoff (`E1-T09`)**. It remains **blocked by Mhmd Hajeer**, owner of unfinished `E1-T07 — Integrate the approved foundation and run the final technical gate`; do not bypass that dependency.
