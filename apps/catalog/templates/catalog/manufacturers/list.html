@@ -8,12 +8,12 @@ PHARMANEX {% endblock %} {% block content %}
     <div class="min-w-0">
       <p class="operational-kicker">Registry workspace</p>
       <h1
-        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-ink-strong"
       >
         Manufacturers
       </h1>
       <p
-        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-muted"
       >
         Maintain the manufacturers linked to medicine definitions.
       </p>
@@ -26,10 +26,10 @@ PHARMANEX {% endblock %} {% block content %}
   <section class="workspace-surface overflow-visible">
     {% url "catalog:manufacturer-list" as clear_url %} {% include "components/registry_filters.html" with search_label="" search_placeholder="" %}
     <div class="flex items-center justify-between gap-3 px-5 py-4">
-      <h2 class="text-sm font-semibold text-slate-900">
+      <h2 class="text-sm font-semibold text-ink">
         Manufacturers registry
       </h2>
-      <span class="text-xs text-slate-500"> Registry records </span>
+      <span class="text-xs text-muted"> Registry records </span>
     </div>
     {% if manufacturers %}
     <div
@@ -52,7 +52,7 @@ PHARMANEX {% endblock %} {% block content %}
         <tbody>
           {% for manufacturer in manufacturers %}
           <tr>
-            <td class="font-semibold text-slate-900">
+            <td class="font-semibold text-ink">
               {{ manufacturer.name }}
             </td>
             <td>
@@ -69,7 +69,7 @@ PHARMANEX {% endblock %} {% block content %}
                   {% csrf_token %} {% if manufacturer.is_active %} {% include "components/button.html" with text="Deactivate" flat=True variant="outline" size="sm" type="submit" %} {% else %} {% include "components/button.html" with text="Reactivate" flat=True variant="secondary" size="sm" type="submit" %} {% endif %}
                 </form>
                 {% else %}
-                <span class="text-xs text-slate-400"> View only </span>
+                <span class="text-xs text-faint"> View only </span>
                 {% endif %}
               </div>
             </td>
@@ -80,8 +80,8 @@ PHARMANEX {% endblock %} {% block content %}
     </div>
     {% else %}
     <div class="operational-empty m-4 text-center sm:m-5">
-      <p class="font-semibold text-slate-800">No manufacturers found</p>
-      <p class="mt-1 text-sm text-slate-500">
+      <p class="font-semibold text-ink-soft">No manufacturers found</p>
+      <p class="mt-1 text-sm text-muted">
         No records match the current status filter.
       </p>
       <div class="mt-4">

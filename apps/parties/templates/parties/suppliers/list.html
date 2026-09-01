@@ -8,12 +8,12 @@
     <div class="min-w-0">
       <p class="operational-kicker">Registry workspace</p>
       <h1
-        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-ink-strong"
       >
         Suppliers
       </h1>
       <p
-        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-muted"
       >
         Manage supplier records used by purchasing and returns.
       </p>
@@ -25,8 +25,8 @@
   <section class="workspace-surface overflow-visible">
     {% url "parties:supplier-list" as clear_url %} {% include "components/registry_filters.html" with search_label="Search suppliers" search_placeholder="Name, code or contact details" %}
     <div class="flex items-center justify-between gap-3 px-5 py-4">
-      <h2 class="text-sm font-semibold text-slate-900">Supplier registry</h2>
-      <span class="text-xs text-slate-500"> Registry records </span>
+      <h2 class="text-sm font-semibold text-ink">Supplier registry</h2>
+      <span class="text-xs text-muted"> Registry records </span>
     </div>
     {% if suppliers %}
     <div
@@ -52,10 +52,10 @@
         <tbody>
           {% for supplier in suppliers %}
           <tr>
-            <td class="font-mono text-xs text-slate-500">
+            <td class="font-mono text-xs text-muted">
               {{ supplier.code|default:"—" }}
             </td>
-            <td class="font-semibold text-slate-900">
+            <td class="font-semibold text-ink">
               {{ supplier.name|default:"—" }}
             </td>
             <td>{{ supplier.contact_person|default:"—" }}</td>
@@ -74,7 +74,7 @@
                   {% csrf_token %} {% if supplier.is_active %} {% include "components/button.html" with text="Deactivate" flat=True variant="outline" size="sm" type="submit" %} {% else %} {% include "components/button.html" with text="Reactivate" flat=True variant="secondary" size="sm" type="submit" %} {% endif %}
                 </form>
                 {% else %}
-                <span class="text-xs text-slate-400"> View only </span>
+                <span class="text-xs text-faint"> View only </span>
                 {% endif %}
               </div>
             </td>
@@ -85,8 +85,8 @@
     </div>
     {% else %}
     <div class="operational-empty m-4 text-center sm:m-5">
-      <p class="font-semibold text-slate-800">No suppliers found</p>
-      <p class="mt-1 text-sm text-slate-500">
+      <p class="font-semibold text-ink-soft">No suppliers found</p>
+      <p class="mt-1 text-sm text-muted">
         No supplier records match the current filters.
       </p>
       <div class="mt-4">

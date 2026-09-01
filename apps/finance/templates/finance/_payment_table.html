@@ -34,19 +34,19 @@
             >{{ row.invoice.invoice_number|default:"Invoice" }}</a
           >
         </td>
-        <td class="max-w-56 wrap-break-words font-medium text-slate-900">
+        <td class="max-w-56 wrap-break-words font-medium text-ink">
           {{ row.party.name|default:"Walk-in customer" }}
         </td>
         <td>{{ row.payment.payment_method.name }}</td>
         <td class="whitespace-nowrap text-xs tabular-nums">
           {{ row.payment.paid_at|date:"d M Y" }}<span
-            class="mt-1 block text-slate-500"
+            class="mt-1 block text-muted"
             >{{ row.payment.paid_at|date:"H:i T" }}</span
           >
         </td>
-        <td class="ledger-number font-semibold text-slate-900">
+        <td class="ledger-number font-semibold text-ink">
           {{ row.payment.amount|floatformat:"2" }}
-          <span class="text-xs font-normal text-slate-500"
+          <span class="text-xs font-normal text-muted"
             >{{ row.invoice.currency_code|default:currency_code }}</span
           >
         </td>
@@ -67,10 +67,10 @@
 </div>
 {% else %}
 <div class="operational-empty m-4 text-center sm:m-5">
-  <p class="font-semibold text-slate-800">
+  <p class="font-semibold text-ink-soft">
     {% if has_filters %}No payments match the current filters.{% else %}No {{ kind }} payments yet{% endif %}
   </p>
-  <p class="mt-1 text-sm text-slate-500">
+  <p class="mt-1 text-sm text-muted">
     {% if has_filters %}Try another reference, invoice or payment method.{% else %}Payments recorded against {% if kind == "customer" %}sales{% else %}purchase{% endif %} invoices will appear here.{% endif %}
   </p>
   {% if has_filters %}

@@ -8,26 +8,26 @@
 
     <h1
       id="auth-title"
-      class="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]"
+      class="mt-4 text-3xl font-semibold tracking-tight text-ink-strong sm:text-[2rem]"
     >
       Welcome back
     </h1>
 
-    <p class="mt-2 text-sm leading-6 text-slate-500">
+    <p class="mt-2 text-sm leading-6 text-muted">
       Sign in with your staff account to access your pharmacy workspace.
     </p>
   </header>
 
   {% if form.non_field_errors %}
     <div
-      class="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      class="mt-5 rounded-lg border border-negative-line bg-negative-soft px-4 py-3 text-sm text-negative-strong"
       role="alert"
       aria-live="polite"
     >
       <p class="font-medium">Unable to sign in</p>
 
       {% for error in form.non_field_errors %}
-        <p class="mt-1 text-red-600">{{ error }}</p>
+        <p class="mt-1 text-negative">{{ error }}</p>
       {% endfor %}
     </div>
   {% endif %}
@@ -49,14 +49,14 @@
   </form>
 
   <div class="mt-7 flex items-center gap-3">
-    <div class="h-px flex-1 bg-slate-200"></div>
-    <span class="text-xs font-medium text-slate-400">
+    <div class="h-px flex-1 bg-surface-pressed"></div>
+    <span class="text-xs font-medium text-faint">
       AUTHORIZED STAFF ONLY
     </span>
-    <div class="h-px flex-1 bg-slate-200"></div>
+    <div class="h-px flex-1 bg-surface-pressed"></div>
   </div>
 
-  <p class="mt-5 text-center text-xs leading-5 text-slate-400">
+  <p class="mt-5 text-center text-xs leading-5 text-faint">
     Access is restricted to registered Pharmanex staff accounts.
   </p>
 {% endblock %}

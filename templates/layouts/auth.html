@@ -15,7 +15,7 @@
         rgb(6 182 212 / 8%),
         transparent 34rem
       ),
-      #f8fafc;
+      var(--color-canvas);
   }
 
   /* Subtle background pattern */
@@ -55,7 +55,7 @@
   class="auth-surface min-h-screen px-4 py-5 sm:px-6 sm:py-8 lg:flex lg:items-center lg:justify-center lg:px-8"
 >
   <div
-    class="mx-auto grid min-h-[calc(100vh-2.5rem)] w-full max-w-6xl overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-900/5 sm:min-h-0 lg:grid-cols-[1.05fr_0.95fr]"
+    class="mx-auto grid min-h-[calc(100vh-2.5rem)] w-full max-w-6xl overflow-hidden rounded-2xl border border-line/80 bg-surface shadow-xl shadow-slate-900/5 sm:min-h-0 lg:grid-cols-[1.05fr_0.95fr]"
   >
     {# Desktop branding panel #}
     <section
@@ -135,10 +135,11 @@
       class="flex items-center justify-center px-5 py-8 sm:px-10 sm:py-12 lg:px-14 xl:px-16"
     >
       <div class="w-full max-w-md">
+        <div class="mb-4 flex justify-end">{% include "components/theme_toggle.html" %}</div>
         {# Mobile/tablet logo #}
         <a
           href="/"
-          class="mx-auto mb-8 flex w-fit rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 lg:hidden"
+          class="mx-auto mb-8 flex w-fit rounded-lg bg-white p-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 lg:hidden"
           aria-label="Pharmanex home"
         >
           <img

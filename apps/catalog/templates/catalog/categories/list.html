@@ -8,12 +8,12 @@
     <div class="min-w-0">
       <p class="operational-kicker">Registry workspace</p>
       <h1
-        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-ink-strong"
       >
         Categories
       </h1>
       <p
-        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-muted"
       >
         Organize medicines into clear catalog categories.
       </p>
@@ -26,8 +26,8 @@
   <section class="workspace-surface overflow-visible">
     {% url "catalog:category-list" as clear_url %} {% include "components/registry_filters.html" with search_label="" search_placeholder="" %}
     <div class="flex items-center justify-between gap-3 px-5 py-4">
-      <h2 class="text-sm font-semibold text-slate-900">Categories registry</h2>
-      <span class="text-xs text-slate-500"> Registry records </span>
+      <h2 class="text-sm font-semibold text-ink">Categories registry</h2>
+      <span class="text-xs text-muted"> Registry records </span>
     </div>
     {% if categories %}
     <div
@@ -50,7 +50,7 @@
         <tbody>
           {% for category in categories %}
           <tr>
-            <td class="font-semibold text-slate-900">{{ category.name }}</td>
+            <td class="font-semibold text-ink">{{ category.name }}</td>
             <td>
               {% if category.is_active %} {% include "components/badge.html" with text="Active" variant="primary" only %} {% else %} {% include "components/badge.html" with text="Inactive" variant="secondary" only %} {% endif %}
             </td>
@@ -65,7 +65,7 @@
                   {% csrf_token %} {% if category.is_active %} {% include "components/button.html" with text="Deactivate" flat=True variant="outline" size="sm" type="submit" %} {% else %} {% include "components/button.html" with text="Reactivate" flat=True variant="secondary" size="sm" type="submit" %} {% endif %}
                 </form>
                 {% else %}
-                <span class="text-xs text-slate-400"> View only </span>
+                <span class="text-xs text-faint"> View only </span>
                 {% endif %}
               </div>
             </td>
@@ -76,8 +76,8 @@
     </div>
     {% else %}
     <div class="operational-empty m-4 text-center sm:m-5">
-      <p class="font-semibold text-slate-800">No categories found</p>
-      <p class="mt-1 text-sm text-slate-500">
+      <p class="font-semibold text-ink-soft">No categories found</p>
+      <p class="mt-1 text-sm text-muted">
         No records match the current status filter.
       </p>
       <div class="mt-4">

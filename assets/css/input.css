@@ -2,6 +2,9 @@
 
 @source "../../templates";
 @source "../../static/js";
+@source "../../apps";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   /* Brand */
@@ -40,7 +43,207 @@
   --color-chart-5: #d97706;
 }
 
+/* Semantic roles preserve the light console; raw brand/slate scales stay fixed.
+   Static emission also makes these values available to canvas charts. */
+@theme static {
+  --color-canvas: var(--color-slate-50);
+  --color-surface: var(--color-white);
+  --color-surface-muted: var(--color-slate-50);
+  --color-surface-hover: var(--color-slate-100);
+  --color-surface-pressed: var(--color-slate-200);
+  --color-surface-disabled: var(--color-slate-300);
+  --color-ink-strong: var(--color-slate-950);
+  --color-ink: var(--color-slate-900);
+  --color-ink-soft: var(--color-slate-800);
+  --color-body: var(--color-slate-700);
+  --color-copy: var(--color-slate-600);
+  --color-muted: var(--color-slate-500);
+  --color-faint: var(--color-slate-500);
+  --color-decorative: var(--color-slate-300);
+  --color-line: var(--color-slate-200);
+  --color-line-soft: var(--color-slate-100);
+  --color-line-strong: var(--color-slate-300);
+  --color-accent: var(--color-primary-700);
+  --color-accent-strong: var(--color-primary-800);
+  --color-accent-soft: var(--color-primary-50);
+  --color-accent-tint: var(--color-primary-100);
+  --color-accent-line: var(--color-primary-200);
+  --color-positive: var(--color-green-700);
+  --color-positive-soft: var(--color-green-50);
+  --color-positive-line: var(--color-green-200);
+  --color-caution: var(--color-amber-700);
+  --color-caution-strong: var(--color-amber-800);
+  --color-caution-soft: var(--color-amber-50);
+  --color-caution-line: var(--color-amber-200);
+  --color-negative: var(--color-red-600);
+  --color-negative-strong: var(--color-red-700);
+  --color-negative-soft: var(--color-red-50);
+  --color-negative-line: var(--color-red-200);
+  --color-negative-ring: var(--color-red-100);
+  --color-notice: var(--color-sky-700);
+  --color-notice-soft: var(--color-sky-50);
+  --color-notice-line: var(--color-sky-200);
+  --color-chart-grid: var(--color-line-soft);
+  --color-chart-label: var(--color-muted);
+  --color-chart-value: var(--color-body);
+  --color-chart-tooltip: var(--color-slate-900);
+  --color-chart-tooltip-border: var(--color-slate-700);
+  --color-chart-tooltip-title: var(--color-slate-300);
+  --color-chart-tooltip-body: var(--color-white);
+  --color-chart-healthy: var(--color-primary-600);
+  --color-chart-warning: var(--color-warning);
+  --color-chart-danger: var(--color-danger);
+  --color-chart-watch: var(--color-slate-500);
+  --color-chart-neutral: var(--color-slate-400);
+  --color-chart-purchase: var(--color-primary-700);
+  --color-chart-focus: var(--color-primary-800);
+}
+
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  /* Focus-ring offsets must blend with the active surface, not default white. */
+  *,
+  ::before,
+  ::after {
+    --tw-ring-offset-color: var(--color-surface);
+  }
+
+  /* Screen-only overrides make print use the original light tokens, even when
+     the document keeps its dark class. Do not remap raw palette colors. */
+  @media screen {
+    :root.dark {
+      color-scheme: dark;
+
+      /* Dark shell — charcoal/slate with a subtle teal bias.
+         The sidebar tokens are overridden only in dark mode so light mode keeps
+         the existing brighter PHARMANEX teal. Ramp widened vs. the previous
+         pass: 950→900→800 were within ~10-16 units of each other, so hover
+         and active nav items barely read as different states. */
+      --color-sidebar-950: #071a1b;
+      --color-sidebar-900: #0d3230;
+      --color-sidebar-800: #135e56;
+      --color-sidebar-300: #6cd4c9;
+      --color-sidebar-100: #d3f5f0;
+
+      /* Canvas→surface used to differ by only ~6-13 units per channel, so
+         cards barely lifted off the page. Surface now steps up more clearly;
+         disabled is pulled toward neutral grey instead of continuing the
+         teal ramp, since "disabled" should read as inactive, not elevated. */
+      --color-canvas: #0a0f14;
+      --color-surface: #141f29;
+      --color-surface-muted: #1a2731;
+      --color-surface-hover: #21313c;
+      --color-surface-pressed: #293c47;
+      --color-surface-disabled: #37474f;
+
+      --color-ink-strong: #f5f8f8;
+      --color-ink: #e8eeee;
+      --color-ink-soft: #d2dcdf;
+      --color-body: #bcc9cd;
+      --color-copy: #a7b6bb;
+      --color-muted: #84969d;
+      --color-faint: #6f828a;
+      --color-decorative: #566a72;
+
+      --color-line: #2a3b44;
+      --color-line-soft: #1d2c33;
+      --color-line-strong: #405762;
+
+      /* Teal remains the PHARMANEX interaction/identity accent, but the shell
+         itself is intentionally darker so the sidebar belongs to the canvas.
+         Soft/tint now mix from primary-500 instead of primary-700 (700 mixed
+         into an already-dark surface read as muddy, near-invisible), and the
+         line color is a touch brighter to stay visible against the lighter
+         surface above. */
+      --color-accent: #5fc7bd;
+      --color-accent-strong: #8adbd3;
+      --color-accent-soft: color-mix(
+        in srgb,
+        #14b8a6 30%,
+        var(--color-surface)
+      );
+      --color-accent-tint: color-mix(
+        in srgb,
+        #14b8a6 46%,
+        var(--color-surface)
+      );
+      --color-accent-line: #1f8177;
+
+      /* Status colors previously borrowed raw Tailwind 300-level swatches
+         (green-300, amber-300, red-300, sky-300). Those are tuned for a
+         neutral grey dark mode; against this teal-tinted slate they read as
+         generic/neon and clash with the custom ink scale. Replaced with
+         hand-tuned hues in the same family, softened to match the rest of
+         the palette, and mixed from the brand semantic colors already
+         defined at the top of the file (success/warning/danger/info) rather
+         than arbitrary Tailwind 900-shades, so light and dark stay related. */
+      --color-positive: #5fd9a0;
+      --color-positive-soft: color-mix(
+        in srgb,
+        var(--color-success) 40%,
+        var(--color-surface)
+      );
+      --color-positive-line: #1f7a4f;
+
+      --color-caution: #eec36a;
+      --color-caution-strong: #f6dda0;
+      --color-caution-soft: color-mix(
+        in srgb,
+        var(--color-warning) 36%,
+        var(--color-surface)
+      );
+      --color-caution-line: #8f5a1e;
+
+      /* negative-strong previously equaled negative exactly (both red-300),
+         so there was no escalation step for emphasis. It's now a distinct,
+         lighter shade, matching how caution/caution-strong already behave. */
+      --color-negative: #ef9d9d;
+      --color-negative-strong: #f6c2c2;
+      --color-negative-soft: color-mix(
+        in srgb,
+        var(--color-danger) 36%,
+        var(--color-surface)
+      );
+      --color-negative-line: #8a3838;
+      --color-negative-ring: color-mix(
+        in srgb,
+        var(--color-danger) 22%,
+        var(--color-surface)
+      );
+
+      /* Notice shifted slightly more blue/indigo than sky-300's cyan so it
+         doesn't compete with the teal brand accent when both appear near
+         each other (e.g. an info badge next to an accent button). */
+      --color-notice: #8ec2e8;
+      --color-notice-soft: color-mix(
+        in srgb,
+        var(--color-info) 36%,
+        var(--color-surface)
+      );
+      --color-notice-line: #2f5c78;
+
+      /* Canvas charts read these tokens directly. Keep them clear and branded
+         without returning to washed-out mint tones. */
+      --color-chart-grid: #20313a;
+      --color-chart-label: #82959d;
+      --color-chart-value: #c5d1d5;
+      --color-chart-tooltip: #0f181f;
+      --color-chart-tooltip-border: #344851;
+      --color-chart-tooltip-title: #93a6ad;
+      --color-chart-tooltip-body: #f3f7f7;
+      --color-chart-healthy: #159b90;
+      --color-chart-warning: #d97706;
+      --color-chart-danger: #cf4141;
+      --color-chart-watch: #8ca0a8;
+      --color-chart-neutral: #647983;
+      --color-chart-purchase: #12897f;
+      --color-chart-focus: #0f766e;
+    }
+  }
+
   ::selection {
     background-color: var(--color-primary-600);
     color: white;
@@ -49,6 +252,43 @@
   ::-moz-selection {
     background-color: var(--color-primary-600);
     color: white;
+  }
+
+  
+}
+
+/* A synchronous style flush in theme.js brackets each theme change. Hover and
+   unrelated motion are restored immediately, without a timed color fade. */
+html[data-theme-changing],
+html[data-theme-changing] *,
+html[data-theme-changing] *::before,
+html[data-theme-changing] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    background: white !important;
+    color: var(--color-slate-900) !important;
+  }
+  [data-theme-toggle],
+  [data-navigation-sidebar],
+  [data-app-topbar],
+  #sidebar-backdrop,
+  .navigation-progress,
+  #toast-viewport,
+  [data-modal] {
+    display: none !important;
+  }
+  [data-dashboard-content] {
+    margin-left: 0 !important;
+  }
+  [data-navigation-workspace] {
+    opacity: 1 !important;
   }
 }
 
@@ -91,28 +331,28 @@
   }
 
   .workspace-surface {
-    @apply overflow-hidden rounded-workspace border border-slate-200/90 bg-white;
+    @apply overflow-hidden rounded-workspace border border-line/90 bg-surface;
   }
 
   .operational-kicker {
-    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-700;
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-accent;
   }
 
   .operational-empty {
-    @apply rounded-control border border-dashed border-slate-300 bg-slate-50/70 px-5 py-8;
+    @apply rounded-control border border-dashed border-line-strong bg-surface-muted/70 px-5 py-8;
   }
 
   /* Shared ledgers keep dense records readable within a local scroll region. */
   .ledger-scroll {
-    @apply max-w-full overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600;
+    @apply relative max-w-full overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600;
   }
 
   .ledger-table {
-    @apply w-full text-left text-sm text-slate-600;
+    @apply w-full text-left text-sm text-copy;
   }
 
   .ledger-table thead {
-    @apply border-y border-slate-200 bg-slate-50 text-xs text-slate-500;
+    @apply border-y border-line bg-surface-muted text-xs text-muted;
   }
 
   .ledger-table th {
@@ -120,7 +360,7 @@
   }
 
   .ledger-table td {
-    @apply border-b border-slate-100 px-5 py-3.5 align-middle;
+    @apply border-b border-line-soft px-5 py-3.5 align-middle;
   }
 
   .ledger-table tbody tr:last-child td {
@@ -128,7 +368,7 @@
   }
 
   .ledger-table tbody tr:hover {
-    @apply bg-slate-50/70;
+    @apply bg-surface-muted/70;
   }
 
   .ledger-table .ledger-number {
@@ -136,27 +376,27 @@
   }
 
   .registry-link {
-    @apply font-semibold text-slate-900 underline-offset-4 hover:text-primary-700 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600;
+    @apply font-semibold text-ink underline-offset-4 hover:text-accent hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600;
   }
 
   .pagination-control {
-    @apply inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-status border border-slate-200 px-2 text-xs font-medium text-slate-600 tabular-nums;
+    @apply inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-status border border-line px-2 text-xs font-medium text-copy tabular-nums;
   }
 
   a.pagination-control {
-    @apply hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
+    @apply hover:border-line-strong hover:bg-surface-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
   }
 
   .pagination-control[aria-current="page"] {
-    @apply border-primary-200 bg-primary-50 text-primary-800;
+    @apply border-accent-line bg-accent-soft text-accent-strong;
   }
 
   .pagination-control[aria-disabled="true"] {
-    @apply border-slate-100 text-slate-400;
+    @apply border-line-soft text-faint;
   }
 
   .app-toast {
-    @apply pointer-events-none absolute inset-x-0 bottom-0 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 pr-10 shadow-[0_4px_12px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)];
+    @apply pointer-events-none absolute inset-x-0 bottom-0 flex items-start gap-3 rounded-xl border border-line bg-surface p-4 pr-10 shadow-[0_4px_12px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)];
     touch-action: pan-y;
     will-change: transform, opacity;
 
@@ -170,27 +410,35 @@
   }
 
   .app-toast[data-level="success"] .app-toast__icon {
-    @apply text-success;
+    @apply text-positive;
   }
 
   .app-toast[data-level="error"] .app-toast__icon {
-    @apply text-danger;
+    @apply text-negative;
   }
 
   .app-toast[data-level="warning"] .app-toast__icon {
-    @apply text-warning;
+    @apply text-caution;
   }
 
   .app-toast[data-level="info"] .app-toast__icon {
-    @apply text-info;
+    @apply text-notice;
   }
 }
 
 @keyframes navigation-progress {
-  0% { transform: scaleX(0.12); }
-  6% { transform: scaleX(0.68); }
-  40% { transform: scaleX(0.85); }
-  100% { transform: scaleX(0.94); }
+  0% {
+    transform: scaleX(0.12);
+  }
+  6% {
+    transform: scaleX(0.68);
+  }
+  40% {
+    transform: scaleX(0.85);
+  }
+  100% {
+    transform: scaleX(0.94);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

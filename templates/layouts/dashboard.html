@@ -7,11 +7,11 @@
 {% endblock %}
 
 {% block body %}
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-canvas">
     {% include "components/navigation_loading.html" %}
     {% include "components/sidebar.html" %}
     <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/40 backdrop-blur-[1px] lg:hidden" aria-hidden="true"></div>
-    <div class="min-h-screen min-w-0 lg:ml-64">
+    <div data-dashboard-content class="min-h-screen min-w-0 lg:ml-64">
       {% include "components/topbar.html" %}
       <main id="main-content" data-navigation-workspace class="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         {% block content %}{% endblock %}

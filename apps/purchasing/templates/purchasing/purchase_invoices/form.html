@@ -7,12 +7,12 @@ PHARMANEX {% endblock %} {% block content %}
     <div class="min-w-0">
       <p class="operational-kicker">Purchasing operations</p>
       <h1
-        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-ink-strong"
       >
         New Purchase Invoice
       </h1>
       <p
-        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-muted"
       >
         Enter supplier information and purchase lines, then save the invoice for
         review.
@@ -25,7 +25,7 @@ PHARMANEX {% endblock %} {% block content %}
   <form method="post" class="space-y-5" data-submit-form novalidate>
     {% csrf_token %} {% if header_form.errors or formset.errors or formset.non_form_errors %}
     <div
-      class="rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      class="rounded-control border border-negative-line bg-negative-soft p-4 text-sm text-negative-strong"
       role="alert"
     >
       <p class="font-semibold">
@@ -35,13 +35,13 @@ PHARMANEX {% endblock %} {% block content %}
       {{ header_form.non_field_errors }} {{ formset.non_form_errors }}
     </div>
     {% endif %}
-    <section class="rounded-workspace border border-slate-200 bg-white">
+    <section class="rounded-workspace border border-line bg-surface">
       <section class="p-5 sm:p-6">
         <div class="mb-5">
-          <h2 class="text-sm font-semibold text-slate-900">
+          <h2 class="text-sm font-semibold text-ink">
             Invoice information
           </h2>
-          <p class="mt-1 text-sm text-slate-500">
+          <p class="mt-1 text-sm text-muted">
             Supplier and document references for this transaction.
           </p>
         </div>
@@ -57,35 +57,35 @@ PHARMANEX {% endblock %} {% block content %}
       class="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]"
     >
       <section
-        class="min-w-0 rounded-workspace border border-slate-200 bg-white"
+        class="min-w-0 rounded-workspace border border-line bg-surface"
         aria-labelledby="purchase-lines-heading"
       >
-        <header class="border-b border-slate-200 px-5 py-4">
+        <header class="border-b border-line px-5 py-4">
           <p class="operational-kicker">Stock receipt details</p>
           <h2
             id="purchase-lines-heading"
-            class="mt-1 text-base font-semibold text-slate-900"
+            class="mt-1 text-base font-semibold text-ink"
           >
             Purchase lines
           </h2>
-          <p class="mt-1 text-sm text-slate-500">
+          <p class="mt-1 text-sm text-muted">
             Enter at least one line. Leave unused lines completely blank or mark
             them for removal.
           </p>
         </header>
         {{ formset.management_form }} {% for line_form in formset %}
         <fieldset
-          class="min-w-0 border-b border-slate-200 px-5 pb-5 pt-4 last:border-b-0"
+          class="min-w-0 border-b border-line px-5 pb-5 pt-4 last:border-b-0"
         >
-          <legend class="px-1 pt-4 text-sm font-semibold text-slate-900">
+          <legend class="px-1 pt-4 text-sm font-semibold text-ink">
             Line {{ forloop.counter }} {% if line_form.empty_permitted %}
-            <span class="ml-2 text-xs font-normal text-slate-500">
+            <span class="ml-2 text-xs font-normal text-muted">
               Optional unless used
             </span>
             {% endif %}
           </legend>
           {% if line_form.non_field_errors %}
-          <div class="mb-4 text-sm text-red-700" role="alert">
+          <div class="mb-4 text-sm text-negative-strong" role="alert">
             {{ line_form.non_field_errors }}
           </div>
           {% endif %}
@@ -99,7 +99,7 @@ PHARMANEX {% endblock %} {% block content %}
             {% include "components/input.html" with name=line_form.batch_number.html_name id=line_form.batch_number.id_for_label label="Batch number" value=line_form.batch_number.value error=line_form.batch_number.errors required=line_form.batch_number.field.required maxlength=line_form.batch_number.field.max_length placeholder="Enter batch number" only %} {% include "components/input.html" with name=line_form.expiry_date.html_name id=line_form.expiry_date.id_for_label label="Expiry date" value=line_form.expiry_date.value error=line_form.expiry_date.errors required=line_form.expiry_date.field.required maxlength=line_form.expiry_date.field.max_length type="date" only %}
           </div>
           {% if formset.can_delete %}
-          <div class="mt-5 border-t border-slate-100 pt-4">
+          <div class="mt-5 border-t border-line-soft pt-4">
             {% include "components/checkbox.html" with name=line_form.DELETE.html_name id=line_form.DELETE.id_for_label label="Remove this line" checked=line_form.DELETE.value error=line_form.DELETE.errors description="Marked lines are excluded when you save the draft." only %}
           </div>
           {% endif %}
@@ -110,10 +110,10 @@ PHARMANEX {% endblock %} {% block content %}
         class="workspace-surface xl:sticky xl:top-21"
         aria-label="Save purchase draft"
       >
-        <div class="border-b border-slate-200 px-5 py-4">
-          <h2 class="text-sm font-semibold text-slate-900">Purchase summary</h2>
+        <div class="border-b border-line px-5 py-4">
+          <h2 class="text-sm font-semibold text-ink">Purchase summary</h2>
 
-          <p class="mt-1 text-xs leading-5 text-slate-500">
+          <p class="mt-1 text-xs leading-5 text-muted">
             Totals are calculated after the draft is saved.
           </p>
         </div>
@@ -121,27 +121,27 @@ PHARMANEX {% endblock %} {% block content %}
         <div class="space-y-5 p-5">
           <div class="space-y-3">
             <div class="flex items-center justify-between gap-4 text-sm">
-              <span class="text-slate-500">Subtotal</span>
-              <span class="font-medium tabular-nums text-slate-400">—</span>
+              <span class="text-muted">Subtotal</span>
+              <span class="font-medium tabular-nums text-faint">—</span>
             </div>
 
             <div class="flex items-center justify-between gap-4 text-sm">
-              <span class="text-slate-500">Discount</span>
-              <span class="font-medium tabular-nums text-slate-400">—</span>
+              <span class="text-muted">Discount</span>
+              <span class="font-medium tabular-nums text-faint">—</span>
             </div>
 
             <div class="flex items-center justify-between gap-4 text-sm">
-              <span class="text-slate-500">Tax</span>
-              <span class="font-medium tabular-nums text-slate-400">—</span>
+              <span class="text-muted">Tax</span>
+              <span class="font-medium tabular-nums text-faint">—</span>
             </div>
 
-            <div class="border-t border-slate-200 pt-3">
+            <div class="border-t border-line pt-3">
               <div class="flex items-center justify-between gap-4">
-                <span class="text-sm font-semibold text-slate-900">
+                <span class="text-sm font-semibold text-ink">
                   Grand total
                 </span>
 
-                <span class="text-lg font-semibold tabular-nums text-slate-400">
+                <span class="text-lg font-semibold tabular-nums text-faint">
                   —
                 </span>
               </div>
@@ -149,16 +149,16 @@ PHARMANEX {% endblock %} {% block content %}
           </div>
 
           <div
-            class="border-l-2 border-amber-400 bg-amber-50/70 px-3 py-2.5"
+            class="border-l-2 border-amber-400 bg-caution-soft/70 px-3 py-2.5"
             role="note"
           >
-            <p class="text-xs leading-5 text-amber-800">
+            <p class="text-xs leading-5 text-caution-strong">
               Saving a draft does not receive stock. Review and post the saved
               invoice when you are ready to update inventory.
             </p>
           </div>
 
-          <div class="space-y-2 border-t border-slate-200 pt-4">
+          <div class="space-y-2 border-t border-line pt-4">
             {% include "components/button.html" with text="Save draft" flat=True type="submit" loading_text="Saving…" variant="primary" full_width=True %} {% if perms.purchasing.view_purchaseinvoice %} {% url "purchasing:purchase-invoice-list" as cancel_url %} {% include "components/button.html" with text="Cancel" flat=True href=cancel_url variant="ghost" full_width=True %} {% endif %}
           </div>
         </div>

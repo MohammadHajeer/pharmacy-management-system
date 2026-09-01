@@ -6,11 +6,11 @@
     <div class="min-w-0">
       <p class="operational-kicker">Invoice payment history</p>
       <h1
-        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-ink-strong"
       >
         {{ invoice.invoice_number|default:"Invoice" }}
       </h1>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-muted">
         {{ invoice_label }} · {{ party.name|default:"Walk-in customer" }}
       </p>
     </div>
@@ -22,8 +22,8 @@
   <div class="grid gap-5 lg:grid-cols-2">
     {% include "finance/_invoice_summary.html" %}
     <section class="self-start p-5">
-      <h2 class="text-sm font-semibold text-slate-900">Financial history</h2>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <h2 class="text-sm font-semibold text-ink">Financial history</h2>
+      <p class="mt-2 text-sm leading-6 text-muted">
         Posted and reversed payments are retained below. Reversed payments no
         longer contribute to the paid total.
       </p>
@@ -35,7 +35,7 @@
     </section>
   </div>
   <section class="workspace-surface">
-    <h2 class="px-5 py-4 text-sm font-semibold text-slate-900">
+    <h2 class="px-5 py-4 text-sm font-semibold text-ink">
       Payments against this invoice
     </h2>
     {% include "finance/_payment_table.html" %}

@@ -2,22 +2,22 @@
 {% block title %}Record {{ kind }} payment · PHARMANEX{% endblock %}
 {% block content %}
 <div class="workspace-container space-y-5">
-  <header><p class="operational-kicker">Financial operations</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Record {{ kind }} payment</h1><p class="mt-2 text-sm leading-6 text-slate-500">Review the invoice balance before posting. The server checks the latest balance when you submit.</p></header>
+  <header><p class="operational-kicker">Financial operations</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">Record {{ kind }} payment</h1><p class="mt-2 text-sm leading-6 text-muted">Review the invoice balance before posting. The server checks the latest balance when you submit.</p></header>
   {% include "finance/_navigation.html" %}
   <div class="grid min-w-0 gap-5 lg:grid-cols-2">
     {% include "finance/_invoice_summary.html" %}
     <form method="post" action="{{ record_url }}" class="workspace-surface min-w-0 overflow-visible self-start" data-submit-form novalidate>
       {% csrf_token %}
-      <header class="border-b border-slate-200 px-5 py-4"><h2 class="text-sm font-semibold text-slate-900">Payment entry</h2><p class="mt-1 text-xs text-slate-500">Posts immediately against {{ invoice.invoice_number|default:"this invoice" }}.</p></header>
-      {% if form.errors %}<div class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700" role="alert"><p class="font-semibold">Payment was not posted. Review the highlighted fields.</p>{{ form.non_field_errors }}</div>{% endif %}
-      {% if not eligible %}<p class="border-b border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">This invoice is not currently available for payment. It must be {% if kind == "customer" %}completed{% else %}posted{% endif %} and have an outstanding balance.</p>{% endif %}
+      <header class="border-b border-line px-5 py-4"><h2 class="text-sm font-semibold text-ink">Payment entry</h2><p class="mt-1 text-xs text-muted">Posts immediately against {{ invoice.invoice_number|default:"this invoice" }}.</p></header>
+      {% if form.errors %}<div class="border-b border-negative-line bg-negative-soft px-5 py-4 text-sm text-negative-strong" role="alert"><p class="font-semibold">Payment was not posted. Review the highlighted fields.</p>{{ form.non_field_errors }}</div>{% endif %}
+      {% if not eligible %}<p class="border-b border-caution-line bg-caution-soft px-5 py-4 text-sm text-caution-strong">This invoice is not currently available for payment. It must be {% if kind == "customer" %}completed{% else %}posted{% endif %} and have an outstanding balance.</p>{% endif %}
       <div class="space-y-5 p-5">
         {% include "components/input.html" with name="amount" label="Payment amount" value=form.amount.value error=form.amount.errors type="number" step="0.01" min="0.01" required=True help_text="Enter the amount in the invoice currency shown alongside. It cannot exceed the outstanding balance." only %}
         {% include "components/select.html" with name="payment_method" label="Payment method" value=form.payment_method.value error=form.payment_method.errors options=method_options placeholder="Select payment method" required=True help_text="Only active methods are available. Methods that need a reference are marked above." only %}
         {% include "components/input.html" with name="reference" label="Reference" value=form.reference.value error=form.reference.errors maxlength=form.reference.field.max_length help_text="Required when the selected payment method requires a reference." only %}
         {% include "components/input.html" with name="paid_at" label="Paid at" value=paid_at_value error=form.paid_at.errors type="datetime-local" step="1" required=True help_text=time_zone only %}
       </div>
-      <footer class="flex flex-wrap justify-end gap-2 rounded-b-workspace border-t border-slate-200 bg-slate-50 px-5 py-4">
+      <footer class="flex flex-wrap justify-end gap-2 rounded-b-workspace border-t border-line bg-surface-muted px-5 py-4">
         {% include "components/button.html" with text="Choose another invoice" href=choose_url variant="ghost" flat=True only %}
         {% if eligible %}{% include "components/button.html" with text="Post payment" type="submit" loading_text="Posting…" variant="primary" flat=True only %}{% endif %}
       </footer>

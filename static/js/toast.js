@@ -174,13 +174,13 @@ document.addEventListener("DOMContentLoaded", () => {
     content.className = "min-w-0 flex-1 pt-0.5";
 
     const title = document.createElement("p");
-    title.className = "text-sm font-medium leading-5 text-slate-900";
+    title.className = "text-sm font-medium leading-5 text-ink";
     title.textContent = options.title || text;
     content.append(title);
 
     if (options.title && text) {
       const desc = document.createElement("p");
-      desc.className = "mt-1 text-sm leading-5 text-slate-500";
+      desc.className = "mt-1 text-sm leading-5 text-muted";
       desc.textContent = text;
       content.append(desc);
     }
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const close = document.createElement("button");
     close.type = "button";
     close.className =
-      "absolute right-2.5 top-2.5 inline-flex size-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1";
+      "absolute right-2.5 top-2.5 inline-flex size-7 items-center justify-center rounded-md text-faint hover:bg-surface-hover hover:text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1";
     close.setAttribute("aria-label", "Dismiss notification");
     close.innerHTML =
       '<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" /></svg>';

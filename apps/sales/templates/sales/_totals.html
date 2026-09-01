@@ -1,8 +1,8 @@
 <dl class="space-y-3 text-sm tabular-nums">
-  <div class="flex justify-between gap-4"><dt class="text-slate-500">Subtotal</dt><dd>{{ invoice.subtotal|floatformat:2 }}</dd></div>
-  <div class="flex justify-between gap-4"><dt class="text-slate-500">Discount</dt><dd>−{{ invoice.discount_total|floatformat:2 }}</dd></div>
-  <div class="flex justify-between gap-4"><dt class="text-slate-500">Tax</dt><dd>{{ invoice.tax_total|floatformat:2 }}</dd></div>
-  <div class="border-t border-slate-200 pt-4"><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Grand total · {{ invoice.currency_code }}</dt><dd class="mt-1 break-words text-3xl font-semibold tracking-tight text-slate-950">{{ invoice.grand_total|floatformat:2 }}</dd></div>
-  <div class="flex justify-between gap-4 pt-2"><dt class="text-slate-500">Paid</dt><dd>{{ invoice.paid_total|floatformat:2 }}</dd></div>
+  <div class="flex justify-between gap-4"><dt class="text-muted">Subtotal</dt><dd>{{ invoice.subtotal|floatformat:2 }}</dd></div>
+  <div class="flex justify-between gap-4"><dt class="text-muted">Discount</dt><dd>−{{ invoice.discount_total|floatformat:2 }}</dd></div>
+  <div class="flex justify-between gap-4"><dt class="text-muted">Tax</dt><dd>{{ invoice.tax_total|floatformat:2 }}</dd></div>
+  <div class="border-t border-line pt-4"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">Grand total · {{ invoice.currency_code }}</dt><dd class="mt-1 wrap-break-word text-3xl font-semibold tracking-tight text-ink-strong">{{ invoice.grand_total|floatformat:2 }}</dd></div>
+  <div class="flex justify-between gap-4 pt-2"><dt class="text-muted">Paid</dt><dd>{{ invoice.paid_total|floatformat:2 }}</dd></div>
   <div class="flex justify-between gap-4 font-semibold"><dt>Balance due</dt><dd>{{ invoice.balance_due|floatformat:2 }}</dd></div>
 </dl>

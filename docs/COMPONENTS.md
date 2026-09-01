@@ -18,6 +18,53 @@ Use the auth layout for login and password-related screens. It provides a center
 {% block content %}...{% endblock %}
 ```
 
+## Light and dark themes
+
+The operational dashboard and auth shells share a root `html.dark` theme with
+Tailwind v4's class-based `dark` variant. `components/theme_init.html` resolves
+the preference inline before the stylesheet and first paint; `static/js/theme.js`
+owns the compact topbar/login buttons and their descriptive action labels.
+`localStorage["pharmanex.theme"]` accepts `light`, `dark`, or `system` (the default).
+The two-state button saves an explicit choice. System changes apply only while
+following `system`; storage events and `pageshow` restore the current preference.
+Blocked storage falls back safely to an in-memory choice. No server preference,
+new dependency, or database change is involved.
+
+Use semantic tokens from `assets/css/input.css` for themed presentation:
+
+- `bg-canvas` for the shell; `bg-surface`, `bg-surface-muted`, and
+  `bg-surface-hover` for workspaces, controls, and interaction states;
+- `text-ink-strong`, `text-ink`, `text-ink-soft`, `text-body`, `text-copy`,
+  `text-muted`, and `text-faint` for the existing text hierarchy;
+- `border-line`, `border-line-soft`, and `border-line-strong` for separators;
+- `accent`, `positive`, `caution`, `negative`, and `notice` text/soft/line roles
+  for links, badges, validation, and alerts. Keep complete static class names.
+
+These same roles cover ledgers, filters, pagination, selects (including JS-added
+classes), modals, toasts, dirty bars, POS, and feature-owned surfaces. Raw brand
+colors stay fixed for solid actions and the teal sidebar; white logo plaques on
+auth screens are intentional. The standalone historical design-comparison page
+is not part of the operational theme system.
+
+Theme changes intentionally have **no transition**. Themed color-transition
+utilities are removed; `data-theme-changing` also suppresses transitions and
+animations during synchronous theme application/style resolution. Unrelated
+sidebar transforms and toast motion remain. Native controls use `color-scheme`.
+Chart.js reads the `--color-chart-*` roles, refreshes existing instances on
+`pharmanex:theme-change`, and calls `update("none")`, including value labels,
+axes, grids, tooltips, and series. Print events refresh chart colors too.
+
+Dark token overrides are screen-only. `@media print` hides navigation, theme
+controls, dialogs, and toasts and restores a white page with dark text, so invoices
+and receipts stay light regardless of preference. Existing sales print layout
+rules remain in place. Physical printer output is a separate device check.
+
+Run the frontend suite with `node --test apps/dashboard/tests_js/*.test.cjs
+apps/sales/tests_js/*.test.cjs`. For disposable cross-workspace browser review,
+run `npm run build`, then `uv run python scripts/preview-theme.py`: port 8017 uses
+synthetic fixtures in an in-memory SQLite database and prints a random local
+login. Stopping the process discards the data; it never uses the `.env` database.
+
 ## Navigation loading
 
 The dashboard layout loads `static/js/navigation-loading.js`, includes the shared
@@ -234,6 +281,9 @@ for its payment-method filter with the same native-change navigation behavior.
 Run the dependency-free interaction tests with `node --test apps/dashboard/tests_js/registry-filters.test.cjs`.
 
 Use `ledger-scroll` around a `ledger-table` for a contained horizontal scroll region, with `tabindex="0"`, `role="region"`, and a descriptive `aria-label`. Tables retain captions and column headers. Use `ledger-number` on numeric cells and their headers for right alignment and tabular numerals. `registry-link` provides the shared record-link focus/hover treatment. These roles use existing theme colors and do not change the dashboard shell.
+
+`ledger-scroll` also establishes the positioning context for screen-reader-only
+captions/action text, preventing that absolute content from widening the page.
 
 Render empty states outside the table's scroll region so their text and permitted actions remain visible on narrow screens.
 

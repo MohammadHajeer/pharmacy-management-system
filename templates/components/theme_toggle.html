@@ -1,0 +1,6 @@
+<button type="button" data-theme-toggle hidden
+  class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
+  aria-label="Switch to dark mode" title="Switch to dark mode">
+  {% include "components/icon.html" with name="moon" class="size-4.5 dark:hidden" only %}
+  {% include "components/icon.html" with name="sun" class="hidden size-4.5 dark:block" only %}
+</button>

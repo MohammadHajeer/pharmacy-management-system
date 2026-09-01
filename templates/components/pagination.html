@@ -1,6 +1,6 @@
 {% if page_obj.paginator.count %}
 <div
-  class="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 sm:px-5 lg:flex-row lg:items-center lg:justify-between"
+  class="flex flex-col gap-3 border-t border-line px-4 py-3 text-xs text-muted sm:px-5 lg:flex-row lg:items-center lg:justify-between"
 >
   <p class="min-w-0 wrap-break-words tabular-nums">
     Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} {{ label }}

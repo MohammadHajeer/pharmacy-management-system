@@ -7,12 +7,12 @@ PHARMANEX {% endblock %} {% block content %}
     <div class="min-w-0">
       <p class="operational-kicker">Purchasing operations</p>
       <h1
-        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-slate-950"
+        class="mt-1 wrap-break-words text-2xl font-semibold tracking-tight text-ink-strong"
       >
         Purchase Invoices
       </h1>
       <p
-        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-slate-500"
+        class="mt-2 max-w-2xl wrap-break-words text-sm leading-6 text-muted"
       >
         Receive stock and track supplier purchase transactions.
       </p>
@@ -23,8 +23,8 @@ PHARMANEX {% endblock %} {% block content %}
   </header>
   <section class="workspace-surface">
     <header class="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
-      <h2 class="text-sm font-semibold text-slate-900">Purchase ledger</h2>
-      <span class="text-xs text-slate-500"> Most recent first </span>
+      <h2 class="text-sm font-semibold text-ink">Purchase ledger</h2>
+      <span class="text-xs text-muted"> Most recent first </span>
     </header>
     {% if invoices %}
     <div
@@ -59,14 +59,14 @@ PHARMANEX {% endblock %} {% block content %}
                 </a>
 
                 {% if not invoice.invoice_number %}
-                  <p class="mt-1 text-xs text-slate-500">
+                  <p class="mt-1 text-xs text-muted">
                     Created {{ invoice.created_at|date:"d M Y, H:i" }}
                   </p>
                 {% endif %}
               </td>
 
               <td>
-                <span class="font-medium text-slate-800">
+                <span class="font-medium text-ink-soft">
                   {% if invoice.status == "DRAFT" %}
                     {{ invoice.supplier.name }}
                   {% else %}
@@ -75,7 +75,7 @@ PHARMANEX {% endblock %} {% block content %}
                 </span>
 
                 {% if invoice.supplier_invoice_reference %}
-                  <p class="mt-1 text-xs text-slate-500">
+                  <p class="mt-1 text-xs text-muted">
                     {{ invoice.supplier_invoice_reference }}
                   </p>
                 {% endif %}
@@ -95,9 +95,9 @@ PHARMANEX {% endblock %} {% block content %}
                 {% endif %}
               </td>
 
-              <td class="ledger-number font-semibold text-slate-900">
+              <td class="ledger-number font-semibold text-ink">
                 {{ invoice.grand_total }}
-                <span class="text-xs font-normal text-slate-500">
+                <span class="text-xs font-normal text-muted">
                   {{ invoice.currency_code }}
                 </span>
               </td>
@@ -113,8 +113,8 @@ PHARMANEX {% endblock %} {% block content %}
     </div>
     {% else %}
     <div class="operational-empty m-4 text-center sm:m-5">
-      <p class="font-semibold text-slate-800">No purchase invoices yet</p>
-      <p class="mt-1 text-sm text-slate-500">
+      <p class="font-semibold text-ink-soft">No purchase invoices yet</p>
+      <p class="mt-1 text-sm text-muted">
         Create a purchase draft to record supplier details, costs, and stock to
         receive.
       </p>
@@ -123,7 +123,7 @@ PHARMANEX {% endblock %} {% block content %}
       </div>
     </div>
     {% endif %} {% include "components/pagination.html" with label="purchase invoices" %}
-    <footer class="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+    <footer class="border-t border-line-soft px-5 py-3 text-xs text-muted">
       Drafts do not change stock. Stock is received when an authorized user
       posts the invoice.
     </footer>

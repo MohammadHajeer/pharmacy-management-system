@@ -1,6 +1,8 @@
-{% if name == "dashboard" or name == "sales" or name == "medicines" or name == "inventory" or name == "suppliers" or name == "customers" or name == "prescriptions" or name == "purchases" or name == "invoices" or name == "payments" or name == "returns" or name == "reports" or name == "settings" or name == "logout" or name == "close" or name == "menu" or name == "chevron-right" or name == "chevron-down" %}
+{% if name == "sun" or name == "moon" or name == "dashboard" or name == "sales" or name == "medicines" or name == "inventory" or name == "suppliers" or name == "customers" or name == "prescriptions" or name == "purchases" or name == "invoices" or name == "payments" or name == "returns" or name == "reports" or name == "settings" or name == "logout" or name == "close" or name == "menu" or name == "chevron-right" or name == "chevron-down" %}
 <svg{% if class %} class="{{ class }}"{% endif %} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
   {% if name == "dashboard" %}<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linejoin="round" />
+  {% elif name == "sun" %}<circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" stroke-linecap="round" />
+  {% elif name == "moon" %}<path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" stroke-linejoin="round" />
   {% elif name == "sales" %}<path d="M4 7h16v10H4zM8 7V5h8v2M7 12h2m3 0h5m-10 3h4" stroke-linecap="round" stroke-linejoin="round" />
   {% elif name == "medicines" %}<path d="m7.8 16.2 8.4-8.4a3.4 3.4 0 0 1 4.8 4.8L12.6 21a3.4 3.4 0 0 1-4.8-4.8ZM11 13l4.8 4.8" stroke-linecap="round" />
   {% elif name == "inventory" %}<path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10" stroke-linejoin="round" />

@@ -3,25 +3,18 @@
 
   if (typeof window.Chart !== "function") return;
 
-  const styles = getComputedStyle(document.documentElement);
-  const color = (token) => styles.getPropertyValue(`--color-${token}`).trim();
-  const palette = {
-    healthy: color("primary-600"),
-    warning: color("warning"),
-    danger: color("danger"),
-    watch: color("slate-500"),
-    neutral: color("slate-400"),
-  };
+  const color = (token) => getComputedStyle(document.documentElement).getPropertyValue(`--color-${token}`).trim();
+  const charts = [];
   const number = new Intl.NumberFormat(document.documentElement.lang || "en");
   const fontFamily = getComputedStyle(document.body).fontFamily;
 
   const tooltip = (unit) => ({
     displayColors: false,
-    backgroundColor: color("slate-900"),
-    borderColor: color("slate-700"),
+    backgroundColor: color("chart-tooltip"),
+    borderColor: color("chart-tooltip-border"),
     borderWidth: 1,
-    titleColor: color("slate-300"),
-    bodyColor: color("white"),
+    titleColor: color("chart-tooltip-title"),
+    bodyColor: color("chart-tooltip-body"),
     titleFont: { family: fontFamily, size: 11, weight: "normal" },
     bodyFont: { family: fontFamily, size: 12, weight: "600" },
     padding: { x: 10, y: 8 },
@@ -37,13 +30,13 @@
       beginAtZero: true,
       suggestedMax: 1,
       border: { display: false },
-      grid: { color: color("slate-100"), drawTicks: false },
-      ticks: { precision: 0, color: color("slate-500"), maxTicksLimit: 4, padding: 8, font: { family: fontFamily, size: 10 } },
+      grid: { color: color("chart-grid"), drawTicks: false },
+      ticks: { precision: 0, color: color("chart-label"), maxTicksLimit: 4, padding: 8, font: { family: fontFamily, size: 10 } },
     };
     const label = {
-      border: { display: true, color: color("slate-200") },
+      border: { display: true, color: color("line") },
       grid: { display: false },
-      ticks: { color: color("slate-600"), maxRotation: 0, autoSkip: purchase, padding: 8, font: { family: fontFamily, size: 10 } },
+      ticks: { color: color("copy"), maxRotation: 0, autoSkip: purchase, padding: 8, font: { family: fontFamily, size: 10 } },
     };
     return { x: label, y: count };
   }
@@ -57,7 +50,7 @@
       if (!chartArea || !chart.isDatasetVisible(0)) return;
       ctx.save();
       ctx.font = `600 11px ${fontFamily}`;
-      ctx.fillStyle = color("slate-700");
+      ctx.fillStyle = color("chart-value");
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
       chart.getDatasetMeta(0).data.forEach((bar, index) => {
@@ -88,10 +81,11 @@
       const indices = data.values.map((_, index) => index).filter((index) => (
         data.unit !== "batches" || data.tones[index] !== "neutral"
       ));
-      const colors = indices.map((index) => purchase
-        ? color(index === data.focus_index ? "primary-800" : "primary-700")
-        : palette[data.tones[index]]);
-      new window.Chart(canvas, {
+      const seriesColors = () => indices.map((index) => purchase
+        ? color(index === data.focus_index ? "chart-focus" : "chart-purchase")
+        : color(`chart-${data.tones[index]}`));
+      const colors = seriesColors();
+      const chart = new window.Chart(canvas, {
         type: "bar",
         plugins: [valueLabels(purchase ? indices.indexOf(data.focus_index) : undefined)],
         data: {
@@ -123,6 +117,7 @@
           scales: axes(purchase),
         },
       });
+      charts.push({ chart, purchase, unit: data.unit, seriesColors });
     } catch (error) {
       // Keep the server-rendered summary usable if an asset/data problem occurs.
       window.Chart.getChart(canvas)?.destroy();
@@ -130,4 +125,18 @@
       console.warn("Dashboard chart could not be rendered.", error);
     }
   });
+
+  function refreshTheme() {
+    charts.forEach(({ chart, purchase, unit, seriesColors }) => {
+      const colors = seriesColors();
+      chart.data.datasets[0].backgroundColor = colors;
+      chart.data.datasets[0].hoverBackgroundColor = colors;
+      chart.options.scales = axes(purchase);
+      chart.options.plugins.tooltip = tooltip(unit);
+      chart.update("none");
+    });
+  }
+  document.addEventListener("pharmanex:theme-change", refreshTheme);
+  window.addEventListener("beforeprint", refreshTheme);
+  window.addEventListener("afterprint", refreshTheme);
 })();

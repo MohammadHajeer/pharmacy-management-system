@@ -5,8 +5,8 @@
   <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div class="min-w-0">
       <p class="operational-kicker">Financial operations</p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{{ title }}</h1>
-      <p class="mt-2 text-sm leading-6 text-slate-500">{{ description }}</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">{{ title }}</h1>
+      <p class="mt-2 text-sm leading-6 text-muted">{{ description }}</p>
     </div>
     {% if can_post %}<div class="shrink-0">{% include "components/button.html" with text="Record payment" href=choose_url variant="primary" flat=True only %}</div>{% endif %}
   </header>
@@ -14,9 +14,9 @@
   <section class="workspace-surface overflow-visible">
     {% include "components/registry_filters.html" with clear_url=list_url search_label="Search payments" search_placeholder="Reference, invoice or party" extra_filters_template="finance/_method_filter.html" %}
     <header class="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
-      <h2 class="text-sm font-semibold text-slate-900">{{ party_label }} payment ledger</h2><span class="text-xs text-slate-500">Newest payment first · includes reversals</span>
+      <h2 class="text-sm font-semibold text-ink">{{ party_label }} payment ledger</h2><span class="text-xs text-muted">Newest payment first · includes reversals</span>
     </header>
-    {% if invalid_filter %}<p class="px-5 pb-4 text-sm text-amber-700" role="alert">A filter is invalid or no longer available. Clear filters to see all payments.</p>{% endif %}
+    {% if invalid_filter %}<p class="px-5 pb-4 text-sm text-caution" role="alert">A filter is invalid or no longer available. Clear filters to see all payments.</p>{% endif %}
     {% include "finance/_payment_table.html" %}
   </section>
 </div>

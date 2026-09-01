@@ -6,10 +6,10 @@ payment · PHARMANEX{% endblock %} {% block content %}
   >
     <div class="min-w-0">
       <p class="operational-kicker">Financial transaction record</p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">
         {{ party_label }} payment
       </h1>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-muted">
         {{ invoice.invoice_number }} · {{ party.name|default:"Walk-in customer" }}
       </p>
     </div>
@@ -22,84 +22,84 @@ payment · PHARMANEX{% endblock %} {% block content %}
   <div class="grid min-w-0 gap-5 lg:grid-cols-2">
     <section class="workspace-surface min-w-0 self-start">
       <header
-        class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4"
+        class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"
       >
-        <h2 class="text-sm font-semibold text-slate-900">Payment summary</h2>
+        <h2 class="text-sm font-semibold text-ink">Payment summary</h2>
         {% include "finance/_payment_status.html" %}
       </header>
       <div class="px-5 py-5">
-        <p class="text-xs text-slate-500">Original payment amount</p>
+        <p class="text-xs text-muted">Original payment amount</p>
         <p
-          class="mt-1 wrap-break-words text-3xl font-semibold tabular-nums text-slate-950"
+          class="mt-1 wrap-break-words text-3xl font-semibold tabular-nums text-ink-strong"
         >
           {{ payment.amount|floatformat:"2" }}
-          <span class="text-sm font-medium text-slate-500"
+          <span class="text-sm font-medium text-muted"
             >{{ invoice.currency_code|default:currency_code }}</span
           >
         </p>
       </div>
       <dl
-        class="grid gap-5 border-t border-slate-200 p-5 text-sm sm:grid-cols-2"
+        class="grid gap-5 border-t border-line p-5 text-sm sm:grid-cols-2"
       >
         <div>
-          <dt class="text-xs text-slate-500">Payment method</dt>
+          <dt class="text-xs text-muted">Payment method</dt>
           <dd class="mt-1 wrap-break-words font-medium">
             {{ payment.payment_method.name }}
           </dd>
         </div>
         <div>
-          <dt class="text-xs text-slate-500">Reference</dt>
+          <dt class="text-xs text-muted">Reference</dt>
           <dd class="mt-1 break-all">
             {{ payment.reference|default:"Not provided" }}
           </dd>
         </div>
         <div>
-          <dt class="text-xs text-slate-500">Paid at</dt>
+          <dt class="text-xs text-muted">Paid at</dt>
           <dd class="mt-1 tabular-nums">
             {{ payment.paid_at|date:"d M Y, H:i:s T" }}
           </dd>
         </div>
         <div>
-          <dt class="text-xs text-slate-500">Processed by</dt>
+          <dt class="text-xs text-muted">Processed by</dt>
           <dd class="mt-1 wrap-break-words">
             {{ payment.processed_by.get_full_name|default:payment.processed_by.get_username }}
           </dd>
         </div>
         <div>
-          <dt class="text-xs text-slate-500">Recorded at</dt>
+          <dt class="text-xs text-muted">Recorded at</dt>
           <dd class="mt-1 tabular-nums">
             {{ payment.created_at|date:"d M Y, H:i:s T" }}
           </dd>
         </div>
         <div>
-          <dt class="text-xs text-slate-500">Payment ID</dt>
-          <dd class="mt-1 break-all font-mono text-xs text-slate-500">
+          <dt class="text-xs text-muted">Payment ID</dt>
+          <dd class="mt-1 break-all font-mono text-xs text-muted">
             {{ payment.pk }}
           </dd>
         </div>
       </dl>
       {% if payment.status == "REVERSED" %}
-      <section class="border-t border-slate-200 bg-slate-50 p-5">
-        <h2 class="text-sm font-semibold text-slate-900">Reversal record</h2>
-        <p class="mt-1 text-xs leading-5 text-slate-500">
+      <section class="border-t border-line bg-surface-muted p-5">
+        <h2 class="text-sm font-semibold text-ink">Reversal record</h2>
+        <p class="mt-1 text-xs leading-5 text-muted">
           The original payment is retained and excluded from the invoice paid
           total.
         </p>
         <dl class="mt-4 space-y-3 text-sm">
           <div>
-            <dt class="text-xs text-slate-500">Reversed by</dt>
+            <dt class="text-xs text-muted">Reversed by</dt>
             <dd class="mt-1 wrap-break-words">
               {{ payment.reversed_by.get_full_name|default:payment.reversed_by.get_username }}
             </dd>
           </div>
           <div>
-            <dt class="text-xs text-slate-500">Reversed at</dt>
+            <dt class="text-xs text-muted">Reversed at</dt>
             <dd class="mt-1 tabular-nums">
               {{ payment.reversed_at|date:"d M Y, H:i:s T" }}
             </dd>
           </div>
           <div>
-            <dt class="text-xs text-slate-500">Reason</dt>
+            <dt class="text-xs text-muted">Reason</dt>
             <dd class="mt-1 whitespace-pre-wrap wrap-break-words">
               {{ payment.reversal_reason|default:"No reason provided" }}
             </dd>
@@ -107,7 +107,7 @@ payment · PHARMANEX{% endblock %} {% block content %}
         </dl>
       </section>
       {% endif %} {% if list_url %}
-      <div class="border-t border-slate-200 px-5 py-4">
+      <div class="border-t border-line px-5 py-4">
         <a href="{{ invoice_url }}" class="registry-link text-sm"
           >View invoice payment history</a
         >

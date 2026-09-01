@@ -129,12 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
       for (const medicine of payload.results) {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "flex w-full items-center justify-between gap-3 rounded-control border border-slate-200 bg-white px-3 py-3 text-left text-sm hover:border-primary-600 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600";
+        button.className = "flex w-full items-center justify-between gap-3 rounded-control border border-line bg-surface px-3 py-3 text-left text-sm hover:border-primary-600 hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600";
         const name = document.createElement("span");
-        name.className = "font-semibold text-slate-800";
+        name.className = "font-semibold text-ink-soft";
         name.textContent = `${medicine.name}${medicine.strength ? ` · ${medicine.strength}` : ""}${medicine.prescription_required ? " · Rx required" : ""}`;
         const stock = document.createElement("span");
-        stock.className = "shrink-0 text-xs tabular-nums text-slate-500";
+        stock.className = "shrink-0 text-xs tabular-nums text-muted";
         stock.textContent = `${decimalText(medicine.available_stock_base)} base units`;
         button.append(name, stock);
         button.addEventListener("click", () => addMedicine(medicine));

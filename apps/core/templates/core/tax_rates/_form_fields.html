@@ -1,5 +1,5 @@
 <div class="space-y-5">
-  {% if form.non_field_errors %}<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="rounded-lg border border-negative-line bg-negative-soft px-4 py-3 text-sm text-negative-strong" role="alert">{{ form.non_field_errors }}</div>{% endif %}
   {% include "components/input.html" with id=field_prefix|add:"-code" name="code" label="Code" value=form.code.value error=form.code.errors required=True maxlength=30 help_text="A short internal code, such as VAT or ZERO." %}
   {% include "components/input.html" with id=field_prefix|add:"-name" name="name" label="Name" value=form.name.value error=form.name.errors required=True maxlength=100 %}
   {% include "components/input.html" with id=field_prefix|add:"-rate-percent" name="rate_percent" label="Rate (%)" type="number" value=form.rate_percent.value error=form.rate_percent.errors required=True help_text="Enter a percentage from 0 to 100." %}

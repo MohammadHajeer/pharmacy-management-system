@@ -18,7 +18,7 @@
 
   {# Dialog #}
   <div
-    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-dialog border border-slate-200/80 bg-white {% if not flat %}shadow-[0_24px_70px_-20px_rgba(15,23,42,0.35)]{% endif %} outline-none"
+    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-dialog border border-line/80 bg-surface {% if not flat %}shadow-[0_24px_70px_-20px_rgba(15,23,42,0.35)]{% endif %} outline-none"
     data-modal-panel
     tabindex="-1"
   >
@@ -27,7 +27,7 @@
       <div class="pr-10">
         <h2
           id="{{ modal_id }}-title"
-          class="text-lg font-semibold tracking-tight text-slate-950"
+          class="text-lg font-semibold tracking-tight text-ink-strong"
         >
           {{ title }}
         </h2>
@@ -35,7 +35,7 @@
         {% if description %}
           <p
             id="{{ modal_id }}-description"
-            class="mt-1.5 text-sm leading-6 text-slate-500"
+            class="mt-1.5 text-sm leading-6 text-muted"
           >
             {{ description }}
           </p>
@@ -44,7 +44,7 @@
 
       <button
         type="button"
-        class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
+        class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-lg text-faint hover:bg-surface-hover hover:text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
         data-modal-close
         aria-label="Close dialog"
       >
@@ -56,10 +56,10 @@
     {% if form_template and form_action %}
       <form method="post" action="{{ form_action }}" class="contents" data-submit-form novalidate>
         {% csrf_token %}
-        <div class="min-h-0 overflow-y-auto border-t border-slate-100 px-6 py-5 text-sm leading-6 text-slate-600 sm:px-7">
+        <div class="min-h-0 overflow-y-auto border-t border-line-soft px-6 py-5 text-sm leading-6 text-copy sm:px-7">
           {% include form_template with form=modal_form field_prefix=field_prefix only %}
         </div>
-        <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
+        <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-line-soft bg-surface-muted/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
           {% include "components/button.html" with text=close_text|default:"Cancel" variant="outline" modal_close=True flat=flat only %}
           {% include "components/button.html" with text=confirm_text|default:"Save" loading_text=confirm_loading_text|default:"Saving..." variant=confirm_variant|default:"primary" type="submit" flat=flat only %}
         </footer>
@@ -67,13 +67,13 @@
     {% else %}
       {# Content #}
       {% if body %}
-        <div class="min-h-0 overflow-y-auto border-t border-slate-100 px-6 py-5 text-sm leading-6 text-slate-600 sm:px-7">
+        <div class="min-h-0 overflow-y-auto border-t border-line-soft px-6 py-5 text-sm leading-6 text-copy sm:px-7">
           {{ body }}
         </div>
       {% endif %}
 
       {# Actions #}
-      <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
+      <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-line-soft bg-surface-muted/70 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
         {% include "components/button.html" with text=close_text|default:"Close" variant="outline" modal_close=True flat=flat only %}
 
         {% if confirm_text %}

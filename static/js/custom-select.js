@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const setActiveIndex = (index) => {
       options.forEach((option, optionIndex) => {
-        option.classList.toggle("bg-slate-100", optionIndex === index);
+        option.classList.toggle("bg-surface-hover", optionIndex === index);
       });
 
       select.activeIndex = index;
@@ -66,15 +66,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const displayValue = selectedNativeOption?.textContent?.trim() || ui.dataset.placeholder;
 
       triggerValue.textContent = displayValue;
-      triggerValue.classList.toggle("text-slate-500", selectedValue === "");
-      triggerValue.classList.toggle("text-slate-900", selectedValue !== "");
+      triggerValue.classList.toggle("text-muted", selectedValue === "");
+      triggerValue.classList.toggle("text-ink", selectedValue !== "");
       trigger.disabled = native.disabled;
 
       options.forEach((option) => {
         const selected = option.dataset.value === selectedValue;
         option.setAttribute("aria-selected", String(selected));
-        option.classList.toggle("bg-primary-50", selected);
-        option.classList.toggle("text-primary-700", selected);
+        option.classList.toggle("bg-accent-soft", selected);
+        option.classList.toggle("text-accent", selected);
         option.querySelector("[data-custom-select-indicator]")?.classList.toggle("hidden", !selected);
       });
 

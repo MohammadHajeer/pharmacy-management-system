@@ -1,0 +1,10 @@
+<script>
+  (() => {
+    let preference = "system";
+    try { preference = localStorage.getItem("pharmanex.theme") || "system"; } catch (_) {}
+    if (!["light", "dark", "system"].includes(preference)) preference = "system";
+    const dark = preference === "dark" || (preference === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", Boolean(dark));
+    document.documentElement.dataset.themePreference = preference;
+  })();
+</script>

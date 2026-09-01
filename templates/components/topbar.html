@@ -1,10 +1,10 @@
-<header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95">
+<header data-app-topbar class="sticky top-0 z-20 border-b border-line/80 bg-surface/95">
   <div class="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
 
     {# Mobile sidebar trigger #}
     <button
       type="button"
-      class="-ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 lg:hidden"
+      class="-ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-hover hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 lg:hidden"
       data-sidebar-open
       aria-controls="dashboard-sidebar"
       aria-expanded="false"
@@ -15,47 +15,48 @@
 
     {# Explicit location context; feature templates continue to own the page heading. #}
     <div class="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
-      <span class="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-800">PHARMANEX</span>
-      <span class="h-4 w-px shrink-0 bg-slate-200" aria-hidden="true"></span>
+      <span class="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft">PHARMANEX</span>
+      <span class="h-4 w-px shrink-0 bg-surface-pressed" aria-hidden="true"></span>
       <nav class="min-w-0 overflow-hidden" aria-label="Breadcrumb">
         {% if breadcrumbs %}
           <ol class="flex min-w-0 items-center text-xs">
             {% for breadcrumb in breadcrumbs %}
               <li class="min-w-0 items-center {% if forloop.last %}flex{% else %}hidden sm:flex{% endif %}">
                 {% if breadcrumb.url and not forloop.last %}
-                  <a href="{{ breadcrumb.url }}" class="max-w-32 truncate font-medium text-slate-500 hover:text-primary-700 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 md:max-w-44" title="{{ breadcrumb.label }}">{{ breadcrumb.label }}</a>
+                  <a href="{{ breadcrumb.url }}" class="max-w-32 truncate font-medium text-muted hover:text-accent focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 md:max-w-44" title="{{ breadcrumb.label }}">{{ breadcrumb.label }}</a>
                 {% else %}
-                  <span class="truncate {% if forloop.last %}max-w-44 font-semibold text-slate-800 sm:max-w-56 md:max-w-72{% else %}max-w-32 font-medium text-slate-500 md:max-w-44{% endif %}" {% if forloop.last %}aria-current="page"{% endif %} title="{{ breadcrumb.label }}">{{ breadcrumb.label }}</span>
+                  <span class="truncate {% if forloop.last %}max-w-44 font-semibold text-ink-soft sm:max-w-56 md:max-w-72{% else %}max-w-32 font-medium text-muted md:max-w-44{% endif %}" {% if forloop.last %}aria-current="page"{% endif %} title="{{ breadcrumb.label }}">{{ breadcrumb.label }}</span>
                 {% endif %}
                 {% if not forloop.last %}
-                  {% include "components/icon.html" with name="chevron-right" class="mx-1.5 size-3.5 shrink-0 text-slate-300" only %}
+                  {% include "components/icon.html" with name="chevron-right" class="mx-1.5 size-3.5 shrink-0 text-decorative" only %}
                 {% endif %}
               </li>
             {% endfor %}
           </ol>
         {% elif page_context %}
-          <span class="block max-w-44 truncate text-xs font-semibold text-slate-800 sm:max-w-56 md:max-w-72" aria-current="page" title="{{ page_context }}">{{ page_context }}</span>
+          <span class="block max-w-44 truncate text-xs font-semibold text-ink-soft sm:max-w-56 md:max-w-72" aria-current="page" title="{{ page_context }}">{{ page_context }}</span>
         {% endif %}
       </nav>
     </div>
 
     {# User area #}
+    {% include "components/theme_toggle.html" %}
     {% if request.user.is_authenticated %}
       {% with role=request.user.groups.first display_name=request.user.get_full_name|default:request.user.username %}
         <div class="flex shrink-0 items-center gap-2.5" data-account-identity aria-label="Signed in as {{ display_name }}{% if role %}, {{ role.name }}{% else %}, Staff member{% endif %}">
           <div
-            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 ring-1 ring-inset ring-primary-200"
+            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-tint text-sm font-semibold text-accent ring-1 ring-inset ring-accent-line"
             aria-hidden="true"
           >
             {{ display_name|first|upper }}
           </div>
 
           <div class="hidden min-w-0 sm:block">
-            <p class="max-w-40 truncate text-sm font-semibold leading-4 text-slate-900" title="{{ display_name }}">
+            <p class="max-w-40 truncate text-sm font-semibold leading-4 text-ink" title="{{ display_name }}">
               {{ display_name }}
             </p>
 
-            <p class="mt-1 max-w-40 truncate text-[11px] leading-none text-slate-500">
+            <p class="mt-1 max-w-40 truncate text-[11px] leading-none text-muted">
               {% if role %}
                 {{ role.name }}
               {% else %}

@@ -1,4 +1,4 @@
-<form method="get" action="{{ clear_url }}" data-registry-filter-form class="grid gap-3 border-b border-slate-200 bg-slate-50/60 p-4 sm:flex sm:flex-wrap sm:items-end sm:px-5" aria-label="Registry filters">
+<form method="get" action="{{ clear_url }}" data-registry-filter-form class="grid gap-3 border-b border-line bg-surface-muted/60 p-4 sm:flex sm:flex-wrap sm:items-end sm:px-5" aria-label="Registry filters">
   {% if search_label %}
     <div class="min-w-0 sm:min-w-64 sm:flex-1">
       {% include "components/input.html" with name="q" label=search_label placeholder=search_placeholder value=query type="search" only %}

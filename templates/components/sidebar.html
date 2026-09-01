@@ -24,7 +24,7 @@
                 {% elif item.url %}
                   <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900 {% if item.is_active %}bg-sidebar-800 font-semibold text-white ring-1 ring-inset ring-white/10{% else %}font-medium text-sidebar-100 hover:bg-sidebar-800 hover:text-white{% endif %}">
                 {% else %}
-                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-300 opacity-50">
+                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-300">
                 {% endif %}
                     {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0" only %}
                     <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>

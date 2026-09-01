@@ -9,6 +9,19 @@ from config.context_processors import dashboard_navigation
 
 
 class SharedComponentTests(SimpleTestCase):
+    def test_theme_bootstrap_precedes_css_in_both_shells(self):
+        request = RequestFactory().get("/")
+        request.user = AnonymousUser()
+        for template in ("layouts/dashboard.html", "layouts/auth.html"):
+            with self.subTest(template=template):
+                rendered = render_to_string(template, request=request)
+                self.assertLess(rendered.index('localStorage.getItem("pharmanex.theme")'), rendered.index('rel="stylesheet"'))
+                self.assertEqual(rendered.count('src="/static/js/theme.js"'), 1)
+                self.assertEqual(rendered.count('data-theme-toggle'), 1)
+                self.assertIn('type="button" data-theme-toggle hidden', rendered)
+                self.assertIn('aria-label="Switch to dark mode"', rendered)
+                self.assertIn('focus-visible:ring-primary-600', rendered)
+
     def test_navigation_loading_is_shared_by_dashboard_pages_only(self):
         request = RequestFactory().get("/catalog/medicines/")
         request.user = AnonymousUser()
@@ -188,7 +201,7 @@ class SharedComponentTests(SimpleTestCase):
 
         self.assertIn("disabled", rendered)
         self.assertIn("cursor-not-allowed", rendered)
-        self.assertIn("border-slate-300 bg-slate-300", rendered)
+        self.assertIn("border-line-strong bg-surface-disabled", rendered)
         self.assertIn("opacity-100", rendered)
 
     def test_textarea_and_select_share_accessible_supporting_text(self):
