@@ -50,6 +50,12 @@ The existing white logo sits directly on either sidebar without a plaque. White
 logo plaques on auth screens remain intentional. The standalone historical
 design-comparison page is not part of the operational theme system.
 
+Authenticated account identity lives in the fixed sidebar footer rather than the
+topbar. Only the middle navigation region scrolls. Its compact account trigger
+opens upward, repeats the signed-in username and role for context, and launches
+the existing POST-only logout confirmation flow. The topbar retains breadcrumbs
+and the theme control.
+
 Theme changes intentionally have **no transition**. Themed color-transition
 utilities are removed; `data-theme-changing` also suppresses transitions and
 animations during synchronous theme application/style resolution. Unrelated

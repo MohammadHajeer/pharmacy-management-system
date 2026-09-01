@@ -93,6 +93,7 @@ class SharedComponentTests(SimpleTestCase):
         self.assertIn("Panadol 500mg", rendered)
         self.assertNotIn("Pharmacy operations", rendered)
         self.assertNotIn("medicine-list", rendered.lower())
+        self.assertNotIn("data-account-identity", rendered)
 
     def test_icon_selects_named_path_and_applies_shared_svg_attributes(self):
         rendered = render_to_string(
@@ -549,6 +550,11 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, 'aria-label="Breadcrumb"', html=False)
         self.assertContains(response, 'aria-current="page" title="Dashboard"', html=False)
         self.assertContains(response, "data-account-identity", html=False)
+        self.assertContains(response, "data-sidebar-account-footer", html=False)
+        self.assertContains(response, "data-sidebar-account-trigger", html=False)
+        self.assertContains(response, 'role="menu" aria-label="Account menu"', html=False)
+        topbar = response.content.decode().split('<header data-app-topbar', 1)[1].split('</header>', 1)[0]
+        self.assertNotIn("data-account-identity", topbar)
         self.assertContains(response, "dashboard-user")
         self.assertContains(response, "Staff member")
         self.assertNotContains(response, "Pharmacy operations")

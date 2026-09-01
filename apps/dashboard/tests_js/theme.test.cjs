@@ -170,6 +170,14 @@ test("dashboard chrome uses theme-specific sidebar roles with branded navigation
   assert.match(sidebar, /before:bg-sidebar-accent/);
   assert.match(sidebar, /hover:bg-sidebar-hover/);
   assert.match(sidebar, /focus-visible:ring-sidebar-focus/);
+  assert.match(sidebar, /data-sidebar-account-footer/);
+  assert.match(sidebar, /bottom-full/);
+  assert.match(sidebar, /role="menu" aria-label="Account menu"/);
+  assert.match(sidebar, /id="sidebar-account-popover" class="[^"]*border border-line bg-surface/);
+  assert.match(sidebar, /text-accent">Signed in as/);
+  assert.match(sidebar, /class="[^"]*text-ink hover:bg-surface-hover[^"]*"[^>]*role="menuitem"/);
+  assert.doesNotMatch(sidebar, /id="sidebar-account-popover" class="[^"]*bg-shell-sidebar/);
+  assert.doesNotMatch(topbar, /data-account-identity/);
   assert.doesNotMatch(sidebar, /bg-sidebar-900|bg-sidebar-800/);
   assert.match(topbar, /bg-shell-topbar\/95/);
 });

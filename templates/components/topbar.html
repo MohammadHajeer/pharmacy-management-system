@@ -37,35 +37,8 @@
       </nav>
     </div>
 
-    {# User area #}
+    {# Theme remains available globally; account identity lives in the sidebar footer. #}
     {% include "components/theme_toggle.html" %}
-    {% if request.user.is_authenticated %}
-      {% with role=request.user.groups.first display_name=request.user.get_full_name|default:request.user.username %}
-        <div class="flex shrink-0 items-center gap-2.5" data-account-identity aria-label="Signed in as {{ display_name }}{% if role %}, {{ role.name }}{% else %}, Staff member{% endif %}">
-          <div
-            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-tint text-sm font-semibold text-accent ring-1 ring-inset ring-accent-line"
-            aria-hidden="true"
-          >
-            {{ display_name|first|upper }}
-          </div>
-
-          <div class="hidden min-w-0 sm:block">
-            <p class="max-w-40 truncate text-sm font-semibold leading-4 text-ink" title="{{ display_name }}">
-              {{ display_name }}
-            </p>
-
-            <p class="mt-1 max-w-40 truncate text-[11px] leading-none text-muted">
-              {% if role %}
-                {{ role.name }}
-              {% else %}
-                Staff member
-              {% endif %}
-            </p>
-          </div>
-
-        </div>
-      {% endwith %}
-    {% endif %}
 
   </div>
 </header>

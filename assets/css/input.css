@@ -68,6 +68,9 @@
   --color-sidebar-accent: var(--color-white);
   --color-sidebar-accent-line: #43a8a1;
   --color-sidebar-focus: var(--color-primary-100);
+  --color-scrollbar-thumb: #cbd5e1;
+  --color-scrollbar-thumb-hover: #94a3b8;
+  --color-scrollbar-track: transparent;
   --color-accent: var(--color-primary-700);
   --color-accent-strong: var(--color-primary-800);
   --color-accent-soft: var(--color-primary-50);
@@ -165,6 +168,9 @@
       --color-sidebar-accent: #6dd5cb;
       --color-sidebar-accent-line: #206a65;
       --color-sidebar-focus: #42c3b7;
+      --color-scrollbar-thumb: #3b5158;
+      --color-scrollbar-thumb-hover: #587078;
+      --color-scrollbar-track: transparent;
 
       /* Teal remains the PHARMANEX interaction/identity accent, but the shell
          itself is intentionally darker so the sidebar belongs to the canvas.
@@ -258,6 +264,42 @@
     }
   }
 
+  /* Global PHARMANEX scrollbars.
+     Applies to the page, sidebars, custom-select menus, ledgers, modals,
+     permission matrices, and any current/future overflow container. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   ::selection {
     background-color: var(--color-primary-600);
     color: white;
@@ -267,8 +309,6 @@
     background-color: var(--color-primary-600);
     color: white;
   }
-
-  
 }
 
 /* A synchronous style flush in theme.js brackets each theme change. Hover and

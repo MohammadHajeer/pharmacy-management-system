@@ -5,6 +5,7 @@
     "**/.venv": true,
     "**/node_modules": true,
     "**/.pytest_cache": true,
+    "**/.uv-cache": true,
     "**/.mypy_cache": true,
     "**/.ruff_cache": true,
     "**/*.egg-info": true,

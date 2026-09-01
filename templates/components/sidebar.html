@@ -11,43 +11,85 @@
   </div>
 
   {% regroup dashboard_navigation by section as navigation_sections %}
-  <nav class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 [scrollbar-color:var(--color-sidebar-border)_transparent]" aria-label="Dashboard navigation">
+  <nav class="min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-5" data-sidebar-scroll aria-label="Dashboard navigation">
     <div class="space-y-7">
       {% for navigation_section in navigation_sections %}
-        <section aria-labelledby="sidebar-section-{{ navigation_section.grouper|slugify }}">
+        <section class="hidden has-[li]:block" aria-labelledby="sidebar-section-{{ navigation_section.grouper|slugify }}">
           <h2 id="sidebar-section-{{ navigation_section.grouper|slugify }}" class="px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-muted">{{ navigation_section.grouper }}</h2>
           <ul class="mt-2 space-y-1">
             {% for item in navigation_section.list %}
-              <li>
-                {% if item.method == "post" %}
-                  <button type="button" class="group flex h-9 w-full items-center gap-3 rounded-control px-3 text-left text-sm font-medium text-sidebar-text hover:bg-sidebar-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation">
-                {% elif item.url %}
-                  <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group relative flex h-9 items-center gap-3 rounded-control px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar {% if item.is_active %}border border-sidebar-accent-line bg-sidebar-active font-semibold text-sidebar-accent before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-sidebar-accent{% else %}border border-transparent font-medium text-sidebar-text hover:bg-sidebar-hover{% endif %}">
-                {% else %}
-                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-control border border-transparent px-3 text-sm font-medium text-sidebar-disabled">
-                {% endif %}
-                    {% if item.is_active %}
-                      {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-accent" only %}
-                    {% elif item.url or item.method == "post" %}
-                      {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-icon group-hover:text-sidebar-text" only %}
-                    {% else %}
-                      {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-disabled" only %}
+              {% if item.method != "post" %}
+                <li>
+                  {% if item.url %}
+                    <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group relative flex h-9 items-center gap-3 rounded-control px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar {% if item.is_active %}border border-sidebar-accent-line bg-sidebar-active font-semibold text-sidebar-accent before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-sidebar-accent{% else %}border border-transparent font-medium text-sidebar-text hover:bg-sidebar-hover{% endif %}">
+                  {% else %}
+                    <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-control border border-transparent px-3 text-sm font-medium text-sidebar-disabled">
+                  {% endif %}
+                      {% if item.is_active %}
+                        {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-accent" only %}
+                      {% elif item.url %}
+                        {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-icon group-hover:text-sidebar-text" only %}
+                      {% else %}
+                        {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-disabled" only %}
+                      {% endif %}
+                      <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+                  {% if item.url %}
+                    </a>
+                  {% else %}
+                    </span>
                     {% endif %}
-                    <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-                {% if item.method == "post" %}
-                  </button>
-                {% elif item.url %}
-                  </a>
-                {% else %}
-                  </span>
-                {% endif %}
-              </li>
+                </li>
+              {% endif %}
             {% endfor %}
           </ul>
         </section>
       {% endfor %}
     </div>
   </nav>
+
+  {% if request.user.is_authenticated %}
+    {% with role=request.user.groups.first display_name=request.user.get_full_name|default:request.user.username %}
+      <footer class="relative shrink-0 border-t border-sidebar-border p-2" data-sidebar-account-footer>
+        <details class="group relative" data-sidebar-account-menu>
+          <summary
+            class="flex min-h-14 w-full cursor-pointer list-none items-center gap-3 rounded-control px-2.5 py-2 text-left hover:bg-sidebar-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar [&::-webkit-details-marker]:hidden"
+            data-sidebar-account-trigger
+            aria-label="Open account menu for {{ display_name }}"
+            aria-haspopup="menu"
+            aria-controls="sidebar-account-popover"
+            aria-expanded="false"
+          >
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-active text-sm font-semibold text-sidebar-accent ring-1 ring-inset ring-sidebar-accent-line" aria-hidden="true">
+              {{ display_name|first|upper }}
+            </span>
+            <span class="min-w-0 flex-1" data-account-identity aria-label="Signed in as {{ display_name }}{% if role %}, {{ role.name }}{% else %}, Staff member{% endif %}">
+              <span class="block truncate text-sm font-semibold leading-4 text-sidebar-text" title="{{ display_name }}">{{ display_name }}</span>
+              <span class="mt-1 block truncate text-[11px] leading-none text-sidebar-muted">
+                {% if role %}{{ role.name }}{% else %}Staff member{% endif %}
+              </span>
+            </span>
+            {% include "components/icon.html" with name="chevron-down" class="size-4 shrink-0 rotate-180 text-sidebar-icon group-open:rotate-0" only %}
+          </summary>
+
+          <div id="sidebar-account-popover" class="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden rounded-workspace border border-line bg-surface shadow-xl shadow-slate-950/30" role="menu" aria-label="Account menu">
+            <div class="border-b border-line px-3.5 py-3">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Signed in as</p>
+              <p class="mt-1 truncate text-sm font-semibold text-ink" title="{{ display_name }}">{{ display_name }}</p>
+              <p class="mt-0.5 truncate text-xs text-muted">{% if role %}{{ role.name }}{% else %}Staff member{% endif %}</p>
+            </div>
+            {% for item in dashboard_navigation %}
+              {% if item.method == "post" %}
+                <button type="button" class="group flex h-10 w-full items-center gap-3 px-3.5 text-left text-sm font-medium text-ink hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation" role="menuitem">
+                  {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-muted group-hover:text-accent" only %}
+                  <span>{{ item.label }}</span>
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </details>
+      </footer>
+    {% endwith %}
+  {% endif %}
 </aside>
 
 {% for item in dashboard_navigation %}

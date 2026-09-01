@@ -29,3 +29,5 @@ staticfiles/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+.uv-cache
