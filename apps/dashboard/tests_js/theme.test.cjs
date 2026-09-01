@@ -152,3 +152,24 @@ test("theme changes suppress all transitions while normal toast motion stays tra
     assert.doesNotMatch(template, /transition-(colors|all)/);
   }
 });
+
+test("dashboard chrome uses theme-specific sidebar roles with branded navigation state", () => {
+  const css = fs.readFileSync(path.join(rootPath, "assets/css/input.css"), "utf8");
+  const sidebar = fs.readFileSync(path.join(rootPath, "templates/components/sidebar.html"), "utf8");
+  const topbar = fs.readFileSync(path.join(rootPath, "templates/components/topbar.html"), "utf8");
+
+  assert.match(css, /--color-shell-sidebar: #076b64/);
+  assert.match(css, /--color-sidebar-active: #0b8278/);
+  assert.match(css, /--color-shell-sidebar: #081518/);
+  assert.match(css, /--color-sidebar-active: color-mix/);
+  assert.match(sidebar, /bg-shell-sidebar/);
+  assert.match(sidebar, /class="flex h-16 shrink-0/);
+  assert.match(sidebar, /src="{% static 'logo-white\.png' %}"/);
+  assert.doesNotMatch(sidebar, /src="{% static 'logo\.png' %}"/);
+  assert.match(sidebar, /aria-current="page"/);
+  assert.match(sidebar, /before:bg-sidebar-accent/);
+  assert.match(sidebar, /hover:bg-sidebar-hover/);
+  assert.match(sidebar, /focus-visible:ring-sidebar-focus/);
+  assert.doesNotMatch(sidebar, /bg-sidebar-900|bg-sidebar-800/);
+  assert.match(topbar, /bg-shell-topbar\/95/);
+});

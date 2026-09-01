@@ -1,5 +1,5 @@
-<header data-app-topbar class="sticky top-0 z-20 border-b border-line/80 bg-surface/95">
-  <div class="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
+<header data-app-topbar class="sticky top-0 z-20 h-16 border-b border-line/80 bg-shell-topbar/95 supports-backdrop-filter:backdrop-blur-md">
+  <div class="flex h-full items-center gap-4 workspace-container">
 
     {# Mobile sidebar trigger #}
     <button
@@ -15,8 +15,6 @@
 
     {# Explicit location context; feature templates continue to own the page heading. #}
     <div class="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
-      <span class="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft">PHARMANEX</span>
-      <span class="h-4 w-px shrink-0 bg-surface-pressed" aria-hidden="true"></span>
       <nav class="min-w-0 overflow-hidden" aria-label="Breadcrumb">
         {% if breadcrumbs %}
           <ol class="flex min-w-0 items-center text-xs">

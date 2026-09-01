@@ -1,32 +1,38 @@
 {% load static %}
 
-<aside id="dashboard-sidebar" data-navigation-sidebar class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col overflow-hidden border-r border-sidebar-800 bg-sidebar-900 text-sidebar-100 shadow-xl shadow-sidebar-950/20 transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Primary navigation">
-  <div class="flex shrink-0 items-center justify-between px-5 max-lg:pr-2">
-    <a href="{% url 'dashboard:home' %}" class="flex min-w-0 w-full items-center rounded-lg px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900" aria-label="Pharmanex home">
-      <img src="{% static 'logo-white.png' %}" alt="Pharmanex" class="object-contain">
+<aside id="dashboard-sidebar" data-navigation-sidebar class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col overflow-hidden border-r border-sidebar-border bg-shell-sidebar text-sidebar-text shadow-xl shadow-slate-950/30 transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Primary navigation">
+  <div class="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-5 max-lg:pr-2">
+    <a href="{% url 'dashboard:home' %}" class="flex min-w-0 w-full items-center rounded-control px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar" aria-label="Pharmanex home">
+      <img src="{% static 'logo-white.png' %}" alt="Pharmanex" class="w-40 object-contain">
     </a>
-    <button type="button" class="ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-300 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900 lg:hidden" data-sidebar-close aria-label="Close navigation menu">
+    <button type="button" class="ml-2 inline-flex size-9 shrink-0 items-center justify-center rounded-control text-sidebar-icon hover:bg-sidebar-hover hover:text-sidebar-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar lg:hidden" data-sidebar-close aria-label="Close navigation menu">
       {% include "components/icon.html" with name="close" class="size-5" only %}
     </button>
   </div>
 
   {% regroup dashboard_navigation by section as navigation_sections %}
-  <nav class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1 [scrollbar-color:var(--color-sidebar-800)_transparent]" aria-label="Dashboard navigation">
+  <nav class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 [scrollbar-color:var(--color-sidebar-border)_transparent]" aria-label="Dashboard navigation">
     <div class="space-y-7">
       {% for navigation_section in navigation_sections %}
         <section aria-labelledby="sidebar-section-{{ navigation_section.grouper|slugify }}">
-          <h2 id="sidebar-section-{{ navigation_section.grouper|slugify }}" class="px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-300">{{ navigation_section.grouper }}</h2>
+          <h2 id="sidebar-section-{{ navigation_section.grouper|slugify }}" class="px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-muted">{{ navigation_section.grouper }}</h2>
           <ul class="mt-2 space-y-1">
             {% for item in navigation_section.list %}
               <li>
                 {% if item.method == "post" %}
-                  <button type="button" class="group flex h-9 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-sidebar-100 transition-colors hover:bg-sidebar-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation">
+                  <button type="button" class="group flex h-9 w-full items-center gap-3 rounded-control px-3 text-left text-sm font-medium text-sidebar-text hover:bg-sidebar-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar" data-modal-open="sidebar-logout-confirmation" aria-haspopup="dialog" aria-controls="sidebar-logout-confirmation">
                 {% elif item.url %}
-                  <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-100 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-900 {% if item.is_active %}bg-sidebar-800 font-semibold text-white ring-1 ring-inset ring-white/10{% else %}font-medium text-sidebar-100 hover:bg-sidebar-800 hover:text-white{% endif %}">
+                  <a href="{{ item.url }}" {% if item.is_active %}aria-current="page"{% endif %} class="group relative flex h-9 items-center gap-3 rounded-control px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-focus focus-visible:ring-offset-2 focus-visible:ring-offset-shell-sidebar {% if item.is_active %}border border-sidebar-accent-line bg-sidebar-active font-semibold text-sidebar-accent before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-sidebar-accent{% else %}border border-transparent font-medium text-sidebar-text hover:bg-sidebar-hover{% endif %}">
                 {% else %}
-                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-300">
+                  <span aria-disabled="true" title="{{ item.label }} is not available yet" class="flex h-9 cursor-not-allowed items-center gap-3 rounded-control border border-transparent px-3 text-sm font-medium text-sidebar-disabled">
                 {% endif %}
-                    {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0" only %}
+                    {% if item.is_active %}
+                      {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-accent" only %}
+                    {% elif item.url or item.method == "post" %}
+                      {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-icon group-hover:text-sidebar-text" only %}
+                    {% else %}
+                      {% include "components/icon.html" with name=item.icon class="size-4.5 shrink-0 text-sidebar-disabled" only %}
+                    {% endif %}
                     <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
                 {% if item.method == "post" %}
                   </button>

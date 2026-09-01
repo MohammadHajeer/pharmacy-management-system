@@ -16,13 +16,6 @@
   --color-primary-700: #0f766e;
   --color-primary-800: #115e59;
 
-  /* Dashboard sidebar */
-  --color-sidebar-950: #054f4b;
-  --color-sidebar-900: #076b64;
-  --color-sidebar-800: #0b8278;
-  --color-sidebar-300: #83cec8;
-  --color-sidebar-100: #d8f3f0;
-
   /* Semantic — use sparingly */
   --color-success: #15803d;
   --color-warning: #b45309;
@@ -63,6 +56,18 @@
   --color-line: var(--color-slate-200);
   --color-line-soft: var(--color-slate-100);
   --color-line-strong: var(--color-slate-300);
+  --color-shell-sidebar: #076b64;
+  --color-shell-topbar: var(--color-white);
+  --color-sidebar-hover: #0b776f;
+  --color-sidebar-active: #0b8278;
+  --color-sidebar-text: #e7f7f5;
+  --color-sidebar-muted: #bce2df;
+  --color-sidebar-icon: #c7e8e5;
+  --color-sidebar-disabled: #94c1bd;
+  --color-sidebar-border: #0b756e;
+  --color-sidebar-accent: var(--color-white);
+  --color-sidebar-accent-line: #43a8a1;
+  --color-sidebar-focus: var(--color-primary-100);
   --color-accent: var(--color-primary-700);
   --color-accent-strong: var(--color-primary-800);
   --color-accent-soft: var(--color-primary-50);
@@ -117,27 +122,16 @@
     :root.dark {
       color-scheme: dark;
 
-      /* Dark shell — charcoal/slate with a subtle teal bias.
-         The sidebar tokens are overridden only in dark mode so light mode keeps
-         the existing brighter PHARMANEX teal. Ramp widened vs. the previous
-         pass: 950→900→800 were within ~10-16 units of each other, so hover
-         and active nav items barely read as different states. */
-      --color-sidebar-950: #071a1b;
-      --color-sidebar-900: #0d3230;
-      --color-sidebar-800: #135e56;
-      --color-sidebar-300: #6cd4c9;
-      --color-sidebar-100: #d3f5f0;
-
-      /* Canvas→surface used to differ by only ~6-13 units per channel, so
-         cards barely lifted off the page. Surface now steps up more clearly;
-         disabled is pulled toward neutral grey instead of continuing the
-         teal ramp, since "disabled" should read as inactive, not elevated. */
-      --color-canvas: #0a0f14;
-      --color-surface: #141f29;
-      --color-surface-muted: #1a2731;
-      --color-surface-hover: #21313c;
-      --color-surface-pressed: #293c47;
-      --color-surface-disabled: #37474f;
+      /* One low-chroma charcoal/teal-biased ramp now spans the application
+         chrome and workspace. Small luminance steps preserve shell, canvas,
+         and panel hierarchy without making the page feel blue-black beside
+         a separate green sidebar. */
+      --color-canvas: #0c181c;
+      --color-surface: #17262b;
+      --color-surface-muted: #1c2d32;
+      --color-surface-hover: #24363c;
+      --color-surface-pressed: #2c4047;
+      --color-surface-disabled: #3a4b50;
 
       --color-ink-strong: #f5f8f8;
       --color-ink: #e8eeee;
@@ -148,9 +142,29 @@
       --color-faint: #6f828a;
       --color-decorative: #566a72;
 
-      --color-line: #2a3b44;
-      --color-line-soft: #1d2c33;
-      --color-line-strong: #405762;
+      --color-line: #2a3c42;
+      --color-line-soft: #1d2d32;
+      --color-line-strong: #40565d;
+
+      /* The application chrome shares one charcoal/slate family. The sidebar
+         is the deepest shell layer; teal is reserved for navigation state and
+         focus instead of filling the entire region. */
+      --color-shell-sidebar: #081518;
+      --color-shell-topbar: #111e22;
+      --color-sidebar-hover: #17272c;
+      --color-sidebar-active: color-mix(
+        in srgb,
+        #14b8a6 18%,
+        var(--color-shell-sidebar)
+      );
+      --color-sidebar-text: #c7d2d6;
+      --color-sidebar-muted: #82939a;
+      --color-sidebar-icon: #91a2a8;
+      --color-sidebar-disabled: #667980;
+      --color-sidebar-border: #24363c;
+      --color-sidebar-accent: #6dd5cb;
+      --color-sidebar-accent-line: #206a65;
+      --color-sidebar-focus: #42c3b7;
 
       /* Teal remains the PHARMANEX interaction/identity accent, but the shell
          itself is intentionally darker so the sidebar belongs to the canvas.

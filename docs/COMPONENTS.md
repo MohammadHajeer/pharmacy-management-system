@@ -41,10 +41,14 @@ Use semantic tokens from `assets/css/input.css` for themed presentation:
   for links, badges, validation, and alerts. Keep complete static class names.
 
 These same roles cover ledgers, filters, pagination, selects (including JS-added
-classes), modals, toasts, dirty bars, POS, and feature-owned surfaces. Raw brand
-colors stay fixed for solid actions and the teal sidebar; white logo plaques on
-auth screens are intentional. The standalone historical design-comparison page
-is not part of the operational theme system.
+classes), modals, toasts, dirty bars, POS, and feature-owned surfaces. The
+dashboard chrome additionally uses `shell-sidebar`, `shell-topbar`, and the
+`sidebar-*` interaction roles. Light mode uses the branded teal sidebar against
+the light neutral workspace. Dark mode overrides the same roles with the neutral
+charcoal/teal-biased shell and reserves brighter teal for active and focus states.
+The existing white logo sits directly on either sidebar without a plaque. White
+logo plaques on auth screens remain intentional. The standalone historical
+design-comparison page is not part of the operational theme system.
 
 Theme changes intentionally have **no transition**. Themed color-transition
 utilities are removed; `data-theme-changing` also suppresses transitions and
