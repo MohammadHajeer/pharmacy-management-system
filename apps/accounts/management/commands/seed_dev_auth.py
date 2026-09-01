@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.accounts.permissions import APPROVED_PERMISSION_NAMES
+
 ROLES = {
     "owner": "Owner / Admin",
     "pharmacist": "Pharmacist",
@@ -39,7 +41,18 @@ class Command(BaseCommand):
         for username, group_name in ROLES.items():
             group, _ = Group.objects.get_or_create(name=group_name)
 
-            if group_name in FINANCIAL_REPORT_ROLES:
+            if group_name == "Owner / Admin":
+                owner_permissions = []
+                for permission_name in APPROVED_PERMISSION_NAMES:
+                    app_label, codename = permission_name.split(".", 1)
+                    permission = Permission.objects.filter(
+                        content_type__app_label=app_label,
+                        codename=codename,
+                    ).first()
+                    if permission is not None:
+                        owner_permissions.append(permission)
+                group.permissions.add(*owner_permissions)
+            elif group_name in FINANCIAL_REPORT_ROLES:
                 group.permissions.add(financial_report_permission)
             else:
                 group.permissions.remove(financial_report_permission)

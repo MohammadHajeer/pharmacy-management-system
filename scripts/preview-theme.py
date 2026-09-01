@@ -17,7 +17,8 @@ import django
 django.setup()
 
 from django.conf import settings
-from django.contrib.auth.models import Permission
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.core.management import call_command
 from django.db import connection
 from django.test import Client
@@ -26,12 +27,38 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.finance.services import post_customer_payment, post_supplier_payment
+from apps.accounts.permissions import BUSINESS_ROLES, OWNER_ROLE
 from apps.finance.tests import _FinanceFixtureMixin
 from apps.parties.models import Prescriber
 from apps.purchasing.models import PurchaseInvoice
 from apps.sales.tests import PosDraftServiceTests
 
 settings.ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
+
+
+class PreviewAutoLoginMiddleware:
+    """Authenticate the disposable preview actor without transmitting credentials."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        requested_role = request.GET.get("preview_as")
+        preview_user_id = settings.PREVIEW_ROLE_USER_IDS.get(
+            requested_role, settings.PREVIEW_USER_ID
+        )
+        if not request.user.is_authenticated or (
+            requested_role and request.user.pk != preview_user_id
+        ):
+            from django.contrib.auth import get_user_model, login
+
+            user = get_user_model().objects.get(pk=preview_user_id)
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            login(request, user)
+        return self.get_response(request)
+
+
+settings.MIDDLEWARE.append("__main__.PreviewAutoLoginMiddleware")
 settings.TEMPLATES[0]["APP_DIRS"] = False
 settings.TEMPLATES[0]["OPTIONS"]["loaders"] = [
     "django.template.loaders.filesystem.Loader",
@@ -45,9 +72,25 @@ pos = PosDraftServiceTests
 finance = _FinanceFixtureMixin
 actor = pos.authorized_user
 actor.user_permissions.set(Permission.objects.all())
+preview_groups = {
+    name: Group.objects.get_or_create(name=name)[0] for name in BUSINESS_ROLES
+}
+preview_groups[OWNER_ROLE].permissions.set(Permission.objects.all())
+actor.groups.add(preview_groups[OWNER_ROLE])
 password = secrets.token_urlsafe(18)
 actor.set_password(password)
 actor.save()
+settings.PREVIEW_USER_ID = actor.pk
+preview_role_users = {"owner": actor.pk}
+for role_name in BUSINESS_ROLES:
+    if role_name == OWNER_ROLE:
+        continue
+    role_user = get_user_model().objects.create_user(
+        username=f"preview-{role_name.lower().replace(' ', '-')}",
+    )
+    role_user.groups.add(preview_groups[role_name])
+    preview_role_users[role_name.lower().replace(" ", "-")] = role_user.pk
+settings.PREVIEW_ROLE_USER_IDS = preview_role_users
 Prescriber.objects.create(name="Preview prescriber")
 pos.pharmacy_settings.pharmacy_name = "Local theme review pharmacy"
 pos.pharmacy_settings.save()

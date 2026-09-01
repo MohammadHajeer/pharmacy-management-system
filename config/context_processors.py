@@ -18,6 +18,10 @@ def dashboard_navigation(request):
     for configured_item in DASHBOARD_NAVIGATION:
         permission = configured_item["permission"]
 
+        if configured_item.get("required_group") and not request.user.groups.filter(
+            name=configured_item["required_group"]
+        ).exists():
+            continue
         if permission and not request.user.has_perm(permission):
             continue
         if configured_item.get("any_permissions") and not any(

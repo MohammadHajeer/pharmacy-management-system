@@ -1,0 +1,19 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Roles & Permissions · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container space-y-5">
+  <header><p class="operational-kicker">System administration</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">Roles & Permissions</h1><p class="mt-2 max-w-3xl text-sm leading-6 text-muted">Review approved business capabilities and update one operational role at a time. Owner / Admin retains required full system access.</p></header>
+  <nav class="flex flex-wrap gap-2" aria-label="Role to edit">{% for tab in role_tabs %}<a href="{% url 'accounts:role-permissions' %}?role={{ tab.slug }}" {% if tab.name == selected_role %}aria-current="page"{% endif %} class="inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 {% if tab.name == selected_role %}border-accent-line bg-accent-soft text-accent-strong{% else %}border-line bg-surface text-copy hover:bg-surface-hover{% endif %}">{{ tab.name }}</a>{% endfor %}</nav>
+  <form method="post" action="{% url 'accounts:role-permissions-update' %}" class="workspace-surface" data-submit-form>
+    {% csrf_token %}<input type="hidden" name="role" value="{{ selected_role }}">
+    {% if permission_form.errors %}<div class="border-b border-negative-line bg-negative-soft px-5 py-3 text-sm text-negative" role="alert">The permission update was not accepted. Review the submitted capabilities and try again.</div>{% endif %}
+    <div class="border-b border-line bg-surface-muted/60 px-5 py-4"><p class="text-sm font-semibold text-ink">Editing {{ selected_role }}</p><p class="mt-1 text-xs text-muted">Checked capabilities in the {{ selected_role }} column will be saved. Other columns are read-only for comparison.</p></div>
+    <div class="ledger-scroll" tabindex="0" role="region" aria-label="PHARMANEX role permission matrix">
+      <table class="ledger-table min-w-240"><caption class="sr-only">Approved permissions for PHARMANEX business roles</caption><thead><tr><th scope="col" class="sticky left-0 z-10 min-w-72 bg-surface-muted">Capability</th>{% for role in business_roles %}<th scope="col" class="min-w-40 text-center">{{ role }}{% if role == "Owner / Admin" %}<span class="mt-1 block text-[10px] font-normal text-muted">Locked</span>{% elif role == selected_role %}<span class="mt-1 block text-[10px] font-normal text-accent">Editing</span>{% endif %}</th>{% endfor %}</tr></thead>
+        <tbody>{% for domain in domains %}<tr class="bg-surface-muted/80"><th colspan="5" scope="colgroup" class="text-xs uppercase tracking-wide text-ink-soft">{{ domain.name }}</th></tr>{% for capability in domain.capabilities %}<tr><th scope="row" class="sticky left-0 z-5 bg-surface"><span class="block font-semibold text-ink">{{ capability.label }}</span><span class="mt-1 block max-w-sm text-xs font-normal leading-5 text-muted">{{ capability.description }}</span></th>{% for state in capability.role_states %}<td class="text-center"><div class="inline-flex">{% include "components/checkbox.html" with id=state.field_id name="permissions" value=capability.permission label=state.role|add:": "|add:capability.label checked=state.checked disabled=state.disabled compact=True only %}</div></td>{% endfor %}</tr>{% endfor %}{% endfor %}</tbody>
+      </table>
+    </div>
+    <footer class="flex flex-col gap-3 border-t border-line bg-surface-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><p class="text-xs text-muted">Only permissions on the approved PHARMANEX allowlist can be submitted.</p>{% include "components/button.html" with text="Save permissions" loading_text="Saving…" type="submit" variant="primary" flat=True only %}</footer>
+  </form>
+</div>
+{% endblock %}

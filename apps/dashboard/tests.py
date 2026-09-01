@@ -366,6 +366,8 @@ class DashboardNavigationTests(TestCase):
             "Returns & Refunds",
             "Reports",
             "Settings",
+            "Staff Accounts",
+            "Roles & Permissions",
             "Logout",
         },
         "Pharmacist": {
@@ -459,6 +461,8 @@ class DashboardNavigationTests(TestCase):
                 "Invoices",
                 "Payments",
                 "Settings",
+                "Staff Accounts",
+                "Roles & Permissions",
                 "Logout",
             }
         ]

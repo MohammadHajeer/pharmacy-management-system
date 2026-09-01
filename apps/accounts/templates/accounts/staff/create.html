@@ -1,0 +1,25 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Add Staff Account · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container space-y-5">
+  <header><p class="operational-kicker">System administration</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">Add staff account</h1><p class="mt-2 max-w-2xl text-sm leading-6 text-muted">Create a standard PHARMANEX account and assign one business role.</p></header>
+  <form method="post" class="workspace-surface" data-submit-form novalidate>
+    {% csrf_token %}{% if form.non_field_errors %}<div class="border-b border-negative-line bg-negative-soft px-5 py-3 text-sm text-negative" role="alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+    <section class="p-5 sm:p-6"><h2 class="text-sm font-semibold text-ink">Account identity</h2><div class="mt-5 grid gap-5 sm:grid-cols-2">
+      {% include "components/input.html" with name=form.username.html_name id=form.username.id_for_label label="Username" value=form.username.value error=form.username.errors required=True maxlength=form.username.field.max_length autocomplete="username" autofocus=True only %}
+      {% include "components/input.html" with name=form.email.html_name id=form.email.id_for_label label="Email" value=form.email.value error=form.email.errors maxlength=form.email.field.max_length autocomplete="email" only %}
+      {% include "components/input.html" with name=form.first_name.html_name id=form.first_name.id_for_label label="First name" value=form.first_name.value error=form.first_name.errors maxlength=form.first_name.field.max_length autocomplete="given-name" only %}
+      {% include "components/input.html" with name=form.last_name.html_name id=form.last_name.id_for_label label="Last name" value=form.last_name.value error=form.last_name.errors maxlength=form.last_name.field.max_length autocomplete="family-name" only %}
+    </div></section>
+    <section class="border-t border-line p-5 sm:p-6"><h2 class="text-sm font-semibold text-ink">Business access</h2><div class="mt-5 grid gap-5 sm:grid-cols-2">
+      {% include "components/select.html" with name=form.role.html_name id=form.role.id_for_label label="Business role" options=role_options value=form.role.value error=form.role.errors required=True only %}
+      <div class="pt-7">{% include "components/checkbox.html" with name=form.is_active.html_name id=form.is_active.id_for_label label="Active account" checked=form.is_active.value error=form.is_active.errors description="Inactive accounts cannot sign in." only %}</div>
+    </div></section>
+    <section class="border-t border-line p-5 sm:p-6"><h2 class="text-sm font-semibold text-ink">Initial password</h2><p class="mt-1 text-sm text-muted">Django's configured password policy is enforced.</p><div class="mt-5 grid gap-5 sm:grid-cols-2">
+      {% include "components/input.html" with name=form.password1.html_name id=form.password1.id_for_label label="Initial password" type="password" error=form.password1.errors required=True autocomplete="new-password" only %}
+      {% include "components/input.html" with name=form.password2.html_name id=form.password2.id_for_label label="Confirm password" type="password" error=form.password2.errors required=True autocomplete="new-password" only %}
+    </div></section>
+    <footer class="flex flex-wrap justify-end gap-2 border-t border-line bg-surface-muted px-5 py-4">{% url "accounts:staff-list" as cancel_url %}{% include "components/button.html" with text="Cancel" href=cancel_url variant="ghost" flat=True only %}{% include "components/button.html" with text="Create staff account" loading_text="Creating…" type="submit" variant="primary" flat=True only %}</footer>
+  </form>
+</div>
+{% endblock %}

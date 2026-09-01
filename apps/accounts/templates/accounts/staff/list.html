@@ -1,0 +1,35 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Staff Accounts · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container space-y-5">
+  {% url "accounts:staff-create" as create_url %}
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <p class="operational-kicker">System administration</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">Staff Accounts</h1>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-muted">Manage staff access, business roles, account status, and password resets.</p>
+    </div>
+    {% include "components/button.html" with text="Add staff account" href=create_url variant="primary" flat=True only %}
+  </header>
+  <section class="workspace-surface overflow-visible">
+    {% url "accounts:staff-list" as clear_url %}
+    {% include "components/registry_filters.html" with search_label="Search staff" search_placeholder="Username, name or email" extra_filters_template="accounts/staff/_role_filter.html" %}
+    <div class="flex items-center justify-between gap-3 px-5 py-4"><h2 class="text-sm font-semibold text-ink">Staff registry</h2><span class="text-xs text-muted">Business accounts</span></div>
+    {% if rows %}
+      <div class="ledger-scroll" tabindex="0" role="region" aria-label="Staff account registry">
+        <table class="ledger-table min-w-220"><caption class="sr-only">PHARMANEX staff accounts</caption>
+          <thead><tr><th scope="col">Username</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last login</th><th scope="col">Joined</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>{% for row in rows %}<tr>
+            <td><a class="registry-link" href="{% url 'accounts:staff-detail' row.user.pk %}">{{ row.user.username }}</a>{% if row.user.email %}<p class="mt-1 text-xs text-muted">{{ row.user.email }}</p>{% endif %}</td>
+            <td>{{ row.user.get_full_name|default:"—" }}</td><td>{{ row.role }}</td>
+            <td>{% if row.user.is_active %}{% include "components/badge.html" with text="Active" variant="success" only %}{% else %}{% include "components/badge.html" with text="Inactive" variant="secondary" only %}{% endif %}</td>
+            <td>{% if row.user.last_login %}{{ row.user.last_login|date:"d M Y, H:i" }}{% else %}Never{% endif %}</td><td>{{ row.user.date_joined|date:"d M Y" }}</td>
+            <td class="text-right">{% url "accounts:staff-detail" row.user.pk as detail_url %}{% include "components/button.html" with text="Manage" href=detail_url variant="ghost" size="sm" flat=True only %}</td>
+          </tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% else %}<div class="operational-empty m-4 text-center sm:m-5"><p class="font-semibold text-ink-soft">No staff accounts found</p><p class="mt-1 text-sm text-muted">No business accounts match the current filters.</p></div>{% endif %}
+    {% include "components/pagination.html" with label="staff accounts" %}
+  </section>
+</div>
+{% endblock %}
