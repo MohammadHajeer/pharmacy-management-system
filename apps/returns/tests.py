@@ -1,10 +1,11 @@
 import threading
 from decimal import Decimal
+from unittest import skipUnless
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import connections
+from django.db import connection, connections
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from django.utils import timezone
 
@@ -367,6 +368,7 @@ class SupplierReturnServiceTests(TestCase):
             )
 
 
+@skipUnless(connection.vendor == "postgresql", "PostgreSQL row locks are required.")
 class ConcurrentSupplierReturnTests(TransactionTestCase):
     """Proves targeted batch locking prevents two concurrent supplier-return
     postings from oversubscribing the same batch (BRD 8 targeted locking;
@@ -423,9 +425,11 @@ class ConcurrentSupplierReturnTests(TransactionTestCase):
                     post_supplier_return(
                         actor=self.actor, supplier_return_id=supplier_return_id
                     )
-                    outcomes.append(True)
+                    outcomes.append("posted")
                 except InsufficientStockError:
-                    outcomes.append(False)
+                    outcomes.append("insufficient")
+                except Exception as error:  # pragma: no cover - asserted below
+                    outcomes.append(f"unexpected:{type(error).__name__}:{error}")
             finally:
                 connections.close_all()
 
@@ -436,9 +440,10 @@ class ConcurrentSupplierReturnTests(TransactionTestCase):
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join()
+            thread.join(timeout=30)
 
-        self.assertEqual(sum(1 for outcome in outcomes if outcome), 1)
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertCountEqual(outcomes, ["posted", "insufficient"])
 
         self.batch.refresh_from_db()
         self.assertEqual(self.batch.quantity_available_base, Decimal("0.000"))
