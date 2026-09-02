@@ -43,6 +43,7 @@ AUTHORITATIVE_LINE_FIELDS = frozenset(
 class PosMedicineSearchForm(forms.Form):
     q = forms.CharField(required=False, max_length=200)
     limit = forms.IntegerField(required=False, min_value=1, max_value=100, initial=20)
+    page = forms.IntegerField(required=False, min_value=1, initial=1)
 
 
 class PosBarcodeLookupForm(forms.Form):

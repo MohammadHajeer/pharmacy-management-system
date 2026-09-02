@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { decimalText, completionDisabled, reindexLines, lookupOnEnter } = require("../static/sales/pos.js");
+const { decimalText, completionDisabled, reindexLines, lookupOnEnter, paginationState } = require("../static/sales/pos.js");
 
 test("quantity display removes only insignificant trailing zeroes without float conversion", () => {
   assert.equal(decimalText("10.000"), "10");
@@ -38,4 +38,15 @@ test("composition, held Enter and ordinary input keys do not trigger scanner loo
   let prevented = false;
   lookupOnEnter({ key: "Enter", repeat: true, preventDefault: () => { prevented = true; } }, () => assert.fail("unexpected lookup"));
   assert.equal(prevented, true, "held Enter must not fall through to native form submission");
+});
+
+test("medicine pagination accepts only explicit server navigation flags", () => {
+  assert.deepEqual(
+    paginationState({ page: 2, has_previous: true, has_next: false }),
+    { page: 2, hasPrevious: true, hasNext: false },
+  );
+  assert.deepEqual(
+    paginationState({ page: "3", has_previous: 1, has_next: "true" }),
+    { page: 3, hasPrevious: false, hasNext: false },
+  );
 });
