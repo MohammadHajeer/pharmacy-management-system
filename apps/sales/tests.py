@@ -333,6 +333,68 @@ class PosLookupTests(PosTestDataMixin, TestCase):
         self.assertEqual(response.json()["matched_unit_id"], str(self.box_unit.pk))
         self.assertEqual(self.client.get(barcode_url, {"barcode": "UNKNOWN"}).status_code, 404)
 
+    def test_medicine_search_paginates_in_stable_twelve_item_pages(self):
+        now = timezone.now()
+        medicines = []
+        for number in range(1, 14):
+            medicine = Medicine.objects.create(
+                name=f"Paging medicine {number:02d}",
+                category=self.category,
+                manufacturer=self.manufacturer,
+                default_selling_price=Decimal("1.0000"),
+            )
+            MedicineUnit.objects.create(
+                medicine=medicine,
+                name="Unit",
+                conversion_to_base=Decimal("1.000000"),
+                is_base_unit=True,
+            )
+            MedicineBatch.objects.create(
+                medicine=medicine,
+                batch_number=f"PAGING-{number:02d}",
+                expiry_date=timezone.localdate() + timedelta(days=30),
+                acquisition_cost_per_base_unit=Decimal("0.5000"),
+                quantity_available_base=Decimal("1.000"),
+                first_received_at=now,
+            )
+            medicines.append(medicine)
+
+        self.client.force_login(self.authorized_user)
+        url = reverse("sales:pos-medicine-search")
+        first = self.client.get(url, {"q": "Paging medicine", "limit": 12, "page": 1})
+        second = self.client.get(url, {"q": "Paging medicine", "limit": 12, "page": 2})
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        first_payload = first.json()
+        second_payload = second.json()
+        self.assertEqual(
+            [result["id"] for result in first_payload["results"]],
+            [str(medicine.pk) for medicine in medicines[:12]],
+        )
+        self.assertEqual(first_payload["page"], 1)
+        self.assertEqual(first_payload["page_size"], 12)
+        self.assertFalse(first_payload["has_previous"])
+        self.assertTrue(first_payload["has_next"])
+        self.assertEqual(
+            [result["id"] for result in second_payload["results"]],
+            [str(medicines[12].pk)],
+        )
+        self.assertEqual(second_payload["page"], 2)
+        self.assertEqual(second_payload["page_size"], 12)
+        self.assertTrue(second_payload["has_previous"])
+        self.assertFalse(second_payload["has_next"])
+
+    def test_medicine_search_rejects_non_positive_page_numbers(self):
+        self.client.force_login(self.authorized_user)
+        response = self.client.get(
+            reverse("sales:pos-medicine-search"),
+            {"q": "medicine", "limit": 12, "page": 0},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("page", response.json()["errors"])
+
 
 class PosDraftServiceTests(PosTestDataMixin, TestCase):
     def test_saved_customer_multiple_line_draft_uses_approved_decimal_sequence(self):

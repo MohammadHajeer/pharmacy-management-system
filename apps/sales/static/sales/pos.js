@@ -11,8 +11,13 @@ const lookupOnEnter = (event, lookup) => {
     if (!event.repeat) lookup();
   }
 };
+const paginationState = (payload) => ({
+  page: Number(payload.page) || 1,
+  hasPrevious: payload.has_previous === true,
+  hasNext: payload.has_next === true,
+});
 // Dependency-free tests can exercise the same presentation helpers as the UI.
-if (typeof module !== "undefined") module.exports = { decimalText, completionDisabled, reindexLines, lookupOnEnter };
+if (typeof module !== "undefined") module.exports = { decimalText, completionDisabled, reindexLines, lookupOnEnter, paginationState };
 if (typeof document === "undefined") return;
 document.addEventListener("DOMContentLoaded", () => {
   const workspace = document.querySelector("[data-pos]");
@@ -28,6 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const barcode = barcodeForm?.querySelector("input");
   const results = document.querySelector("[data-search-results]");
   const lookupStatus = document.querySelector("[data-lookup-status]");
+  const pagination = document.querySelector("[data-search-pagination]");
+  const previousPage = pagination?.querySelector("[data-search-previous]");
+  const nextPage = pagination?.querySelector("[data-search-next]");
+  const pageLabel = pagination?.querySelector("[data-search-page]");
   const recordPayment = checkout?.querySelector('[name="record_payment"]');
   const paymentFields = checkout?.querySelector("[data-payment-fields]");
   const reference = checkout?.querySelector('[name="reference"]');
@@ -44,6 +53,21 @@ document.addEventListener("DOMContentLoaded", () => {
   let lookupSequence = 0;
   let searchTimer;
   let lookupController;
+  let searchPage = 1;
+
+  const showPagination = (show) => {
+    if (!pagination) return;
+    pagination.classList.toggle("hidden", !show);
+    pagination.classList.toggle("flex", show);
+  };
+  const renderPagination = (payload) => {
+    const state = paginationState(payload);
+    searchPage = state.page;
+    pageLabel.textContent = `Page ${state.page}`;
+    previousPage.disabled = !state.hasPrevious;
+    nextPage.disabled = !state.hasNext;
+    showPagination(state.hasPrevious || state.hasNext);
+  };
 
   const syncPayment = () => {
     if (paymentFields) {
@@ -101,22 +125,27 @@ document.addEventListener("DOMContentLoaded", () => {
     syncDraft();
     lookupStatus.textContent = `${medicine.name} added · ${select.selectedOptions[0].textContent}.`;
     results.replaceChildren();
+    showPagination(false);
     if (unitId) { barcode.value = ""; barcode.focus(); }
     else { row.querySelector('[name$="-quantity"]').focus(); row.querySelector('[name$="-quantity"]').select(); }
   };
-  const fetchLookup = async (kind) => {
+  const fetchLookup = async (kind, page = 1) => {
     clearTimeout(searchTimer);
     const input = kind === "barcode" ? barcode : search;
     const value = input.value.trim();
     lookupController?.abort();
     const sequence = ++lookupSequence;
     results.replaceChildren();
-    if (!value) { lookupStatus.textContent = "Enter a medicine name or scan a barcode."; return; }
+    showPagination(false);
+    if (!value) { searchPage = 1; lookupStatus.textContent = "Enter a medicine name or scan a barcode."; return; }
     lookupController = new AbortController();
     lookupStatus.textContent = "Looking up eligible medicines…";
     const url = new URL(kind === "barcode" ? workspace.dataset.barcodeUrl : workspace.dataset.searchUrl, location.origin);
     url.searchParams.set(kind === "barcode" ? "barcode" : "q", value);
-    if (kind !== "barcode") url.searchParams.set("limit", "12");
+    if (kind !== "barcode") {
+      url.searchParams.set("limit", "12");
+      url.searchParams.set("page", String(page));
+    }
     try {
       const response = await fetch(url, { signal: lookupController.signal, headers: { Accept: "application/json" } });
       if (sequence !== lookupSequence) return;
@@ -125,7 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const payload = await response.json();
       if (sequence !== lookupSequence) return;
       if (kind === "barcode") { addMedicine(payload, payload.matched_unit_id); return; }
-      lookupStatus.textContent = payload.results.length ? `${payload.results.length} matches shown. Refine the search if needed.` : "No matching active sale medicines. Try another name.";
+      renderPagination(payload);
+      lookupStatus.textContent = payload.results.length ? `Page ${searchPage}: ${payload.results.length} matches shown.` : "No matching active sale medicines. Try another name.";
       for (const medicine of payload.results) {
         const button = document.createElement("button");
         button.type = "button";
@@ -149,16 +179,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Invalidate an in-flight result as soon as the user changes the query.
     ++lookupSequence;
     lookupController?.abort();
-    if (!event.isComposing) searchTimer = setTimeout(() => fetchLookup("search"), 350);
+    searchPage = 1;
+    showPagination(false);
+    if (!event.isComposing) searchTimer = setTimeout(() => fetchLookup("search", 1), 350);
   });
-  search?.addEventListener("compositionend", () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => fetchLookup("search"), 350); });
-  search?.addEventListener("keydown", (event) => lookupOnEnter(event, () => fetchLookup("search")));
+  search?.addEventListener("compositionend", () => { clearTimeout(searchTimer); searchPage = 1; searchTimer = setTimeout(() => fetchLookup("search", 1), 350); });
+  search?.addEventListener("keydown", (event) => lookupOnEnter(event, () => { searchPage = 1; fetchLookup("search", 1); }));
   barcode?.addEventListener("keydown", (event) => lookupOnEnter(event, () => fetchLookup("barcode")));
-  searchForm?.addEventListener("submit", (event) => { event.preventDefault(); fetchLookup("search"); });
+  searchForm?.addEventListener("submit", (event) => { event.preventDefault(); searchPage = 1; fetchLookup("search", 1); });
   barcodeForm?.addEventListener("submit", (event) => { event.preventDefault(); fetchLookup("barcode"); });
+  previousPage?.addEventListener("click", () => {
+    if (!previousPage.disabled && searchPage > 1) fetchLookup("search", searchPage - 1);
+  });
+  nextPage?.addEventListener("click", () => {
+    if (!nextPage.disabled) fetchLookup("search", searchPage + 1);
+  });
   document.addEventListener("keydown", (event) => {
     if (event.altKey && event.key === "/" && search) { event.preventDefault(); search.focus(); }
-    if (event.key === "Escape" && results?.contains(document.activeElement)) { results.replaceChildren(); search.focus(); }
+    if (event.key === "Escape" && (results?.contains(document.activeElement) || pagination?.contains(document.activeElement))) { results.replaceChildren(); showPagination(false); search.focus(); }
   });
   lines.addEventListener("click", (event) => {
     const remove = event.target.closest("[data-remove-line]");

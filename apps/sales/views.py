@@ -130,10 +130,26 @@ def pos_medicine_search(request):
     form = PosMedicineSearchForm(request.GET)
     if not form.is_valid():
         return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
-    medicines = active_pos_medicine_queryset(form.cleaned_data.get("q") or "")[
-        : form.cleaned_data.get("limit") or 20
-    ]
-    return JsonResponse({"results": [_medicine_payload(medicine) for medicine in medicines]})
+    page_size = form.cleaned_data.get("limit") or 20
+    page = form.cleaned_data.get("page") or 1
+    start = (page - 1) * page_size
+    # One look-ahead row is cheaper than counting the complete lookup queryset.
+    page_rows = list(
+        active_pos_medicine_queryset(form.cleaned_data.get("q") or "")[
+            start : start + page_size + 1
+        ]
+    )
+    return JsonResponse(
+        {
+            "results": [
+                _medicine_payload(medicine) for medicine in page_rows[:page_size]
+            ],
+            "page": page,
+            "page_size": page_size,
+            "has_previous": page > 1,
+            "has_next": len(page_rows) > page_size,
+        }
+    )
 
 
 @login_required
