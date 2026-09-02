@@ -1,119 +1,86 @@
-# Live operational dashboard
+# Live dashboard
 
-`apps.dashboard.queries` provides read-only projections for the existing dashboard.
-There are no schema changes, write operations, API fetches, or seed operations.
-The separate visual comparison page retains its original, clearly labeled sample
-records in `apps.dashboard_preview.sample_data`; live dashboard code never uses them.
+`apps.dashboard.queries` builds read-only operational, commercial, and finance
+projections for the signed-in user. The dashboard performs no writes and uses no
+sample or placeholder values.
 
 ## Measures and permissions
 
-- `inventory.view_medicinebatch` enables the four Daily Pulse counts (active
-  medicines, low stock, out of stock, and expiring soon), inventory charts, and
-  inventory attention records. Data and JSON are omitted without this permission.
-- Stock Health includes active medicines only. Its aggregate subquery reuses
-  `apps.inventory.services.get_fefo_eligible_batches`: active batches, positive
-  remaining quantity, expiry on or after `timezone.localdate()`. Healthy means
-  quantity above threshold; low means `0 < quantity <= threshold`; out means zero,
-  including medicines without batches. A null medicine threshold uses the pharmacy
-  default, while an explicit zero remains zero. Missing pharmacy settings use the
-  model's defaults without creating a settings row.
-- Expiry Exposure counts physical batch cost layers with positive quantity,
-  including inactive batches/medicines. Buckets are expired, today through
-  `min(30, expiry_warning_days)`, the rest of the warning window if any, and beyond
-  the window. At the default 90 days these are Expired / 0–30 / 31–90 / 91+.
-  Warning boundaries are inclusive; expired means strictly before today. The
-  expiring-soon KPI excludes already expired stock. A zero-day window means today.
-- Attention shows at most three stock records (out first, then lowest sellable
-  quantity) and three expiry records (earliest expiry first). Stock names link to
-  the existing medicine detail only with `catalog.view_medicine`. There is no
-  invented batch route. Counts in chart summaries describe the full population.
-- `purchasing.view_purchaseinvoice` enables the latest five posted receipt events
-  and their invoice amounts/currencies, matching the existing purchase detail
-  permission. Financial-report permission alone does not grant purchasing access.
-  Supplier names use invoice snapshots, with a joined supplier fallback. Drafts
-  and voids are excluded; dates use `posted_at`, not seed insertion time.
-- Purchase Activity counts posted invoices in the twelve calendar months ending
-  with the latest receipt month. Months without receipts are zero-filled; the
-  exact historical range is visible. It is shown only with receipts in at least
-  two months. Counts avoid mixing currencies. The demo's 23 historical receipts
-  span enough months to make this useful.
-- Sales, payment, refund, revenue, and net receivables measures are intentionally
-  deferred. No fake amounts are displayed. In particular, invoice balances are
-  payment-only history and must not be mislabeled as the net customer position
-  defined by the BRD/ERD (which also accounts for returns and refunds).
+- `inventory.view_medicinebatch` enables the four inventory Daily Pulse cards,
+  Stock Health, Expiry Exposure, and stock/expiry follow-up items. Stock Health
+  reuses `apps.inventory.services.get_fefo_eligible_batches`; medicine-specific
+  thresholds fall back to the pharmacy default only when unset. Expiry Exposure
+  counts every physical batch layer with remaining quantity and uses the configured
+  inclusive warning window.
+- `sales.view_salesinvoice` enables Sales This Month, Sales Performance,
+  Top-Selling Medicines, and completed-sale ledger entries. Revenue uses
+  `SalesInvoice.grand_total` for `COMPLETED` invoices with a `completed_at` value.
+  Draft and void invoices are excluded. Top sellers sum
+  `SalesInvoiceLine.requested_quantity_base` for completed invoices and return the
+  first seven medicines.
+- `finance.view_financial_reports` enables Purchases vs Sales, Payment Method Mix,
+  and Receivables. Purchases vs Sales compares `POSTED` purchase grand totals with
+  `COMPLETED` sale grand totals; it is an activity comparison, not profit or margin.
+  Both series use the continuous completed-sales period, with internal gaps
+  zero-filled. If no completed sale exists, posted purchase months define the range.
+- Payment Method Mix sums `POSTED` `CustomerPayment.amount` by the actual
+  `PaymentMethod`. Reversed payments remain in history but are excluded.
+- Receivables include completed invoices linked to a saved customer. Each balance
+  is recalculated as invoice grand total minus posted customer payments. Only
+  positive balances are counted; reversed payments, draft/void invoices, and
+  walk-in sales are excluded. Partially paid means an effective posted payment is
+  present; unpaid means none is present.
+- `purchasing.view_purchaseinvoice`, `sales.view_salesinvoice`, and
+  `finance.view_customerpayment` independently enable the matching posted/completed
+  entries in Recent Activity. Events are merged by their business timestamps and
+  limited to the newest five. Links are therefore never exposed without the
+  corresponding record-view permission.
 
-Dates use Django's current timezone (the project's business timezone is UTC).
-The view requires login and disables caching. Permission checks run before
-business queries, not just during template rendering. Query count stays bounded
-as data grows; attention and activity use joined, limited queries.
+All monetary aggregates are filtered to the configured pharmacy currency and use
+database Decimal sums. Missing settings use model defaults without creating a row.
+Dates use Django's active timezone and monthly buckets use `TruncMonth`. The view
+requires login, disables caching, and performs permission checks before business
+queries.
 
-## Frontend build and accessibility
+## Presentation and accessibility
 
-The repository has no JavaScript bundler. `npm run build:js` copies the installed
-Chart.js browser distribution, source map, and MIT license to the ignored
-`static/vendor/chartjs/` directory. No CDN or additional dependency is used.
-`npm run build` runs that copy and the existing CSS build. `npm run dev` runs both
-in `predev`; the deployment build runs both before `collectstatic`. If starting
-Django directly with `uv run manage.py runserver`, run `npm run build` first.
+The dashboard keeps Daily Pulse, Stock Health, Expiry Exposure, Attention Required,
+and Recent Activity. The old invoice-count Purchase Activity chart is replaced by
+the grouped Purchases vs Sales value chart. New sections are Commercial Analytics,
+Finance Overview, and Performance.
 
-The dashboard alone loads the vendor script and `static/js/dashboard-charts.js`,
-in deferred order through the existing `extra_scripts` block. Django's
-`json_script` serializes prepared chart dictionaries. JavaScript renders them
-without business calculations. Colors resolve the existing CSS theme tokens.
+Chart.js receives server-prepared labels and values through Django `json_script`;
+JavaScript does presentation and number formatting only. Sales Performance is a
+line, Purchases vs Sales uses grouped bars, Payment Method Mix is a doughnut, and
+Top-Selling Medicines uses horizontal bars. Static semantic chart tokens in
+`assets/css/input.css` define all colors for light and dark themes. Theme and print
+events recolor existing charts with `chart.update("none")`, so no animated color
+transition occurs.
 
-Charts have bounded heights, stack below the desktop breakpoint, use integer
-axes, and disable animation (including for reduced-motion users). Each canvas is
-associated with its heading and a visible text summary. A native expandable
-table provides exact monthly purchase counts. Without JavaScript or with a failed
-library load, summaries remain visible and canvases remain hidden.
-No-data cards show a useful empty state. The activity ledger scrolls within its
-own keyboard-focusable region rather than widening the page.
-
-### Final console presentation
-
-The connected Daily Pulse and shared 72rem workspace width are unchanged.
-Stock Health uses a 192px plot; Expiry Exposure combines a compact 144px plot
-with a scope label and separate safe-stock count. Purchase Activity uses 160px
-on desktop and 176px on mobile. Charts stack below `xl` with a 16px internal gap.
-All plots use rounded vertical columns and existing theme tokens: medium teal
-for healthy stock, amber for warning, muted red for critical, and slate for
-later expiry exposure. Purchase columns use restrained teal with a deep-teal
-featured month. No mint/pastel bar fills or progress-style tracks remain.
-
-A dashboard-local Chart.js plugin labels exact counts above inventory columns
-and the featured purchase month. Expiry plots only the expired and warning-window
-buckets on a zero-based linear scale; the final neutral bucket remains visible
-as a separate labeled batch count and in the full accessible summary. No counts
-are recalculated, truncated, or represented by a broken axis. Integer ticks,
-restrained gridlines, and bordered slate tooltips keep the plots readable.
-Server-rendered focal chips select the first populated urgent condition (out before low before
-healthy; earliest expiry bucket first), or the latest receipt month. They reuse
-existing counts without adding queries or client-side business calculations.
-Exact summaries remain visible without JavaScript; detailed stock definitions
-and monthly counts use native keyboard-accessible disclosures.
-
-The follow-up rail and ledger split 38/62 at `xl`, then stack in that order.
-Batch identifiers are secondary text, and severity is shown with small dots and
-text badges rather than full-row colored borders. The four-column ledger keeps
-amount/currency beneath the reference and status beneath the event. References
-are visually ellipsized, with full link text, a title, and wrapping on keyboard
-focus; stored identifiers and destination URLs are unchanged. All party names,
-dates, times, and timezones remain visible. Smaller screens use local scrolling.
+Cards stack below `xl`, canvases have bounded responsive heights, monthly labels do
+not rotate, and long medicine labels are shortened only on the canvas. Full names
+remain in tooltips, visible summaries, and keyboard-accessible exact-value tables.
+Every chart has a server-rendered empty state and no canvas is emitted for an empty
+dataset. If JavaScript or Chart.js fails, the visible summary and exact table remain
+usable.
 
 ## Verification
 
-Use isolated SQLite, never the shared Neon database, for automated tests:
+Use an isolated test database, never the shared development database, for automated
+tests:
 
 ```powershell
-$env:DATABASE_URL = 'sqlite:///:memory:'
 uv run manage.py check
-uv run manage.py test apps.dashboard apps.inventory --noinput
+uv run manage.py test apps.dashboard
 node --test apps/dashboard/tests_js/*.test.cjs
-npm run build
+npm run build:css
 git diff --check
 ```
 
-Tests cover threshold/expiry boundaries, inactive/empty stock, settings fallbacks,
-permission filtering, JSON/template escaping, receipt chronology, monthly gaps,
-local date boundaries, and bounded query counts. SQLite does not test PostgreSQL
-locking; the dashboard itself never locks or mutates business data.
+Dashboard coverage includes inventory boundaries, month aggregation and zero-filled
+gaps, completed/draft/void sale handling, posted/draft purchases, posted/reversed
+payments, receivable arithmetic, walk-in exclusion, completed-line top sellers,
+permission filtering, empty states, theme refresh, and bounded query counts.
+
+Returns, refunds, profit, margin, COGS, and income analytics remain intentionally
+deferred until their authoritative posting/accounting workflows exist.

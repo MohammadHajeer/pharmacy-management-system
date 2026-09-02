@@ -173,3 +173,64 @@ and threshold scenarios, unique barcodes/base units, later-date reruns, subseque
 stock deductions, ordinary data preservation, production guards and full rollback.
 SQLite does not exercise PostgreSQL advisory locking or concurrent row-lock behavior.
 Do not use the SQLite test session to seed Neon; it intentionally overrides the URL.
+
+## Second-wave transactional dataset
+
+`seed_demo_transactions` is intentionally separate from `seed_demo_data`. The V1
+command owns an immutable catalog/purchase source chain and accepts later stock
+consumption; making V2 a prerequisite-aware command lets a database that already
+has V1 add transactions without recreating, repairing, or reinterpreting V1 rows.
+
+Review the target development database first, then run V1 if it is not already
+complete. After code review, run V2 manually:
+
+```powershell
+uv run manage.py seed_demo_transactions
+```
+
+An alternative existing actor may be selected with `--actor`. The actor must have
+the sales draft-change/completion and customer/supplier payment permissions used by
+the production services. V2 also requires the complete deterministic V1 dataset,
+`PharmacySettings`, and at least one active `PaymentMethod`. It does not create or
+change users, permissions, tax rates, payment methods, pharmacy settings, or V1
+records.
+
+The V2 seed owns stable UUIDv5 identities for 50 customers, 20 prescribers, 30
+prescriptions with 60 items, 84 completed sales, and four draft sales. Completed
+sales cover 36 walk-in and 48 saved-customer transactions over roughly seven
+months. The initial payment mix is 56 paid, 14 partial, and 14 unpaid invoices;
+20 sales link to prescriptions. Three payment reversals are retained before valid
+replacement payments. Sales include base and pack units, prescription-warning
+acknowledgements, and at least three multi-batch FEFO lines.
+
+The command also uses finance services to make eight V1 purchase invoices paid,
+six partially paid, and nine unpaid. Two reversed supplier payments are retained
+before their valid replacements. Actual payment-method and movement counts are
+calculated for the command summary rather than hardcoded.
+
+Sales are drafted through `process_draft_sale`, completed through `complete_sale`,
+and paid/reversed through the finance services. Consequently allocations and
+`SALE` movements retain the authoritative invoice/allocation/batch chain. The
+dev-only command backdates reporting timestamps only after each production service
+succeeds and within one outer transaction. It never writes batch quantities or
+creates stock movements directly.
+
+Only active stock expiring more than 90 days away and comfortably above its low
+stock threshold is selected. The planner rechecks availability as it works and
+keeps every selected medicine above its threshold. Low, no-sellable, expired, and
+near-expiry examples are therefore left available for UI verification.
+
+Returns and refunds are deliberately not seeded. The current repository has their
+models and inventory primitives but no owning return-posting/refund service that
+enforces source allocation, cumulative quantities, refund eligibility, and locking
+as one workflow. Creating fixture rows without that boundary would bypass the BRD.
+
+V2 uses its own PostgreSQL transaction advisory lock. A complete V2 identity set
+causes a read-only verification rerun; a partial identity set or pre-existing
+payments on its target V1 purchases fails without adoption, cleanup, or repair.
+Focused isolated tests are:
+
+```powershell
+$env:DATABASE_URL = 'sqlite:///:memory:'
+uv run manage.py test apps.inventory.test_demo_transaction_seed --noinput
+```

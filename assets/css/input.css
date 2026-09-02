@@ -103,7 +103,13 @@
   --color-chart-danger: var(--color-danger);
   --color-chart-watch: var(--color-slate-500);
   --color-chart-neutral: var(--color-slate-400);
-  --color-chart-purchase: var(--color-primary-700);
+  --color-chart-sales: var(--color-chart-1);
+  --color-chart-purchase: var(--color-chart-3);
+  --color-chart-series-1: var(--color-chart-1);
+  --color-chart-series-2: var(--color-chart-2);
+  --color-chart-series-3: var(--color-chart-3);
+  --color-chart-series-4: var(--color-chart-4);
+  --color-chart-series-5: var(--color-chart-5);
   --color-chart-focus: var(--color-primary-800);
 }
 
@@ -259,7 +265,13 @@
       --color-chart-danger: #cf4141;
       --color-chart-watch: #8ca0a8;
       --color-chart-neutral: #647983;
-      --color-chart-purchase: #12897f;
+      --color-chart-sales: #159b90;
+      --color-chart-purchase: #4f83cc;
+      --color-chart-series-1: #159b90;
+      --color-chart-series-2: #2fb6a9;
+      --color-chart-series-3: #4f83cc;
+      --color-chart-series-4: #8b6fd1;
+      --color-chart-series-5: #d98b2b;
       --color-chart-focus: #0f766e;
     }
   }

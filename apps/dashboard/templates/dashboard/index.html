@@ -8,25 +8,22 @@
     <header class="max-w-3xl">
       <p class="operational-kicker">Clinical operations console</p>
       <h1 class="mt-2 text-2xl font-semibold tracking-tight text-ink-strong sm:text-3xl">Pharmacy overview</h1>
-      <p class="mt-2 text-sm leading-6 text-copy">A focused view of current inventory, receiving activity, and operational follow-up.</p>
+      <p class="mt-2 text-sm leading-6 text-copy">A balanced view of operational health, commercial activity, and financial follow-up.</p>
     </header>
 
     <section class="workspace-surface mt-7" aria-labelledby="daily-pulse-heading">
-      <header class="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+      <header class="px-5 py-5 sm:px-6">
         <div>
           <p class="operational-kicker">Today</p>
           <h2 id="daily-pulse-heading" class="mt-1 text-lg font-semibold tracking-tight text-ink-strong">Daily Pulse</h2>
           <p class="mt-1 text-sm leading-6 text-muted">The permitted measures shaping today's workload.</p>
         </div>
-        {% if dashboard_data_notice %}
-          <p class="max-w-md border-l-2 border-sky-300 pl-3 text-xs leading-5 text-muted">{{ dashboard_data_notice }}</p>
-        {% endif %}
       </header>
 
       {% if kpis %}
-        <dl class="grid gap-px border-t border-line bg-surface-pressed sm:grid-cols-2 xl:grid-cols-4">
+        <dl class="grid gap-px border-t border-line bg-surface-pressed {% if kpis|length == 1 %}sm:grid-cols-1{% else %}sm:grid-cols-2{% endif %} {% if kpis|length == 5 %}xl:grid-cols-5{% elif kpis|length == 1 %}xl:grid-cols-1{% else %}xl:grid-cols-4{% endif %}">
           {% for kpi in kpis %}
-            <div class="bg-surface px-5 py-4 sm:px-6">
+            <div class="bg-surface px-5 py-4 sm:px-6 {% if kpis|length == 5 and forloop.last %}sm:col-span-2 xl:col-span-1{% endif %}">
               <div class="flex items-start gap-3">
                 <span class="mt-0.5 h-8 w-1 shrink-0 rounded-status {% if kpi.tone == 'destructive' %}bg-red-500{% elif kpi.tone == 'warning' %}bg-amber-400{% else %}bg-surface-disabled{% endif %}" aria-hidden="true"></span>
                 <div class="min-w-0">
@@ -48,12 +45,80 @@
       {% endif %}
     </section>
 
-    {% if charts %}
-      <section class="mt-8" aria-labelledby="analytics-heading">
-        <h2 id="analytics-heading" class="mb-3 text-sm font-semibold text-body">Operational Analytics</h2>
+    {% if operational_charts %}
+      <section class="mt-8" aria-labelledby="operational-analytics-heading">
+        <h2 id="operational-analytics-heading" class="mb-3 text-sm font-semibold text-body">Operational Analytics</h2>
         <div class="grid min-w-0 gap-4 xl:grid-cols-2">
-          {% for chart in charts %}
+          {% for chart in operational_charts %}
             {% include "dashboard/_chart.html" with chart=chart only %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if commercial_charts %}
+      <section class="mt-8" aria-labelledby="commercial-analytics-heading">
+        <h2 id="commercial-analytics-heading" class="mb-3 text-sm font-semibold text-body">Commercial Analytics</h2>
+        <div class="grid min-w-0 gap-4 xl:grid-cols-2">
+          {% for chart in commercial_charts %}
+            {% include "dashboard/_analytics_chart.html" with chart=chart only %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if finance_charts or receivables %}
+      <section class="mt-8" aria-labelledby="finance-overview-heading">
+        <h2 id="finance-overview-heading" class="mb-3 text-sm font-semibold text-body">Finance Overview</h2>
+        <div class="grid min-w-0 gap-4 xl:grid-cols-2">
+          {% for chart in finance_charts %}
+            {% include "dashboard/_analytics_chart.html" with chart=chart only %}
+          {% endfor %}
+          {% if receivables %}
+            <article class="workspace-surface flex min-w-0 flex-col" aria-labelledby="receivables-heading">
+              <header class="px-5 pt-5 sm:px-6">
+                <p class="operational-kicker">Customer balances</p>
+                <h3 id="receivables-heading" class="mt-1 text-lg font-semibold tracking-tight text-ink-strong">Receivables</h3>
+                <p class="mt-1 text-xs leading-5 text-muted">Outstanding balances on completed sales for saved customers.</p>
+              </header>
+              {% if receivables.has_data %}
+                <dl class="mt-5 grid flex-1 gap-px border-y border-line bg-surface-pressed sm:grid-cols-3">
+                  <div class="bg-surface px-5 py-4 sm:px-6">
+                    <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Total outstanding</dt>
+                    <dd class="mt-2 text-2xl font-semibold tracking-tight text-ink-strong tabular-nums">{{ receivables.formatted_total }}</dd>
+                  </div>
+                  <div class="bg-surface px-5 py-4 sm:px-6">
+                    <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Partially paid</dt>
+                    <dd class="mt-2 text-2xl font-semibold tracking-tight text-caution-strong tabular-nums">{{ receivables.partial }}</dd>
+                    <p class="mt-1 text-xs text-muted">invoice{{ receivables.partial|pluralize }}</p>
+                  </div>
+                  <div class="bg-surface px-5 py-4 sm:px-6">
+                    <dt class="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Unpaid</dt>
+                    <dd class="mt-2 text-2xl font-semibold tracking-tight text-negative-strong tabular-nums">{{ receivables.unpaid }}</dd>
+                    <p class="mt-1 text-xs text-muted">invoice{{ receivables.unpaid|pluralize }}</p>
+                  </div>
+                </dl>
+                <p class="px-5 py-4 text-xs leading-5 text-muted sm:px-6">Completed invoice total minus posted customer payments. Reversed payments and walk-in sales are excluded.</p>
+              {% else %}
+                <div class="flex-1 p-5 sm:px-6">
+                  <div class="operational-empty">
+                    <p class="text-sm font-semibold text-ink-soft">No outstanding receivables.</p>
+                    <p class="mt-1 text-sm leading-6 text-muted">There are no positive saved-customer balances from completed sales.</p>
+                  </div>
+                </div>
+              {% endif %}
+            </article>
+          {% endif %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if performance_charts %}
+      <section class="mt-8" aria-labelledby="performance-heading">
+        <h2 id="performance-heading" class="mb-3 text-sm font-semibold text-body">Performance</h2>
+        <div class="grid min-w-0 gap-4">
+          {% for chart in performance_charts %}
+            {% include "dashboard/_analytics_chart.html" with chart=chart only %}
           {% endfor %}
         </div>
       </section>
@@ -118,9 +183,9 @@
 
       <section class="workspace-surface min-w-0" aria-labelledby="recent-activity-heading">
         <header class="border-b border-line px-5 py-5 sm:px-6 xl:min-h-32">
-          <p class="operational-kicker">Operational ledger</p>
+          <p class="operational-kicker">Transaction ledger</p>
           <h2 id="recent-activity-heading" class="mt-1 text-lg font-semibold tracking-tight text-ink-strong">Recent Activity</h2>
-          <p class="mt-1 text-xs leading-5 text-muted">The five latest posted purchase receipts you can access.</p>
+          <p class="mt-1 text-xs leading-5 text-muted">The five latest completed sales, posted purchases, and posted customer payments you can access.</p>
         </header>
 
         {% if recent_activity %}
@@ -161,7 +226,7 @@
           <div class="p-4 sm:p-5">
             <div class="operational-empty">
               <p class="text-sm font-semibold text-ink-soft">No recent activity is available.</p>
-              <p class="mt-1 text-sm leading-6 text-muted">No posted purchase receipts are available within your permitted data.</p>
+              <p class="mt-1 text-sm leading-6 text-muted">No completed or posted transactions are available within your permitted data.</p>
             </div>
           </div>
         {% endif %}

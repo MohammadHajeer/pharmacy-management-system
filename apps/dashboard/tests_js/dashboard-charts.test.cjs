@@ -150,6 +150,94 @@ test("expiry isolates urgent buckets without changing counts or using a distorte
   }
 });
 
+test("sales performance renders Decimal JSON as a restrained currency line", () => {
+  const fixture = page({ chart: {
+    variant: "line", labels: ["Jan 2026", "Feb 2026"], values: ["125.50", "0.00"],
+    tones: ["sales", "sales"], unit: "currency", currency_code: "USD",
+  } });
+  fixture.run();
+  const config = fixture.rendered[0];
+  assert.equal(config.type, "line");
+  assert.deepEqual(Array.from(config.data.datasets[0].data), [125.5, 0]);
+  assert.equal(config.data.datasets[0].borderColor, "--color-chart-sales");
+  assert.equal(config.data.datasets[0].tension, 0.28);
+  assert.equal(config.options.plugins.legend.display, false);
+  assert.equal(config.options.animation, false);
+  assert.equal(
+    config.options.plugins.tooltip.callbacks.label({ raw: 125.5, dataset: { label: "Completed sales" } }),
+    "Completed sales: $125.50",
+  );
+});
+
+test("commercial comparison uses grouped semantic datasets on one monthly scale", () => {
+  const fixture = page({ chart: {
+    variant: "grouped-bar", labels: ["Jan 2026", "Feb 2026"], values: [],
+    datasets: [
+      { label: "Completed sales", values: ["100.00", "0.00"], tone: "sales" },
+      { label: "Posted purchases", values: ["42.50", "50.00"], tone: "purchase" },
+    ],
+    unit: "currency", currency_code: "USD",
+  } });
+  fixture.run();
+  const config = fixture.rendered[0];
+  assert.equal(config.type, "bar");
+  assert.equal(config.data.datasets.length, 2);
+  assert.deepEqual(Array.from(config.data.datasets[0].data), [100, 0]);
+  assert.deepEqual(Array.from(config.data.datasets[1].data), [42.5, 50]);
+  assert.equal(config.data.datasets[0].backgroundColor, "--color-chart-sales");
+  assert.equal(config.data.datasets[1].backgroundColor, "--color-chart-purchase");
+  assert.equal(config.data.datasets[0].borderRadius, 6);
+  assert.equal(config.options.scales.x.ticks.maxRotation, 0);
+});
+
+test("payment mix and top sellers use compact custom chart variants", () => {
+  const doughnut = page({ chart: {
+    variant: "doughnut", labels: ["Cash", "Card"], values: ["75.00", "25.00"],
+    tones: ["series-1", "series-2"], unit: "currency", currency_code: "USD",
+  } });
+  doughnut.run();
+  const doughnutConfig = doughnut.rendered[0];
+  assert.equal(doughnutConfig.type, "doughnut");
+  assert.equal(doughnutConfig.options.cutout, "68%");
+  assert.equal(doughnutConfig.options.scales, undefined);
+  assert.deepEqual(Array.from(doughnutConfig.data.datasets[0].backgroundColor), [
+    "--color-chart-series-1", "--color-chart-series-2",
+  ]);
+
+  const horizontal = page({ chart: {
+    variant: "bar", horizontal: true, labels: ["A very long medicine name"], values: ["3.000"],
+    tones: ["sales"], unit: "base units", currency_code: "",
+  } });
+  horizontal.run();
+  const horizontalConfig = horizontal.rendered[0];
+  assert.equal(horizontalConfig.type, "bar");
+  assert.equal(horizontalConfig.options.indexAxis, "y");
+  assert.equal(horizontalConfig.data.datasets[0].maxBarThickness, 28);
+  assert.equal(horizontalConfig.options.scales.y.ticks.autoSkip, false);
+  assert.equal(
+    horizontalConfig.options.plugins.tooltip.callbacks.label({ raw: 3, dataset: { label: "Sold base quantity" } }),
+    "Sold base quantity: 3 base units",
+  );
+});
+
+test("analytics theme refresh recolors every dataset without animation", () => {
+  const fixture = page({ chart: {
+    variant: "grouped-bar", labels: ["Jan 2026"], values: [],
+    datasets: [
+      { label: "Completed sales", values: ["100.00"], tone: "sales" },
+      { label: "Posted purchases", values: ["42.50"], tone: "purchase" },
+    ],
+    unit: "currency", currency_code: "USD",
+  } });
+  fixture.run();
+  const config = fixture.rendered[0];
+  fixture.emit("pharmanex:theme-change", "dark");
+  assert.equal(config.data.datasets[0].backgroundColor, "dark--color-chart-sales");
+  assert.equal(config.data.datasets[1].backgroundColor, "dark--color-chart-purchase");
+  assert.equal(config.options.scales.y.grid.color, "dark--color-chart-grid");
+  assert.deepEqual(fixture.updates, ["none"]);
+});
+
 test("theme and print changes recolor existing charts instantly without changing counts", () => {
   const fixture = page();
   fixture.run();

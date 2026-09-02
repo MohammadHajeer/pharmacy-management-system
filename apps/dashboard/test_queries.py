@@ -10,11 +10,13 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.catalog.models import Category, Manufacturer, Medicine
-from apps.core.models import PharmacySettings
+from apps.catalog.models import Category, Manufacturer, Medicine, MedicineUnit
+from apps.core.models import PaymentMethod, PharmacySettings
+from apps.finance.models import CustomerPayment, PaymentStatus
 from apps.inventory.models import MedicineBatch
-from apps.parties.models import Supplier
+from apps.parties.models import Customer, Supplier
 from apps.purchasing.models import PurchaseInvoice
+from apps.sales.models import SalesInvoice, SalesInvoiceLine
 
 from .queries import dashboard_context
 
@@ -26,6 +28,12 @@ class DashboardQueryTests(TestCase):
         cls.category = Category.objects.create(name="Dashboard category")
         cls.manufacturer = Manufacturer.objects.create(name="Dashboard manufacturer")
         cls.supplier = Supplier.objects.create(name="Private supplier")
+        cls.customer = Customer.objects.create(
+            code="DASH-CUSTOMER", name="Dashboard customer"
+        )
+        cls.payment_method = PaymentMethod.objects.create(
+            code="DASH-CASH", name="Dashboard cash"
+        )
         cls.pharmacy = PharmacySettings.objects.create(
             pharmacy_name="Test pharmacy", currency_code="USD",
             default_low_stock_threshold=Decimal("5"), expiry_warning_days=90,
@@ -58,6 +66,83 @@ class DashboardQueryTests(TestCase):
             supplier_name_snapshot="Historical supplier", invoice_date=when.date(),
             status=status, posted_at=when, created_by=self.user, currency_code="USD",
             grand_total=Decimal("42.50"), remaining_balance=Decimal("42.50"),
+        )
+
+    def sale(
+        self,
+        number,
+        when,
+        *,
+        status=SalesInvoice.Status.COMPLETED,
+        total="100.00",
+        paid="0.00",
+        customer=None,
+    ):
+        total = Decimal(total)
+        paid = Decimal(paid)
+        if customer is None and status == SalesInvoice.Status.COMPLETED and not paid:
+            paid = total
+        if paid == total:
+            payment_status = SalesInvoice.PaymentStatus.PAID
+        elif paid:
+            payment_status = SalesInvoice.PaymentStatus.PARTIAL
+        else:
+            payment_status = SalesInvoice.PaymentStatus.UNPAID
+        return SalesInvoice.objects.create(
+            invoice_number=number,
+            status=status,
+            customer=customer,
+            pharmacist=self.user,
+            customer_name_snapshot=customer.name if customer else "",
+            currency_code="USD",
+            subtotal=total,
+            grand_total=total,
+            paid_total=paid,
+            balance_due=total - paid,
+            payment_status=payment_status,
+            completed_at=when,
+        )
+
+    def sale_line(self, invoice, medicine, quantity):
+        unit, _ = MedicineUnit.objects.get_or_create(
+            medicine=medicine,
+            name="unit",
+            defaults={
+                "conversion_to_base": Decimal("1.000000"),
+                "is_base_unit": True,
+            },
+        )
+        quantity = Decimal(quantity)
+        return SalesInvoiceLine.objects.create(
+            sales_invoice=invoice,
+            medicine=medicine,
+            medicine_description_snapshot=medicine.name,
+            medicine_unit=unit,
+            unit_name_snapshot=unit.name,
+            quantity=quantity,
+            conversion_to_base_snapshot=Decimal("1.000000"),
+            requested_quantity_base=quantity,
+            unit_price=Decimal("1.0000"),
+            line_total=quantity,
+        )
+
+    def payment(
+        self,
+        invoice,
+        amount,
+        *,
+        status=PaymentStatus.POSTED,
+        method=None,
+        when=None,
+    ):
+        return CustomerPayment.objects.create(
+            sales_invoice=invoice,
+            customer=invoice.customer,
+            payment_method=method or self.payment_method,
+            amount=Decimal(amount),
+            processed_by=self.user,
+            paid_at=when or invoice.completed_at,
+            status=status,
         )
 
     def test_stock_partition_uses_fefo_threshold_equality_and_fallback(self):
@@ -226,7 +311,7 @@ class DashboardQueryTests(TestCase):
         for permissions, allowed, denied in (
             (("inventory.view_medicinebatch",), "Stock Health", "PRIVATE-42"),
             (("purchasing.view_purchaseinvoice",), "PRIVATE-42", "stock-health-data"),
-            (("finance.view_financial_reports",), "Sales, payments", "PRIVATE-42"),
+            (("finance.view_financial_reports",), "Payment Method Mix", "PRIVATE-42"),
         ):
             self.user.user_permissions.clear()
             self.grant(*permissions)
@@ -262,34 +347,180 @@ class DashboardQueryTests(TestCase):
         self.assertEqual([item["reference"] for item in context["recent_activity"]], [f"PI-{index}" for index in range(5)])
         self.assertEqual(context["recent_activity"][0]["amount"], "USD 42.50")
         self.assertEqual(context["recent_activity"][0]["party"], "Historical supplier")
-        chart = context["purchase_chart_data"]
-        self.assertEqual(sum(chart["values"]), 7)
-        self.assertEqual(len(chart["values"]), 12)
-        self.assertIn(0, chart["values"])
-        self.assertEqual(chart["focus_index"], 11)
-        self.assertEqual(chart["focus"]["value"], chart["values"][-1])
-        self.assertEqual(chart["focus"]["label"], chart["labels"][-1])
-
-    def test_purchase_chart_is_omitted_without_multiple_months(self):
-        self.grant("purchasing.view_purchaseinvoice")
-        self.assertNotIn("purchase_chart_data", dashboard_context(self.user))
-        self.purchase("ONE", timezone.now())
-        context = dashboard_context(self.user)
-        self.assertNotIn("purchase_chart_data", context)
-        self.assertEqual(len(context["recent_activity"]), 1)
+        self.assertEqual(len(context["recent_activity"]), 5)
 
     def test_local_day_drives_expiry_and_month_boundaries(self):
-        self.grant("inventory.view_medicinebatch", "purchasing.view_purchaseinvoice")
+        self.grant(
+            "inventory.view_medicinebatch",
+            "finance.view_financial_reports",
+        )
         midnight = datetime(2026, 9, 1, 0, 30, tzinfo=datetime_timezone.utc)
         medicine = self.medicine()
         with timezone.override("America/Los_Angeles"), patch("django.utils.timezone.now", return_value=midnight):
             self.batch(medicine, days=0)
+            self.sale("AUG-SALE", midnight)
             self.purchase("AUG", midnight)
             self.purchase("JUL", datetime(2026, 7, 15, 12, tzinfo=datetime_timezone.utc))
             context = dashboard_context(self.user)
             self.assertEqual(context["inventory_metrics"]["expired"], 0)
             self.assertEqual(context["inventory_metrics"]["near_expiry"], 1)
-            self.assertEqual(context["purchase_chart_data"]["labels"][-1], "Aug 2026")
+            comparison = context["commercial_charts"][0]
+            self.assertEqual(comparison["labels"][-1], "Aug 2026")
+
+    def test_sales_months_include_completed_and_exclude_draft_and_void(self):
+        self.grant("sales.view_salesinvoice")
+        january = datetime(2026, 1, 15, 12, tzinfo=datetime_timezone.utc)
+        march = datetime(2026, 3, 15, 12, tzinfo=datetime_timezone.utc)
+        self.sale("COMPLETED-JAN", january, total="125.50")
+        self.sale(
+            "DRAFT-MAR",
+            march,
+            status=SalesInvoice.Status.DRAFT,
+            total="900.00",
+        )
+        self.sale(
+            "VOID-MAR",
+            march,
+            status=SalesInvoice.Status.VOID,
+            total="700.00",
+        )
+        self.sale("COMPLETED-MAR", march, total="74.50")
+
+        chart = dashboard_context(self.user)["commercial_charts"][0]
+
+        self.assertEqual(chart["labels"], ["Jan 2026", "Feb 2026", "Mar 2026"])
+        self.assertEqual(
+            chart["values"],
+            [Decimal("125.50"), Decimal("0.00"), Decimal("74.50")],
+        )
+        self.assertEqual([row["values"][1] for row in chart["rows"]], [1, 0, 1])
+        self.assertNotIn(Decimal("900.00"), chart["values"])
+
+    def test_purchase_comparison_uses_posted_only_and_shared_months(self):
+        self.grant("finance.view_financial_reports", "sales.view_salesinvoice")
+        january = datetime(2026, 1, 10, 12, tzinfo=datetime_timezone.utc)
+        february = datetime(2026, 2, 10, 12, tzinfo=datetime_timezone.utc)
+        march = datetime(2026, 3, 10, 12, tzinfo=datetime_timezone.utc)
+        self.sale("JAN-SALE", january, total="100.00")
+        self.sale("MAR-SALE", march, total="50.00")
+        self.purchase("JAN-POSTED", january)
+        self.purchase("FEB-DRAFT", february, PurchaseInvoice.Status.DRAFT)
+        self.purchase("MAR-POSTED", march)
+
+        sales_chart, chart = dashboard_context(self.user)["commercial_charts"]
+
+        self.assertEqual(chart["labels"], ["Jan 2026", "Feb 2026", "Mar 2026"])
+        self.assertEqual(chart["labels"], sales_chart["labels"])
+        self.assertEqual(chart["datasets"][0]["values"], [Decimal("100.00"), Decimal("0.00"), Decimal("50.00")])
+        self.assertEqual(chart["datasets"][1]["values"], [Decimal("42.50"), Decimal("0.00"), Decimal("42.50")])
+
+    def test_payment_mix_and_receivables_use_only_effective_posted_payments(self):
+        self.grant("finance.view_financial_reports")
+        when = datetime(2026, 4, 10, 12, tzinfo=datetime_timezone.utc)
+        partial = self.sale(
+            "PARTIAL",
+            when,
+            customer=self.customer,
+            total="100.00",
+            paid="40.00",
+        )
+        self.payment(partial, "40.00")
+        self.payment(partial, "15.00", status=PaymentStatus.REVERSED)
+        self.sale(
+            "UNPAID",
+            when,
+            customer=self.customer,
+            total="50.00",
+        )
+        walk_in = self.sale("WALK-IN", when, total="25.00")
+        self.payment(walk_in, "25.00")
+        draft = self.sale(
+            "DRAFT-CUSTOMER",
+            when,
+            status=SalesInvoice.Status.DRAFT,
+            customer=self.customer,
+            total="80.00",
+        )
+        self.payment(draft, "10.00")
+
+        context = dashboard_context(self.user)
+        payment_mix = context["finance_charts"][0]
+
+        self.assertEqual(payment_mix["values"], [Decimal("75.00")])
+        self.assertNotIn(Decimal("15.00"), payment_mix["values"])
+        self.assertEqual(
+            context["receivables"],
+            {
+                "total": Decimal("110.00"),
+                "partial": 1,
+                "unpaid": 1,
+                "formatted_total": "USD 110.00",
+                "has_data": True,
+            },
+        )
+
+    def test_top_selling_uses_completed_sale_lines_and_base_quantity(self):
+        self.grant("sales.view_salesinvoice")
+        when = timezone.now()
+        first = self.medicine("First medicine")
+        second = self.medicine("Second medicine")
+        self.sale_line(self.sale("FIRST-COMPLETE", when), first, "2")
+        self.sale_line(self.sale("SECOND-COMPLETE", when), second, "3")
+        self.sale_line(
+            self.sale(
+                "FIRST-DRAFT",
+                when,
+                status=SalesInvoice.Status.DRAFT,
+                total="100.00",
+            ),
+            first,
+            "100",
+        )
+
+        chart = dashboard_context(self.user)["performance_charts"][0]
+
+        self.assertEqual(chart["labels"], ["Second medicine", "First medicine"])
+        self.assertEqual(chart["values"], [Decimal("3"), Decimal("2")])
+
+    def test_sales_and_finance_widgets_have_separate_permissions(self):
+        when = timezone.now()
+        self.sale("PRIVATE-SALE", when)
+        self.payment_method.name = "Private card"
+        self.payment_method.save(update_fields=["name"])
+
+        self.grant("sales.view_salesinvoice")
+        sales_context = dashboard_context(self.user)
+        self.assertIn("commercial_charts", sales_context)
+        self.assertIn("performance_charts", sales_context)
+        self.assertNotIn("finance_charts", sales_context)
+        self.assertNotIn("receivables", sales_context)
+
+        self.user.user_permissions.clear()
+        self.grant("finance.view_financial_reports")
+        finance_context = dashboard_context(self.user)
+        self.assertIn("finance_charts", finance_context)
+        self.assertIn("receivables", finance_context)
+        self.assertNotIn("performance_charts", finance_context)
+        self.assertEqual(
+            [chart["title"] for chart in finance_context["commercial_charts"]],
+            ["Purchases vs Sales"],
+        )
+
+    def test_new_analytics_render_empty_states_without_chart_canvases(self):
+        self.grant("sales.view_salesinvoice", "finance.view_financial_reports")
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        for message in (
+            "No completed sales yet.",
+            "No completed sales or posted purchases yet.",
+            "No posted customer payments yet.",
+            "No completed sale lines yet.",
+            "No outstanding receivables.",
+        ):
+            self.assertContains(response, message)
+        self.assertNotContains(response, "<canvas")
 
     def test_query_count_is_bounded_as_records_grow(self):
         self.grant("inventory.view_medicinebatch", "purchasing.view_purchaseinvoice", "catalog.view_medicine")

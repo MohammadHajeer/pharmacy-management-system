@@ -548,7 +548,7 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, "Active Medicines")
         self.assertContains(response, "Recent Activity")
         self.assertContains(response, "Attention Required")
-        self.assertContains(response, "Operational ledger")
+        self.assertContains(response, "Transaction ledger")
         self.assertContains(response, "Stock")
         self.assertContains(response, "Expiry")
         self.assertContains(response, "Operational Analytics")
@@ -580,7 +580,7 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, "Expiring Soon")
         self.assertContains(response, "No recent activity is available.")
         self.assertNotContains(response, "Invoice PI-0298")
-        self.assertNotContains(response, "Today&#x27;s Sales")
+        self.assertNotContains(response, "Sales This Month")
         self.assertNotContains(response, "Receivables")
         self.assertNotContains(response, "Customer payment")
 

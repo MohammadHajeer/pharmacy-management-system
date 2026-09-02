@@ -8,6 +8,182 @@
   const number = new Intl.NumberFormat(document.documentElement.lang || "en");
   const fontFamily = getComputedStyle(document.body).fontFamily;
 
+  const metricFormatter = (data) => {
+    if (data.currency_code) {
+      try {
+        return new Intl.NumberFormat(document.documentElement.lang || "en", {
+          style: "currency",
+          currency: data.currency_code,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      } catch (error) {
+        // A legacy currency code should not prevent the rest of the dashboard rendering.
+      }
+    }
+    return number;
+  };
+
+  const analyticsTooltip = (data) => {
+    const formatter = metricFormatter(data);
+    const base = tooltip(data.unit);
+    base.displayColors = data.variant === "grouped-bar" || data.variant === "doughnut";
+    base.callbacks.label = (context) => {
+      const prefix = context.dataset.label ? `${context.dataset.label}: ` : "";
+      const suffix = data.currency_code ? "" : ` ${data.unit}`;
+      return `${prefix}${formatter.format(Number(context.raw))}${suffix}`;
+    };
+    return base;
+  };
+
+  const labelScale = (horizontal = false) => ({
+    border: { display: true, color: color("line") },
+    grid: { display: false },
+    ticks: {
+      color: color("copy"),
+      maxRotation: 0,
+      autoSkip: !horizontal,
+      padding: 8,
+      font: { family: fontFamily, size: 10 },
+      ...(horizontal ? {
+        callback(value) {
+          const label = this.getLabelForValue(value);
+          return label.length > 28 ? `${label.slice(0, 27)}…` : label;
+        },
+      } : {}),
+    },
+  });
+
+  const valueScale = (data) => {
+    const formatter = metricFormatter(data);
+    return {
+      beginAtZero: true,
+      border: { display: false },
+      grid: { color: color("chart-grid"), drawTicks: false },
+      ticks: {
+        color: color("chart-label"),
+        maxTicksLimit: 5,
+        padding: 8,
+        font: { family: fontFamily, size: 10 },
+        callback: (value) => formatter.format(Number(value)),
+      },
+    };
+  };
+
+  function analyticsScales(data) {
+    if (data.variant === "doughnut") return undefined;
+    if (data.horizontal) return { x: valueScale(data), y: labelScale(true) };
+    return { x: labelScale(), y: valueScale(data) };
+  }
+
+  function renderAnalytics(canvas, data) {
+    const toneColor = (tone) => color(`chart-${tone || "sales"}`);
+    const baseDataset = {
+      borderWidth: 0,
+      borderRadius: 6,
+      borderSkipped: false,
+    };
+    let type = "bar";
+    let datasets;
+
+    if (data.variant === "grouped-bar") {
+      datasets = data.datasets.map((dataset) => ({
+        ...baseDataset,
+        label: dataset.label,
+        data: dataset.values.map(Number),
+        backgroundColor: toneColor(dataset.tone),
+        hoverBackgroundColor: toneColor(dataset.tone),
+        maxBarThickness: 34,
+        categoryPercentage: 0.72,
+        barPercentage: 0.9,
+        dashboardTone: dataset.tone,
+      }));
+    } else if (data.variant === "doughnut") {
+      type = "doughnut";
+      datasets = [{
+        label: "Posted value",
+        data: data.values.map(Number),
+        backgroundColor: data.tones.map(toneColor),
+        hoverBackgroundColor: data.tones.map(toneColor),
+        borderWidth: 0,
+        spacing: 2,
+        dashboardTones: data.tones,
+      }];
+    } else if (data.variant === "line") {
+      type = "line";
+      datasets = [{
+        label: "Completed sales",
+        data: data.values.map(Number),
+        borderColor: toneColor("sales"),
+        backgroundColor: toneColor("sales"),
+        pointBackgroundColor: toneColor("sales"),
+        pointBorderWidth: 0,
+        pointRadius: 3,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+        tension: 0.28,
+        fill: false,
+        dashboardTone: "sales",
+      }];
+    } else {
+      datasets = [{
+        ...baseDataset,
+        label: "Sold base quantity",
+        data: data.values.map(Number),
+        backgroundColor: toneColor("sales"),
+        hoverBackgroundColor: toneColor("sales"),
+        maxBarThickness: 28,
+        categoryPercentage: 0.72,
+        barPercentage: 0.9,
+        dashboardTone: "sales",
+      }];
+    }
+
+    const chart = new window.Chart(canvas, {
+      type,
+      data: { labels: data.labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: data.horizontal ? "y" : "x",
+        animation: false,
+        layout: { padding: { top: 6, right: 6 } },
+        interaction: {
+          mode: data.variant === "doughnut" ? "nearest" : "index",
+          axis: data.horizontal ? "y" : "x",
+          intersect: data.variant === "doughnut",
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: analyticsTooltip(data),
+        },
+        scales: analyticsScales(data),
+        ...(data.variant === "doughnut" ? { cutout: "68%", radius: "90%" } : {}),
+      },
+    });
+
+    const refresh = () => {
+      chart.data.datasets.forEach((dataset) => {
+        if (dataset.dashboardTones) {
+          const colors = dataset.dashboardTones.map(toneColor);
+          dataset.backgroundColor = colors;
+          dataset.hoverBackgroundColor = colors;
+          return;
+        }
+        const next = toneColor(dataset.dashboardTone);
+        if (type === "line") {
+          dataset.borderColor = next;
+          dataset.pointBackgroundColor = next;
+        }
+        dataset.backgroundColor = next;
+        dataset.hoverBackgroundColor = next;
+      });
+      chart.options.scales = analyticsScales(data);
+      chart.options.plugins.tooltip = analyticsTooltip(data);
+    };
+    return { chart, refresh };
+  }
+
   const tooltip = (unit) => ({
     displayColors: false,
     backgroundColor: color("chart-tooltip"),
@@ -74,6 +250,10 @@
       const data = JSON.parse(source.textContent);
       if (!data.has_data) return;
       container.hidden = false;
+      if (data.variant) {
+        charts.push(renderAnalytics(canvas, data));
+        return;
+      }
       const purchase = data.unit === "invoices";
       // The neutral expiry bucket is shown as a separate, labeled server count.
       // Keep the urgent columns on a linear zero-based scale; never distort it
@@ -117,7 +297,16 @@
           scales: axes(purchase),
         },
       });
-      charts.push({ chart, purchase, unit: data.unit, seriesColors });
+      charts.push({
+        chart,
+        refresh() {
+          const nextColors = seriesColors();
+          chart.data.datasets[0].backgroundColor = nextColors;
+          chart.data.datasets[0].hoverBackgroundColor = nextColors;
+          chart.options.scales = axes(purchase);
+          chart.options.plugins.tooltip = tooltip(data.unit);
+        },
+      });
     } catch (error) {
       // Keep the server-rendered summary usable if an asset/data problem occurs.
       window.Chart.getChart(canvas)?.destroy();
@@ -127,12 +316,8 @@
   });
 
   function refreshTheme() {
-    charts.forEach(({ chart, purchase, unit, seriesColors }) => {
-      const colors = seriesColors();
-      chart.data.datasets[0].backgroundColor = colors;
-      chart.data.datasets[0].hoverBackgroundColor = colors;
-      chart.options.scales = axes(purchase);
-      chart.options.plugins.tooltip = tooltip(unit);
+    charts.forEach(({ chart, refresh }) => {
+      refresh();
       chart.update("none");
     });
   }
