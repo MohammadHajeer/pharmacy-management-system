@@ -358,6 +358,54 @@ html[data-theme-changing] *::after {
   }
 }
 
+/* Tailwind CSS v4 custom utilities.
+   Register reusable project classes with @utility so Tailwind treats them as
+   real utilities and editor tooling can discover them as Tailwind candidates. */
+@utility workspace-container {
+  @apply mx-auto w-full min-w-0 max-w-6xl;
+}
+
+@utility workspace-surface {
+  @apply overflow-hidden rounded-workspace border border-line/90 bg-surface;
+}
+
+@utility operational-kicker {
+  @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-accent;
+}
+
+@utility operational-empty {
+  @apply rounded-control border border-dashed border-line-strong bg-surface-muted/70 px-5 py-8;
+}
+
+@utility ledger-scroll {
+  @apply relative max-w-full overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600;
+}
+
+@utility ledger-table {
+  @apply w-full text-left text-sm text-copy;
+}
+
+@utility registry-link {
+  @apply font-semibold text-ink underline-offset-4 hover:text-accent hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600;
+}
+
+@utility pagination-control {
+  @apply inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-status border border-line px-2 text-xs font-medium text-copy tabular-nums;
+}
+
+@utility app-toast {
+  @apply pointer-events-none absolute inset-x-0 bottom-0 flex items-start gap-3 rounded-xl border border-line bg-surface p-4 pr-10 shadow-[0_4px_12px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)];
+  touch-action: pan-y;
+  will-change: transform, opacity;
+
+  transition:
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Stateful/structural selectors remain component CSS. @layer components is
+   still valid in Tailwind v4; @utility is the v4 API for registering custom
+   Tailwind utilities. */
 @layer components {
   .navigation-progress {
     visibility: hidden;
@@ -391,32 +439,6 @@ html[data-theme-changing] *::after {
     cursor: wait;
   }
 
-  /* Main workspace width matches the Settings configuration console. */
-  .workspace-container {
-    @apply mx-auto w-full min-w-0 max-w-6xl;
-  }
-
-  .workspace-surface {
-    @apply overflow-hidden rounded-workspace border border-line/90 bg-surface;
-  }
-
-  .operational-kicker {
-    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-accent;
-  }
-
-  .operational-empty {
-    @apply rounded-control border border-dashed border-line-strong bg-surface-muted/70 px-5 py-8;
-  }
-
-  /* Shared ledgers keep dense records readable within a local scroll region. */
-  .ledger-scroll {
-    @apply relative max-w-full overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600;
-  }
-
-  .ledger-table {
-    @apply w-full text-left text-sm text-copy;
-  }
-
   .ledger-table thead {
     @apply border-y border-line bg-surface-muted text-xs text-muted;
   }
@@ -441,14 +463,6 @@ html[data-theme-changing] *::after {
     @apply whitespace-nowrap text-right tabular-nums;
   }
 
-  .registry-link {
-    @apply font-semibold text-ink underline-offset-4 hover:text-accent hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600;
-  }
-
-  .pagination-control {
-    @apply inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-status border border-line px-2 text-xs font-medium text-copy tabular-nums;
-  }
-
   a.pagination-control {
     @apply hover:border-line-strong hover:bg-surface-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
   }
@@ -459,16 +473,6 @@ html[data-theme-changing] *::after {
 
   .pagination-control[aria-disabled="true"] {
     @apply border-line-soft text-faint;
-  }
-
-  .app-toast {
-    @apply pointer-events-none absolute inset-x-0 bottom-0 flex items-start gap-3 rounded-xl border border-line bg-surface p-4 pr-10 shadow-[0_4px_12px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)];
-    touch-action: pan-y;
-    will-change: transform, opacity;
-
-    transition:
-      transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 400ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .app-toast[data-dragging="true"] {
