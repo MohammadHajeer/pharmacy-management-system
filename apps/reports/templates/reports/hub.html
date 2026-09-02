@@ -1,0 +1,32 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Reports · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container space-y-6">
+  <header>
+    <p class="operational-kicker">Read-only analysis workspace</p>
+    <h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">Reports</h1>
+    <p class="mt-2 max-w-2xl text-sm leading-6 text-muted">Inspect authoritative Phase 1 sales, purchasing, inventory, finance, and returns records. Available reports reflect your current permissions.</p>
+  </header>
+
+  <div class="workspace-surface divide-y divide-line-soft">
+    {% for section in report_sections %}
+      <section class="grid gap-3 p-4 sm:grid-cols-[9rem_1fr] sm:p-5" aria-labelledby="report-section-{{ forloop.counter }}">
+        <div>
+          <p id="report-section-{{ forloop.counter }}" class="operational-kicker">{{ section.name }}</p>
+        </div>
+        <div class="divide-y divide-line-soft border-y border-line-soft sm:border-t-0">
+          {% for report in section.reports %}
+            <a href="{{ report.url }}" class="group flex items-center justify-between gap-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-tint">
+              <span class="min-w-0">
+                <span class="block text-sm font-semibold text-ink group-hover:text-accent">{{ report.title }}</span>
+                <span class="mt-1 block text-xs leading-5 text-muted">{{ report.description }}</span>
+              </span>
+              {% include "components/icon.html" with name="chevron-right" class="size-4 shrink-0 text-faint group-hover:text-accent" only %}
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

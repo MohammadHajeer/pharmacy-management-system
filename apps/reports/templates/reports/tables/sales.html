@@ -1,0 +1,14 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Completed sales report">
+  <table class="ledger-table min-w-220"><caption class="sr-only">Completed sales ordered newest first</caption>
+    <thead><tr><th>Invoice / Customer</th><th>Completed</th><th class="ledger-number">Invoice total</th><th class="ledger-number">Effective paid</th><th class="ledger-number">Balance</th><th>Payment</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for invoice in report_rows %}<tr>
+      <td><p class="max-w-64 break-all font-semibold text-ink">{{ invoice.invoice_number }}</p><p class="mt-1 text-xs text-muted">{{ invoice.customer_name_snapshot|default:"Walk-in" }}</p></td>
+      <td class="whitespace-nowrap tabular-nums">{{ invoice.completed_at|date:"d M Y, H:i" }}</td>
+      <td class="ledger-number font-medium text-ink">{{ invoice.grand_total|floatformat:2 }}</td>
+      <td class="ledger-number">{{ invoice.effective_paid|floatformat:2 }}</td>
+      <td class="ledger-number">{{ invoice.effective_balance|floatformat:2 }}</td>
+      <td>{% if invoice.effective_payment_status == "PAID" %}{% include "components/badge.html" with text="Paid" variant="success" only %}{% elif invoice.effective_payment_status == "PARTIAL" %}{% include "components/badge.html" with text="Partially paid" variant="warning" only %}{% else %}{% include "components/badge.html" with text="Unpaid" variant="outline" only %}{% endif %}</td>
+      <td>{% if perms.sales.view_salesinvoiceline %}<a class="registry-link text-xs" href="{% url 'sales:invoice-detail' invoice.pk %}">View</a>{% else %}<span class="text-xs text-faint">Summary only</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+</div>

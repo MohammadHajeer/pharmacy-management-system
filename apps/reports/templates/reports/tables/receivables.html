@@ -1,0 +1,9 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Customer receivables report">
+  <table class="ledger-table min-w-190"><caption class="sr-only">Completed saved-customer invoice balances</caption>
+    <thead><tr><th>Customer</th><th>Invoice</th><th>Completed</th><th class="ledger-number">Invoice total</th><th class="ledger-number">Effective paid</th><th class="ledger-number">Outstanding</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for invoice in report_rows %}<tr>
+      <td><p class="font-semibold text-ink">{{ invoice.customer_name_snapshot|default:invoice.customer.name }}</p><p class="mt-1 text-xs text-muted">{{ invoice.customer.code }}</p></td><td class="max-w-64 break-all">{{ invoice.invoice_number }}</td><td class="whitespace-nowrap tabular-nums">{{ invoice.completed_at|date:"d M Y" }}</td><td class="ledger-number">{{ invoice.grand_total|floatformat:2 }}</td><td class="ledger-number">{{ invoice.effective_paid|floatformat:2 }}</td><td class="ledger-number font-semibold text-ink">{{ invoice.effective_balance|floatformat:2 }}</td>
+      <td>{% if perms.sales.view_salesinvoice and perms.sales.view_salesinvoiceline %}<a class="registry-link text-xs" href="{% url 'sales:invoice-detail' invoice.pk %}">View invoice</a>{% else %}<span class="text-xs text-faint">Summary only</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+</div>

@@ -1,0 +1,15 @@
+<form method="get" action="{{ clear_url }}" class="border-b border-line bg-surface-muted/60 p-4 sm:p-5" aria-label="Report filters">
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for field in filter_fields %}
+      {% if field.type == "select" %}
+        {% include "components/select.html" with name=field.name label=field.label options=field.options value=field.value error=field.error only %}
+      {% else %}
+        {% include "components/input.html" with name=field.name label=field.label type=field.type value=field.value placeholder=field.placeholder error=field.error only %}
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="mt-4 flex flex-wrap items-center gap-2">
+    {% include "components/button.html" with text="Apply filters" variant="secondary" type="submit" flat=True only %}
+    {% if has_filters %}{% include "components/button.html" with text="Clear filters" variant="ghost" href=clear_url flat=True only %}{% endif %}
+  </div>
+</form>

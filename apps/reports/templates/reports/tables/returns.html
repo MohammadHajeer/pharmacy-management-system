@@ -1,0 +1,14 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Returns report">
+  <table class="ledger-table min-w-220"><caption class="sr-only">Customer returns, refunds, and supplier returns</caption>
+    <thead><tr><th>Activity date</th><th>Type / Number</th><th>Party</th><th>Source invoice</th><th class="ledger-number">Recorded value</th><th>Status</th><th>Reason / Method</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for row in report_rows %}{% with record=row.record %}<tr>
+      <td class="whitespace-nowrap tabular-nums">{{ row.event_at|date:"d M Y, H:i" }}</td>
+      <td><p class="font-semibold text-ink">{% if row.kind == "customer_return" %}Customer return{% elif row.kind == "customer_refund" %}Customer refund{% else %}Supplier return{% endif %}</p><p class="mt-1 max-w-64 break-all text-xs text-muted">{% if row.kind == "customer_refund" %}{{ record.refund_number }}{% else %}{{ record.return_number }}{% endif %}</p></td>
+      <td>{% if row.kind == "customer_return" %}{{ record.customer.name|default:"Walk-in" }}{% elif row.kind == "customer_refund" %}{{ record.customer_return.customer.name|default:"Walk-in" }}{% else %}{{ record.supplier.name }}{% endif %}</td>
+      <td class="max-w-64 break-all">{% if row.kind == "supplier_return" %}{{ record.purchase_invoice.invoice_number|default:"No linked invoice" }}{% else %}{{ record.sales_invoice.invoice_number }}{% endif %}</td><td class="ledger-number font-medium text-ink">{{ row.amount|floatformat:2 }}</td>
+      <td>{% if row.status == "POSTED" or row.status == "REFUNDED" %}{% include "components/badge.html" with text=row.status|title variant="success" only %}{% elif row.status == "DRAFT" %}{% include "components/badge.html" with text="Draft" variant="warning" only %}{% else %}{% include "components/badge.html" with text="Void" variant="outline" only %}{% endif %}</td>
+      <td class="max-w-64 text-xs text-muted">{% if row.kind == "customer_refund" %}{{ record.payment_method.name }}{% if record.reference %} · {{ record.reference }}{% endif %}{% else %}{{ record.reason|truncatechars:90 }}{% endif %}</td>
+      <td>{% if row.kind == "supplier_return" and perms.returns.view_supplierreturnline %}<a class="registry-link text-xs" href="{% url 'returns:supplier-return-detail' record.pk %}">View</a>{% elif row.kind == "customer_refund" and perms.returns.view_customerreturnline %}<a class="registry-link text-xs" href="{% url 'returns:customer-return-detail' record.customer_return_id %}">View return</a>{% elif row.kind == "customer_return" and perms.returns.view_customerreturnline %}<a class="registry-link text-xs" href="{% url 'returns:customer-return-detail' record.pk %}">View</a>{% else %}<span class="text-xs text-faint">Summary only</span>{% endif %}</td>
+    </tr>{% endwith %}{% endfor %}</tbody>
+  </table>
+</div>

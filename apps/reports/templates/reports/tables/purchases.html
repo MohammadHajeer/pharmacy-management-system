@@ -1,0 +1,13 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Posted purchase report">
+  <table class="ledger-table min-w-230"><caption class="sr-only">Posted purchase invoices ordered newest first</caption>
+    <thead><tr><th>Invoice / Reference</th><th>Supplier</th><th>Invoice date</th><th class="ledger-number">Invoice total</th>{% if show_financial_columns %}<th class="ledger-number">Effective paid</th><th class="ledger-number">Balance</th><th>Payment</th>{% endif %}<th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for invoice in report_rows %}<tr>
+      <td><p class="max-w-64 break-all font-semibold text-ink">{{ invoice.invoice_number }}</p><p class="mt-1 text-xs text-muted">{{ invoice.supplier_invoice_reference|default:"No supplier reference" }}</p></td>
+      <td>{{ invoice.supplier_name_snapshot|default:invoice.supplier.name }}</td>
+      <td class="whitespace-nowrap tabular-nums">{{ invoice.invoice_date|date:"d M Y" }}</td>
+      <td class="ledger-number font-medium text-ink">{{ invoice.grand_total|floatformat:2 }}</td>{% if show_financial_columns %}<td class="ledger-number">{{ invoice.effective_paid|floatformat:2 }}</td><td class="ledger-number">{{ invoice.effective_balance|floatformat:2 }}</td>
+      <td>{% if invoice.effective_payment_status == "PAID" %}{% include "components/badge.html" with text="Paid" variant="success" only %}{% elif invoice.effective_payment_status == "PARTIAL" %}{% include "components/badge.html" with text="Partially paid" variant="warning" only %}{% else %}{% include "components/badge.html" with text="Unpaid" variant="outline" only %}{% endif %}</td>{% endif %}
+      <td><a class="registry-link text-xs" href="{% url 'purchasing:purchase-invoice-detail' invoice.pk %}">View</a></td>
+    </tr>{% endfor %}</tbody>
+  </table>
+</div>

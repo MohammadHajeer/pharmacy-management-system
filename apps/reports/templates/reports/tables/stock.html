@@ -1,0 +1,11 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Operational stock report">
+  <table class="ledger-table min-w-190"><caption class="sr-only">Medicine batch stock positions</caption>
+    <thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th class="ledger-number">Available base qty</th><th class="ledger-number">Medicine sellable qty</th><th>Stock state</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for batch in report_rows %}<tr>
+      <td><p class="font-semibold text-ink">{{ batch.medicine.name }}</p><p class="mt-1 text-xs text-muted">{{ batch.medicine.generic_name|default:"—" }}</p></td><td class="font-medium text-ink-soft">{{ batch.batch_number }}</td><td class="whitespace-nowrap tabular-nums">{{ batch.expiry_date|date:"d M Y" }}</td>
+      <td class="ledger-number font-medium text-ink">{{ batch.quantity_available_base|floatformat:3 }}</td><td class="ledger-number">{{ batch.sellable_quantity|floatformat:3 }}</td>
+      <td>{% if batch.stock_state == "healthy" %}{% include "components/badge.html" with text="Healthy" variant="success" only %}{% elif batch.stock_state == "low" %}{% include "components/badge.html" with text="Low stock" variant="warning" only %}{% elif batch.stock_state == "out" %}{% include "components/badge.html" with text="Out of stock" variant="outline" only %}{% elif batch.stock_state == "expired" %}{% include "components/badge.html" with text="Expired" variant="destructive" only %}{% else %}{% include "components/badge.html" with text="Inactive" variant="outline" only %}{% endif %}</td>
+      <td><a class="registry-link text-xs" href="{% url 'inventory:batch-detail' batch.pk %}">Inspect</a></td>
+    </tr>{% endfor %}</tbody>
+  </table>
+</div>

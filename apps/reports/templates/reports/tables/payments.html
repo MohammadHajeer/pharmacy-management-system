@@ -1,0 +1,10 @@
+<div class="ledger-scroll" tabindex="0" role="region" aria-label="Payment activity report">
+  <table class="ledger-table min-w-230"><caption class="sr-only">Customer and supplier payment history</caption>
+    <thead><tr><th>Paid at</th><th>Type / Party</th><th>Invoice</th><th>Method / Reference</th><th class="ledger-number">Amount</th><th>Status</th><th>Reversal</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for row in report_rows %}{% with payment=row.payment %}<tr>
+      <td class="whitespace-nowrap tabular-nums">{{ payment.paid_at|date:"d M Y, H:i" }}</td><td><p class="font-semibold text-ink">{% if row.kind == "customer" %}Customer{% else %}Supplier{% endif %}</p><p class="mt-1 text-xs text-muted">{{ row.party.name|default:"Walk-in" }}</p></td><td class="max-w-64 break-all">{{ row.invoice.invoice_number }}</td><td><p>{{ payment.payment_method.name }}</p><p class="mt-1 text-xs text-muted">{{ payment.reference|default:"No reference" }}</p></td><td class="ledger-number font-semibold text-ink">{{ payment.amount|floatformat:2 }}</td>
+      <td>{% if payment.status == "POSTED" %}{% include "components/badge.html" with text="Posted" variant="success" only %}{% else %}{% include "components/badge.html" with text="Reversed" variant="destructive" only %}{% endif %}</td><td><p class="whitespace-nowrap text-xs">{{ payment.reversed_at|date:"d M Y, H:i"|default:"—" }}</p>{% if payment.reversal_reason %}<p class="mt-1 max-w-56 text-xs text-muted">{{ payment.reversal_reason|truncatechars:70 }}</p>{% endif %}</td>
+      <td>{% if row.kind == "customer" and perms.finance.view_customerpayment %}<a class="registry-link text-xs" href="{% url 'finance:customer-payment-detail' payment.pk %}">View</a>{% elif row.kind == "supplier" and perms.finance.view_supplierpayment %}<a class="registry-link text-xs" href="{% url 'finance:supplier-payment-detail' payment.pk %}">View</a>{% else %}<span class="text-xs text-faint">Summary only</span>{% endif %}</td>
+    </tr>{% endwith %}{% endfor %}</tbody>
+  </table>
+</div>
