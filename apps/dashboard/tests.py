@@ -19,8 +19,13 @@ class SharedComponentTests(SimpleTestCase):
                 self.assertEqual(rendered.count('src="/static/js/theme.js"'), 1)
                 self.assertEqual(rendered.count('data-theme-toggle'), 1)
                 self.assertIn('type="button" data-theme-toggle hidden', rendered)
+                self.assertIn('role="switch" aria-checked="false"', rendered)
                 self.assertIn('aria-label="Switch to dark mode"', rendered)
                 self.assertIn('focus-visible:ring-primary-600', rendered)
+                self.assertIn('w-12', rendered)
+                self.assertIn('md:w-36', rendered)
+                self.assertIn('<span class="hidden md:inline">Light</span>', rendered)
+                self.assertIn('<span class="hidden md:inline">Dark</span>', rendered)
 
     def test_navigation_loading_is_shared_by_dashboard_pages_only(self):
         request = RequestFactory().get("/catalog/medicines/")

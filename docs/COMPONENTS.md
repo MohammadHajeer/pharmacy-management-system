@@ -23,7 +23,9 @@ Use the auth layout for login and password-related screens. It provides a center
 The operational dashboard and auth shells share a root `html.dark` theme with
 Tailwind v4's class-based `dark` variant. `components/theme_init.html` resolves
 the preference inline before the stylesheet and first paint; `static/js/theme.js`
-owns the compact topbar/login buttons and their descriptive action labels.
+owns the responsive topbar/login switch and its descriptive action label. The
+switch is a compact icon control below the `md` breakpoint and a wide, labeled
+Light/Dark segmented control from `md` upward.
 `localStorage["pharmanex.theme"]` accepts `light`, `dark`, or `system` (the default).
 The two-state button saves an explicit choice. System changes apply only while
 following `system`; storage events and `pageshow` restore the current preference.

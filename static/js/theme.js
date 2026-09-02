@@ -18,6 +18,7 @@
       const label = dark ? "Switch to light mode" : "Switch to dark mode";
       button.setAttribute("aria-label", label);
       button.setAttribute("title", label);
+      button.setAttribute("aria-checked", String(dark));
       button.hidden = false;
     });
     if (changed) {

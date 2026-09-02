@@ -60,16 +60,19 @@ for (const [saved, system, expected] of [["light", true, false], ["dark", false,
     assert.equal(fixture.root.classList.contains("dark"), expected);
     assert.equal(fixture.button.hidden, false);
     assert.equal(fixture.button["aria-label"], expected ? "Switch to light mode" : "Switch to dark mode");
+    assert.equal(fixture.button["aria-checked"], String(expected));
   });
 }
 
 test("toggle persists, updates labels and dispatches synchronously with transitions suppressed", () => {
   const fixture = page();
   fixture.start();
+  assert.equal(fixture.button["aria-checked"], "false");
   fixture.toggle();
   assert.equal(fixture.saved(), "dark");
   assert.equal(fixture.root.classList.contains("dark"), true);
   assert.equal(fixture.button.title, "Switch to light mode");
+  assert.equal(fixture.button["aria-checked"], "true");
   assert.equal(fixture.events[0].type, "pharmanex:theme-change");
   assert.equal(fixture.events.length, 1);
   assert.equal(fixture.attributes.has("data-theme-changing"), false);
@@ -77,6 +80,7 @@ test("toggle persists, updates labels and dispatches synchronously with transiti
   fixture.toggle();
   assert.equal(fixture.saved(), "light");
   assert.equal(fixture.root.classList.contains("dark"), false);
+  assert.equal(fixture.button["aria-checked"], "false");
 });
 
 test("system changes apply only to system preference", () => {
