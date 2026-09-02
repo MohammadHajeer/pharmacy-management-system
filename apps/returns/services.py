@@ -44,13 +44,21 @@ from django.utils import timezone
 from apps.core.document_numbers import (
     customer_refund_number_for_creation,
     customer_return_number_for_creation,
+    supplier_return_number_for_creation,
 )
 from apps.inventory.models import MedicineBatch
-from apps.inventory.services import restock_customer_return
-from apps.sales.models import SalesInvoice, SaleBatchAllocation
+from apps.inventory.services import deduct_supplier_return, restock_customer_return
+from apps.sales.models import SalesInvoice, SaleBatchAllocation, SalesInvoiceLine
 
 from .forms import CustomerRefundForm
-from .models import CustomerReturn, CustomerReturnLine, RefundStatus, ReturnStatus
+from .models import (
+    CustomerReturn,
+    CustomerReturnLine,
+    RefundStatus,
+    ReturnStatus,
+    SupplierReturn,
+    SupplierReturnLine,
+)
 
 MONEY_QUANTUM = Decimal("0.01")
 ZERO_MONEY = Decimal("0.00")
@@ -217,6 +225,18 @@ def post_customer_return(*, actor, customer_return):
         if not lines:
             raise ValidationError("A posted customer return requires at least one line.")
 
+        # Returns for different batches can still reference the same sales
+        # line, whose cumulative refund-value cap is shared. Lock those lines
+        # in a stable order so concurrent returns cannot both validate against
+        # the same pre-return value.
+        sales_line_ids = sorted({line.sales_invoice_line_id for line in lines}, key=str)
+        locked_sales_lines = {
+            sales_line.pk: sales_line
+            for sales_line in SalesInvoiceLine.objects.select_for_update()
+            .filter(pk__in=sales_line_ids)
+            .order_by("id")
+        }
+
         # Lock every affected batch, in deterministic order, before any
         # quantity/restock validation runs (acceptance criterion 1).
         batch_ids = sorted({line.batch_id for line in lines}, key=str)
@@ -230,10 +250,25 @@ def post_customer_return(*, actor, customer_return):
         occurred_at = timezone.now()
         business_date = timezone.localdate()
         expected_return_total = ZERO_MONEY
+        current_returned_quantities = {}
+        current_returned_values = {}
+
+        for line in lines:
+            quantity_key = (line.sales_invoice_line_id, line.batch_id)
+            current_returned_quantities[quantity_key] = (
+                current_returned_quantities.get(quantity_key, ZERO_QUANTITY)
+                + line.returned_quantity_base
+            )
+            current_returned_values[line.sales_invoice_line_id] = (
+                current_returned_values.get(line.sales_invoice_line_id, ZERO_MONEY)
+                + line.refund_amount
+            )
 
         for line in lines:
             line.full_clean()
-            sales_invoice_line = line.sales_invoice_line
+            sales_invoice_line = locked_sales_lines.get(line.sales_invoice_line_id)
+            if sales_invoice_line is None:
+                raise ValidationError("A return line references an unknown sales line.")
             if sales_invoice_line.sales_invoice_id != locked_return.sales_invoice_id:
                 raise ValidationError(
                     "A return line no longer belongs to the original sales invoice."
@@ -255,7 +290,10 @@ def post_customer_return(*, actor, customer_return):
                 exclude_return_id=locked_return.pk,
             )
             if (
-                already_returned + line.returned_quantity_base
+                already_returned
+                + current_returned_quantities[
+                    (line.sales_invoice_line_id, line.batch_id)
+                ]
                 > allocation.allocated_quantity_base
             ):
                 raise ValidationError(
@@ -269,7 +307,11 @@ def post_customer_return(*, actor, customer_return):
                 sales_invoice_line=sales_invoice_line,
                 exclude_return_id=locked_return.pk,
             )
-            if already_refunded_value + line.refund_amount > sales_invoice_line.line_total:
+            if (
+                already_refunded_value
+                + current_returned_values[line.sales_invoice_line_id]
+                > sales_invoice_line.line_total
+            ):
                 raise ValidationError(
                     "Cumulative refund value would exceed the original sale "
                     f"line value for {sales_invoice_line.medicine_description_snapshot}."
@@ -378,3 +420,153 @@ def process_customer_refund(*, actor, customer_return, data):
         refund.save()
 
     return form, refund
+
+
+def compute_line_total(*, returned_quantity_base, unit_cost_snapshot):
+    """Return the money-quantized total for a supplier-return line."""
+    return _quantize_money(returned_quantity_base * unit_cost_snapshot)
+
+
+def create_draft_supplier_return(
+    *,
+    actor,
+    supplier,
+    reason,
+    lines_data,
+    purchase_invoice=None,
+):
+    """Create a draft supplier return referencing exact inventory batches."""
+    _require_permission(actor, "returns.add_supplierreturn")
+
+    if not lines_data:
+        raise ValidationError("A supplier return needs at least one line.")
+    if not supplier.is_active:
+        raise ValidationError("An active supplier is required.")
+    if purchase_invoice is not None and purchase_invoice.supplier_id != supplier.pk:
+        raise ValidationError("The purchase invoice must belong to the supplier.")
+
+    with transaction.atomic():
+        supplier_return = SupplierReturn(
+            supplier=supplier,
+            purchase_invoice=purchase_invoice,
+            reason=reason,
+            status=ReturnStatus.DRAFT,
+            processed_by=actor,
+        )
+        supplier_return.return_number = supplier_return_number_for_creation(
+            supplier_return.id
+        )
+
+        return_total = ZERO_MONEY
+        lines = []
+        for line_data in lines_data:
+            medicine = line_data["medicine"]
+            batch = line_data["batch"]
+            returned_quantity_base = line_data["returned_quantity_base"]
+
+            if batch.medicine_id != medicine.pk:
+                raise ValidationError("The batch must belong to the selected medicine.")
+
+            unit_cost_snapshot = batch.acquisition_cost_per_base_unit
+            line_total = compute_line_total(
+                returned_quantity_base=returned_quantity_base,
+                unit_cost_snapshot=unit_cost_snapshot,
+            )
+            lines.append(
+                SupplierReturnLine(
+                    supplier_return=supplier_return,
+                    medicine=medicine,
+                    batch=batch,
+                    returned_quantity_base=returned_quantity_base,
+                    unit_cost_snapshot=unit_cost_snapshot,
+                    line_total=line_total,
+                )
+            )
+            return_total += line_total
+
+        supplier_return.return_total = return_total
+        supplier_return.full_clean()
+        supplier_return.save()
+
+        for line in lines:
+            line.full_clean()
+            line.save()
+
+    return supplier_return
+
+
+def post_supplier_return(*, actor, supplier_return_id):
+    """Post an exact-batch supplier return with targeted row locks."""
+    _require_permission(actor, "returns.post_supplierreturn")
+
+    with transaction.atomic():
+        supplier_return = (
+            SupplierReturn.objects.select_for_update()
+            .select_related("supplier")
+            .get(pk=supplier_return_id)
+        )
+        _require_permission(actor, "returns.post_supplierreturn")
+
+        if supplier_return.status != ReturnStatus.DRAFT:
+            raise ValidationError("Only a draft supplier return can be posted.")
+        if not supplier_return.supplier.is_active:
+            raise ValidationError("The supplier return's supplier is inactive.")
+
+        lines = list(
+            supplier_return.lines.select_related("medicine", "batch").order_by("id")
+        )
+        if not lines:
+            raise ValidationError("A posted supplier return requires at least one line.")
+
+        batch_ids = {line.batch_id for line in lines}
+        locked_batches = {
+            batch.pk: batch
+            for batch in MedicineBatch.objects.select_for_update()
+            .filter(pk__in=batch_ids)
+            .order_by("id")
+        }
+
+        expected_return_total = ZERO_MONEY
+        for line in lines:
+            line.full_clean()
+            batch = locked_batches.get(line.batch_id)
+            if batch is None:
+                raise ValidationError("A supplier return line references an unknown batch.")
+            if batch.medicine_id != line.medicine_id:
+                raise ValidationError(
+                    "A supplier return line's batch no longer matches its medicine."
+                )
+            expected_line_total = compute_line_total(
+                returned_quantity_base=line.returned_quantity_base,
+                unit_cost_snapshot=line.unit_cost_snapshot,
+            )
+            if line.line_total != expected_line_total:
+                raise ValidationError(
+                    "A supplier return line's stored total no longer matches its inputs."
+                )
+            expected_return_total += expected_line_total
+
+        if supplier_return.return_total != expected_return_total:
+            raise ValidationError(
+                "The supplier return total no longer matches its stored lines."
+            )
+
+        occurred_at = timezone.now()
+        for line in lines:
+            deduct_supplier_return(
+                actor=actor,
+                batch=locked_batches[line.batch_id],
+                quantity_base=line.returned_quantity_base,
+                source_type="SUPPLIER_RETURN",
+                source_id=supplier_return.id,
+                source_line_id=line.id,
+                reference_number=supplier_return.return_number,
+                occurred_at=occurred_at,
+            )
+
+        supplier_return.status = ReturnStatus.POSTED
+        supplier_return.posted_at = occurred_at
+        supplier_return.full_clean()
+        supplier_return.save()
+
+    return supplier_return

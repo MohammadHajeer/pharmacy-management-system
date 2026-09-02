@@ -1,17 +1,19 @@
 import threading
 from datetime import timedelta
 from decimal import Decimal
+from unittest import skipUnless
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import connections
+from django.db import connection, connections
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from django.utils import timezone
 
 from apps.catalog.models import Category, Manufacturer, Medicine, MedicineUnit
 from apps.core.models import PaymentMethod
 from apps.inventory.models import MedicineBatch, StockMovement
+from apps.inventory.services import InsufficientStockError
 from apps.parties.models import Customer, Supplier
 from apps.purchasing.models import PurchaseInvoice
 from apps.sales.models import SaleBatchAllocation, SalesInvoice, SalesInvoiceLine
@@ -25,7 +27,13 @@ from .models import (
     ReturnStatus,
     SupplierReturn,
 )
-from .services import create_customer_return, post_customer_return, process_customer_refund
+from .services import (
+    create_customer_return,
+    create_draft_supplier_return,
+    post_customer_return,
+    post_supplier_return,
+    process_customer_refund,
+)
 
 
 class ReturnChoiceTests(SimpleTestCase):
@@ -419,6 +427,24 @@ class PostCustomerReturnServiceTests(_CustomerReturnsFixtureMixin, TestCase):
             StockMovement.objects.filter(source_id=second_return.id).exists()
         )
 
+    def test_post_aggregates_duplicate_current_lines_for_quantity_cap(self):
+        customer_return = self._create_draft_return(
+            lines_data=[
+                self._return_line(quantity="6.000", refund="30.00"),
+                self._return_line(quantity="6.000", refund="30.00"),
+            ]
+        )
+
+        with self.assertRaises(ValidationError):
+            post_customer_return(
+                actor=self.returns_user,
+                customer_return=customer_return,
+            )
+
+        customer_return.refresh_from_db()
+        self.assertEqual(customer_return.status, ReturnStatus.DRAFT)
+        self.assertFalse(StockMovement.objects.filter(source_id=customer_return.id).exists())
+
     def test_post_rejects_cumulative_refund_value_exceeding_original_line_total(self):
         first_return = self._create_draft_return(
             lines_data=[self._return_line(quantity="4.000", refund="70.00")]
@@ -434,6 +460,23 @@ class PostCustomerReturnServiceTests(_CustomerReturnsFixtureMixin, TestCase):
 
         second_return.refresh_from_db()
         self.assertEqual(second_return.status, ReturnStatus.DRAFT)
+
+    def test_post_aggregates_duplicate_current_lines_for_value_cap(self):
+        customer_return = self._create_draft_return(
+            lines_data=[
+                self._return_line(quantity="4.000", refund="60.00"),
+                self._return_line(quantity="4.000", refund="60.00"),
+            ]
+        )
+
+        with self.assertRaises(ValidationError):
+            post_customer_return(
+                actor=self.returns_user,
+                customer_return=customer_return,
+            )
+
+        customer_return.refresh_from_db()
+        self.assertEqual(customer_return.status, ReturnStatus.DRAFT)
 
     def test_post_rejects_restocking_an_expired_batch_and_rolls_back_all_lines(self):
         # A second, still-valid batch line is posted alongside the expired
@@ -634,6 +677,7 @@ class ProcessCustomerRefundServiceTests(_CustomerReturnsFixtureMixin, TestCase):
         self.assertEqual(self.sales_invoice.balance_due, Decimal("0.00"))
 
 
+@skipUnless(connection.vendor == "postgresql", "PostgreSQL row locks are required.")
 class ConcurrentCustomerReturnPostingTests(_CustomerReturnsFixtureMixin, TransactionTestCase):
     """Two threads try to post the same draft return at once. The row lock
     on the CustomerReturn must ensure exactly one of them posts it and
@@ -654,9 +698,11 @@ class ConcurrentCustomerReturnPostingTests(_CustomerReturnsFixtureMixin, Transac
             try:
                 barrier.wait(timeout=5)
                 post_customer_return(actor=self.returns_user, customer_return=customer_return)
-                outcomes.append(True)
-            except (ValidationError, Exception):
-                outcomes.append(False)
+                outcomes.append("posted")
+            except ValidationError:
+                outcomes.append("rejected")
+            except Exception as error:  # pragma: no cover - asserted below
+                outcomes.append(f"unexpected:{type(error).__name__}:{error}")
             finally:
                 connections.close_all()
 
@@ -664,9 +710,10 @@ class ConcurrentCustomerReturnPostingTests(_CustomerReturnsFixtureMixin, Transac
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join()
+            thread.join(timeout=30)
 
-        self.assertEqual(sum(1 for outcome in outcomes if outcome), 1)
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertCountEqual(outcomes, ["posted", "rejected"])
 
         customer_return.refresh_from_db()
         self.batch.refresh_from_db()
@@ -678,7 +725,73 @@ class ConcurrentCustomerReturnPostingTests(_CustomerReturnsFixtureMixin, Transac
             StockMovement.objects.filter(source_id=customer_return.id).count(), 1
         )
 
+    def test_different_batches_share_the_sales_line_refund_cap(self):
+        self.allocation.allocated_quantity_base = Decimal("5.000")
+        self.allocation.save(update_fields=["allocated_quantity_base"])
+        second_batch = MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="BATCH-RET-CONCURRENT-2",
+            expiry_date=timezone.localdate() + timedelta(days=365),
+            acquisition_cost_per_base_unit=Decimal("5.0000"),
+            quantity_available_base=Decimal("90.000"),
+            first_received_at=timezone.now(),
+        )
+        SaleBatchAllocation.objects.create(
+            sales_invoice_line=self.sales_invoice_line,
+            batch=second_batch,
+            allocated_quantity_base=Decimal("5.000"),
+            acquisition_cost_snapshot=Decimal("5.0000"),
+        )
+        returns = [
+            self._create_draft_return(
+                lines_data=[
+                    self._return_line(
+                        quantity="5.000",
+                        refund="70.00",
+                        restock=False,
+                        batch=batch,
+                    )
+                ]
+            )
+            for batch in (self.batch, second_batch)
+        ]
 
+        outcomes = []
+        barrier = threading.Barrier(2)
+
+        def attempt(customer_return):
+            try:
+                barrier.wait(timeout=5)
+                post_customer_return(
+                    actor=self.returns_user,
+                    customer_return=customer_return,
+                )
+                outcomes.append("posted")
+            except ValidationError:
+                outcomes.append("rejected")
+            except Exception as error:  # pragma: no cover - asserted below
+                outcomes.append(f"unexpected:{type(error).__name__}:{error}")
+            finally:
+                connections.close_all()
+
+        threads = [
+            threading.Thread(target=attempt, args=(customer_return,))
+            for customer_return in returns
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertCountEqual(outcomes, ["posted", "rejected"])
+        self.assertEqual(
+            CustomerReturn.objects.filter(status=ReturnStatus.POSTED).count(),
+            1,
+        )
+
+
+@skipUnless(connection.vendor == "postgresql", "PostgreSQL row locks are required.")
 class ConcurrentCustomerRefundTests(_CustomerReturnsFixtureMixin, TransactionTestCase):
     """Two refund requests, each individually within the return total but
     together exceeding it, are posted concurrently. The row lock on the
@@ -705,9 +818,9 @@ class ConcurrentCustomerRefundTests(_CustomerReturnsFixtureMixin, TransactionTes
                     customer_return=customer_return,
                     data=self._refund_data(amount="30.00"),
                 )
-                outcomes.append(refund is not None)
-            except Exception:
-                outcomes.append(False)
+                outcomes.append("posted" if refund is not None else "rejected")
+            except Exception as error:  # pragma: no cover - asserted below
+                outcomes.append(f"unexpected:{type(error).__name__}:{error}")
             finally:
                 connections.close_all()
 
@@ -715,12 +828,336 @@ class ConcurrentCustomerRefundTests(_CustomerReturnsFixtureMixin, TransactionTes
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join()
+            thread.join(timeout=30)
 
-        self.assertEqual(sum(1 for outcome in outcomes if outcome), 1)
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertCountEqual(outcomes, ["posted", "rejected"])
 
         total_refunded = sum(
             (refund.amount for refund in CustomerRefund.objects.filter(customer_return=customer_return)),
             Decimal("0.00"),
         )
         self.assertLessEqual(total_refunded, customer_return.return_total)
+
+
+class SupplierReturnServiceTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.actor = get_user_model().objects.create_user(username="returns-actor")
+        _grant(cls.actor, "add_supplierreturn")
+        _grant(cls.actor, "post_supplierreturn")
+        cls.supplier = Supplier.objects.create(code="SUP-RT", name="Returns supplier")
+        category = Category.objects.create(name="Returns category")
+        manufacturer = Manufacturer.objects.create(name="Returns manufacturer")
+        cls.medicine = Medicine.objects.create(
+            name="Returns medicine",
+            category=category,
+            manufacturer=manufacturer,
+            default_selling_price=Decimal("5.00"),
+        )
+
+    def _make_batch(self, *, batch_number="SRB-1", quantity="20.000", cost="4.0000"):
+        return MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number=batch_number,
+            expiry_date=timezone.localdate() + timezone.timedelta(days=180),
+            acquisition_cost_per_base_unit=Decimal(cost),
+            quantity_available_base=Decimal(quantity),
+            first_received_at=timezone.now(),
+            is_active=True,
+        )
+
+    def test_create_draft_snapshots_batch_cost_and_computes_totals(self):
+        batch = self._make_batch()
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Damaged on arrival",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("5.000"),
+                }
+            ],
+        )
+
+        self.assertEqual(supplier_return.status, ReturnStatus.DRAFT)
+        self.assertTrue(supplier_return.return_number.startswith("SRT-"))
+        line = supplier_return.lines.get()
+        self.assertEqual(line.unit_cost_snapshot, Decimal("4.0000"))
+        self.assertEqual(line.line_total, Decimal("20.00"))
+        self.assertEqual(supplier_return.return_total, Decimal("20.00"))
+        batch.refresh_from_db()
+        self.assertEqual(batch.quantity_available_base, Decimal("20.000"))
+
+    def test_create_draft_requires_active_supplier(self):
+        self.supplier.is_active = False
+        self.supplier.save(update_fields=["is_active"])
+        batch = self._make_batch()
+
+        with self.assertRaises(ValidationError):
+            create_draft_supplier_return(
+                actor=self.actor,
+                supplier=self.supplier,
+                reason="Damaged",
+                lines_data=[
+                    {
+                        "medicine": self.medicine,
+                        "batch": batch,
+                        "returned_quantity_base": Decimal("1.000"),
+                    }
+                ],
+            )
+
+    def test_post_supplier_return_deducts_exact_batch_and_records_movement(self):
+        batch = self._make_batch()
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Damaged on arrival",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("5.000"),
+                }
+            ],
+        )
+
+        posted = post_supplier_return(
+            actor=self.actor,
+            supplier_return_id=supplier_return.id,
+        )
+
+        self.assertEqual(posted.status, ReturnStatus.POSTED)
+        self.assertIsNotNone(posted.posted_at)
+        batch.refresh_from_db()
+        self.assertEqual(batch.quantity_available_base, Decimal("15.000"))
+        line = posted.lines.get()
+        movement = StockMovement.objects.get(source_line_id=line.id)
+        self.assertEqual(
+            movement.movement_type,
+            StockMovement.MovementType.SUPPLIER_RETURN,
+        )
+        self.assertEqual(movement.quantity_delta_base, Decimal("-5.000"))
+        self.assertEqual(movement.source_type, "SUPPLIER_RETURN")
+        self.assertEqual(movement.source_id, posted.id)
+        self.assertEqual(movement.reference_number, posted.return_number)
+
+    def test_post_supplier_return_two_lines_same_batch_accumulate_deduction(self):
+        batch = self._make_batch()
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Two lines, one batch",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("6.000"),
+                },
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("4.000"),
+                },
+            ],
+        )
+
+        post_supplier_return(actor=self.actor, supplier_return_id=supplier_return.id)
+
+        batch.refresh_from_db()
+        self.assertEqual(batch.quantity_available_base, Decimal("10.000"))
+        self.assertEqual(
+            StockMovement.objects.filter(source_id=supplier_return.id).count(),
+            2,
+        )
+
+    def test_post_supplier_return_rejects_a_non_draft_return(self):
+        batch = self._make_batch()
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Damaged",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("1.000"),
+                }
+            ],
+        )
+        post_supplier_return(actor=self.actor, supplier_return_id=supplier_return.id)
+
+        with self.assertRaises(ValidationError):
+            post_supplier_return(
+                actor=self.actor,
+                supplier_return_id=supplier_return.id,
+            )
+
+    def test_post_supplier_return_rejects_over_return_and_rolls_back_everything(self):
+        first_batch = self._make_batch(batch_number="SRB-OVER-1", quantity="5.000")
+        second_batch = self._make_batch(batch_number="SRB-OVER-2", quantity="2.000")
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Over-return attempt",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": first_batch,
+                    "returned_quantity_base": Decimal("5.000"),
+                },
+                {
+                    "medicine": self.medicine,
+                    "batch": second_batch,
+                    "returned_quantity_base": Decimal("3.000"),
+                },
+            ],
+        )
+
+        with self.assertRaises(InsufficientStockError):
+            post_supplier_return(
+                actor=self.actor,
+                supplier_return_id=supplier_return.id,
+            )
+
+        supplier_return.refresh_from_db()
+        self.assertEqual(supplier_return.status, ReturnStatus.DRAFT)
+        first_batch.refresh_from_db()
+        second_batch.refresh_from_db()
+        self.assertEqual(first_batch.quantity_available_base, Decimal("5.000"))
+        self.assertEqual(second_batch.quantity_available_base, Decimal("2.000"))
+        self.assertFalse(
+            StockMovement.objects.filter(source_id=supplier_return.id).exists()
+        )
+
+    def test_post_supplier_return_rejects_tampered_total(self):
+        batch = self._make_batch()
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Damaged",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("5.000"),
+                }
+            ],
+        )
+        SupplierReturn.objects.filter(pk=supplier_return.pk).update(
+            return_total=Decimal("999.99")
+        )
+
+        with self.assertRaises(ValidationError):
+            post_supplier_return(
+                actor=self.actor,
+                supplier_return_id=supplier_return.id,
+            )
+
+        batch.refresh_from_db()
+        self.assertEqual(batch.quantity_available_base, Decimal("20.000"))
+
+    def test_post_supplier_return_rechecks_permission_after_creation(self):
+        batch = self._make_batch()
+        supplier_return = create_draft_supplier_return(
+            actor=self.actor,
+            supplier=self.supplier,
+            reason="Damaged",
+            lines_data=[
+                {
+                    "medicine": self.medicine,
+                    "batch": batch,
+                    "returned_quantity_base": Decimal("1.000"),
+                }
+            ],
+        )
+        unauthorized_actor = get_user_model().objects.create_user(
+            username="unauthorized-returns-user"
+        )
+
+        with self.assertRaises(PermissionDenied):
+            post_supplier_return(
+                actor=unauthorized_actor,
+                supplier_return_id=supplier_return.id,
+            )
+
+
+@skipUnless(connection.vendor == "postgresql", "PostgreSQL row locks are required.")
+class ConcurrentSupplierReturnTests(TransactionTestCase):
+    def setUp(self):
+        self.actor = get_user_model().objects.create_user(username="returns-concurrent")
+        _grant(self.actor, "add_supplierreturn")
+        _grant(self.actor, "post_supplierreturn")
+        self.supplier = Supplier.objects.create(code="SUP-CC", name="Concurrent supplier")
+        category = Category.objects.create(name="Concurrent category")
+        manufacturer = Manufacturer.objects.create(name="Concurrent manufacturer")
+        self.medicine = Medicine.objects.create(
+            name="Concurrent medicine",
+            category=category,
+            manufacturer=manufacturer,
+            default_selling_price=Decimal("5.00"),
+        )
+        self.batch = MedicineBatch.objects.create(
+            medicine=self.medicine,
+            batch_number="SRB-CONC",
+            expiry_date=timezone.localdate() + timezone.timedelta(days=180),
+            acquisition_cost_per_base_unit=Decimal("4.0000"),
+            quantity_available_base=Decimal("10.000"),
+            first_received_at=timezone.now(),
+            is_active=True,
+        )
+
+    def test_two_full_batch_returns_cannot_both_post(self):
+        returns = [
+            create_draft_supplier_return(
+                actor=self.actor,
+                supplier=self.supplier,
+                reason=f"Concurrent return {index}",
+                lines_data=[
+                    {
+                        "medicine": self.medicine,
+                        "batch": self.batch,
+                        "returned_quantity_base": Decimal("10.000"),
+                    }
+                ],
+            )
+            for index in range(2)
+        ]
+        outcomes = []
+        barrier = threading.Barrier(2)
+
+        def attempt(supplier_return_id):
+            try:
+                barrier.wait(timeout=5)
+                post_supplier_return(
+                    actor=self.actor,
+                    supplier_return_id=supplier_return_id,
+                )
+                outcomes.append("posted")
+            except InsufficientStockError:
+                outcomes.append("insufficient")
+            except Exception as error:  # pragma: no cover - asserted below
+                outcomes.append(f"unexpected:{type(error).__name__}:{error}")
+            finally:
+                connections.close_all()
+
+        threads = [
+            threading.Thread(target=attempt, args=(supplier_return.id,))
+            for supplier_return in returns
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertCountEqual(outcomes, ["posted", "insufficient"])
+        self.batch.refresh_from_db()
+        self.assertEqual(self.batch.quantity_available_base, Decimal("0.000"))
+        self.assertEqual(
+            SupplierReturn.objects.filter(status=ReturnStatus.POSTED).count(),
+            1,
+        )
