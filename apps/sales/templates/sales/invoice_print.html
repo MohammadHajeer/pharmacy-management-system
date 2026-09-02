@@ -4,6 +4,7 @@
 {% block extra_head %}<link rel="stylesheet" href="{% static 'sales/print.css' %}">{% endblock %}
 {% block body %}
 <main class="sales-print {% if receipt %}sales-receipt{% endif %}">
+  <img class="sales-print-watermark" src="{% static 'logo.png' %}" alt="" aria-hidden="true">
   <nav class="sales-print-controls mb-6 flex flex-wrap gap-2" aria-label="Print actions"><span data-print-button>{% include "components/button.html" with text="Print" flat=True %}</span>{% url 'sales:invoice-detail' invoice.pk as detail_url %}{% include "components/button.html" with text="Back to invoice" href=detail_url variant="outline" flat=True %}</nav>
   <article class="rounded-workspace border border-line bg-surface p-5 sm:p-8">
     <header class="border-b border-line pb-5"><p class="operational-kicker">{% if receipt %}Sales receipt{% else %}Sales invoice{% endif %}</p><h1 class="mt-2 text-2xl font-semibold">{{ invoice.pharmacy_name_snapshot }}</h1>{% if pharmacy %}<p class="mt-2 whitespace-pre-line text-sm text-muted">{{ pharmacy.address }}</p><p class="text-sm text-muted">{{ pharmacy.phone }}{% if pharmacy.email %} · {{ pharmacy.email }}{% endif %}</p>{% if pharmacy.invoice_header %}<p class="mt-3 whitespace-pre-line text-sm">{{ pharmacy.invoice_header }}</p>{% endif %}{% endif %}</header>
