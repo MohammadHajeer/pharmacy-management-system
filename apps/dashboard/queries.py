@@ -146,7 +146,7 @@ def _inventory_context(user, today):
             "detail": f"Expiry {batch.expiry_date:%d %b %Y} · {batch.quantity_available_base:,.3f} base units remaining",
             "status": "Expired" if expired else "Near expiry",
             "status_variant": "destructive" if expired else "warning", "group": "Expiry",
-            # There is no batch registry/detail route yet; do not invent a link.
+            "url": reverse("inventory:batch-detail", args=[batch.pk]) if user.has_perm("inventory.view_medicinebatch") else None,
         })
     return {
         "inventory_metrics": stock, "stock_chart_data": stock_chart,

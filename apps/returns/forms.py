@@ -4,8 +4,11 @@ from django import forms
 from django.utils import timezone
 
 from apps.core.models import PaymentMethod
+from apps.catalog.models import Medicine
 from apps.inventory.models import MedicineBatch
-from apps.sales.models import SalesInvoiceLine
+from apps.parties.models import Supplier
+from apps.purchasing.models import PurchaseInvoice
+from apps.sales.models import SalesInvoice, SalesInvoiceLine
 
 from .models import CustomerRefund, CustomerReturnLine
 
@@ -21,7 +24,9 @@ class CustomerReturnHeaderForm(forms.Form):
     it from ``sales_invoice`` instead of trusting separate input.
     """
 
-    sales_invoice = forms.UUIDField()
+    sales_invoice = forms.ModelChoiceField(
+        queryset=SalesInvoice.objects.filter(status=SalesInvoice.Status.COMPLETED)
+    )
     reason = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}))
 
 
@@ -71,6 +76,63 @@ CustomerReturnLineFormSet = forms.formset_factory(
 )
 
 
+class SupplierReturnHeaderForm(forms.Form):
+    supplier = forms.ModelChoiceField(queryset=Supplier.objects.filter(is_active=True))
+    purchase_invoice = forms.ModelChoiceField(
+        queryset=PurchaseInvoice.objects.select_related("supplier").all(),
+        required=False,
+    )
+    reason = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        supplier = cleaned_data.get("supplier")
+        purchase_invoice = cleaned_data.get("purchase_invoice")
+        if supplier and purchase_invoice and purchase_invoice.supplier_id != supplier.pk:
+            self.add_error(
+                "purchase_invoice",
+                "The purchase invoice must belong to the selected supplier.",
+            )
+        return cleaned_data
+
+
+class SupplierReturnLineForm(forms.Form):
+    medicine = forms.ModelChoiceField(queryset=Medicine.objects.all())
+    batch = forms.ModelChoiceField(
+        queryset=MedicineBatch.objects.select_related("medicine").filter(
+            quantity_available_base__gt=ZERO_QUANTITY
+        )
+    )
+    returned_quantity_base = forms.DecimalField(
+        max_digits=14,
+        decimal_places=3,
+        min_value=Decimal("0.001"),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        medicine = cleaned_data.get("medicine")
+        batch = cleaned_data.get("batch")
+        quantity = cleaned_data.get("returned_quantity_base")
+        if medicine and batch and batch.medicine_id != medicine.pk:
+            self.add_error("batch", "The batch must belong to the selected medicine.")
+        if batch and quantity and quantity > batch.quantity_available_base:
+            self.add_error(
+                "returned_quantity_base",
+                f"Only {batch.quantity_available_base} base units are currently available.",
+            )
+        return cleaned_data
+
+
+SupplierReturnLineFormSet = forms.formset_factory(
+    SupplierReturnLineForm,
+    extra=1,
+    can_delete=True,
+    min_num=1,
+    validate_min=True,
+)
+
+
 class CustomerRefundForm(forms.ModelForm):
     """Validates a refund before ``services.process_customer_refund``.
 
@@ -89,7 +151,9 @@ class CustomerRefundForm(forms.ModelForm):
             is_active=True
         ).order_by("name", "id")
         if not self.is_bound and not self.initial.get("refunded_at"):
-            self.initial["refunded_at"] = timezone.now()
+            self.initial["refunded_at"] = timezone.localtime(timezone.now()).strftime(
+                "%Y-%m-%dT%H:%M"
+            )
 
     def clean_amount(self):
         amount = self.cleaned_data.get("amount")

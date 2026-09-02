@@ -1,0 +1,4 @@
+<nav class="flex flex-wrap gap-5 border-b border-line" aria-label="Inventory views">
+  {% if perms.inventory.view_medicinebatch %}<a href="{% url 'inventory:batch-list' %}" class="border-b-2 px-1 pb-3 text-sm font-semibold {% if request.resolver_match.url_name == 'batch-list' or request.resolver_match.url_name == 'batch-detail' %}border-primary-600 text-accent{% else %}border-transparent text-muted hover:text-ink{% endif %}">Batches & stock</a>{% endif %}
+  {% if perms.inventory.view_stockmovement %}<a href="{% url 'inventory:movement-list' %}" class="border-b-2 px-1 pb-3 text-sm font-semibold {% if request.resolver_match.url_name == 'movement-list' %}border-primary-600 text-accent{% else %}border-transparent text-muted hover:text-ink{% endif %}">Movement history</a>{% endif %}
+</nav>

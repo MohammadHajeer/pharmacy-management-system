@@ -17,7 +17,7 @@
       class="block h-11 w-full appearance-none rounded-xl border bg-surface py-0 pl-3.5 pr-10 text-sm text-ink outline-none disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-muted {% if error %}border-red-500 focus:border-red-600 focus:ring-2 focus:ring-negative-ring{% else %}border-line hover:border-line-strong focus:border-primary-600 focus:ring-2 focus:ring-accent-tint{% endif %}"
     >
       {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
-      {% for option in options %}<option value="{{ option.value }}" {% if option.value == value %}selected{% endif %} {% if option.disabled %}disabled{% endif %}>{{ option.label }}</option>{% endfor %}
+      {% for option in options %}{% firstof option.value option.0 as option_value %}{% firstof option.label option.1 as option_label %}<option value="{{ option_value }}" {% if option_value == value %}selected{% endif %} {% if option.disabled %}disabled{% endif %}>{{ option_label }}</option>{% endfor %}
     </select>
     <span data-custom-select-native-icon>
       {% include "components/icon.html" with name="chevron-down" class="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" only %}
@@ -40,7 +40,7 @@
         {% if disabled %}disabled{% endif %}
       >
         <span id="{{ field_id }}-value" class="min-w-0 truncate" data-custom-select-value>
-          {% if placeholder and not value %}{{ placeholder }}{% else %}{% for option in options %}{% if option.value == value %}{{ option.label }}{% endif %}{% endfor %}{% endif %}
+          {% if placeholder and not value %}{{ placeholder }}{% else %}{% for option in options %}{% firstof option.value option.0 as option_value %}{% firstof option.label option.1 as option_label %}{% if option_value == value %}{{ option_label }}{% endif %}{% endfor %}{% endif %}
         </span>
         {% include "components/icon.html" with name="chevron-down" class="size-4 shrink-0 text-faint transition-transform duration-150" only %}
       </button>
@@ -53,8 +53,9 @@
             </button>
           {% endif %}
           {% for option in options %}
-            <button id="{{ field_id }}-option-{{ forloop.counter }}" type="button" role="option" class="flex min-h-9 w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-sm outline-none {% if option.disabled %}cursor-not-allowed text-faint{% else %}text-body hover:bg-surface-hover focus-visible:bg-surface-hover{% endif %}" data-custom-select-option data-value="{{ option.value }}" aria-selected="{% if option.value == value %}true{% else %}false{% endif %}" {% if option.disabled %}aria-disabled="true" disabled{% endif %} tabindex="-1">
-              <span class="truncate">{{ option.label }}</span><span class="size-1.5 shrink-0 rounded-full bg-primary-600 {% if option.value != value %}hidden{% endif %}" data-custom-select-indicator></span>
+            {% firstof option.value option.0 as option_value %}{% firstof option.label option.1 as option_label %}
+            <button id="{{ field_id }}-option-{{ forloop.counter }}" type="button" role="option" class="flex min-h-9 w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-sm outline-none {% if option.disabled %}cursor-not-allowed text-faint{% else %}text-body hover:bg-surface-hover focus-visible:bg-surface-hover{% endif %}" data-custom-select-option data-value="{{ option_value }}" aria-selected="{% if option_value == value %}true{% else %}false{% endif %}" {% if option.disabled %}aria-disabled="true" disabled{% endif %} tabindex="-1">
+              <span class="truncate">{{ option_label }}</span><span class="size-1.5 shrink-0 rounded-full bg-primary-600 {% if option_value != value %}hidden{% endif %}" data-custom-select-indicator></span>
             </button>
           {% endfor %}
         </div>

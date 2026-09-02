@@ -7,5 +7,6 @@ app_name = "prescriptions"
 urlpatterns = [
     path("", views.prescription_list, name="list"),
     path("new/", views.prescription_create, name="create"),
+    path("<uuid:pk>/edit/", views.prescription_update, name="update"),
     path("<uuid:pk>/", views.prescription_detail, name="detail"),
 ]

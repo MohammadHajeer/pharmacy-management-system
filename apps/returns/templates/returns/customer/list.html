@@ -1,0 +1,23 @@
+{% extends "layouts/dashboard.html" %}
+{% block title %}Customer returns · PHARMANEX{% endblock %}
+{% block content %}
+<div class="workspace-container space-y-5">
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div><p class="operational-kicker">Returns & refunds</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-ink-strong">Customer returns</h1><p class="mt-2 text-sm leading-6 text-muted">Review returns against completed sales and track posted refund value.</p></div>
+    {% if perms.returns.add_customerreturn and perms.returns.add_customerreturnline %}{% url 'returns:customer-return-create' as create_url %}{% include "components/button.html" with text="New customer return" href=create_url variant="primary" flat=True only %}{% endif %}
+  </header>
+  {% include "returns/_navigation.html" %}
+  <section class="workspace-surface">
+    {% url 'returns:customer-return-list' as clear_url %}
+    {% include "components/registry_filters.html" with clear_url=clear_url search_label="Search customer returns" search_placeholder="Return, invoice, customer or code" %}
+    <header class="flex flex-wrap items-center justify-between gap-2 px-5 py-4"><h2 class="text-sm font-semibold text-ink">Customer return ledger</h2><span class="text-xs text-muted">Newest first</span></header>
+    {% if invalid_filter %}<p class="px-5 pb-4 text-sm text-caution" role="alert">That status filter is invalid. Clear filters to see all returns.</p>{% endif %}
+    {% if customer_returns %}
+      <div class="ledger-scroll" tabindex="0" role="region" aria-label="Customer return ledger"><table class="ledger-table min-w-200"><caption class="sr-only">Customer returns and refund progress</caption><thead><tr><th>Return / invoice</th><th>Customer</th><th>Status</th><th class="ledger-number">Return total</th><th class="ledger-number">Refunded</th><th>Processed</th><th><span class="sr-only">Action</span></th></tr></thead><tbody>
+      {% for item in customer_returns %}<tr><td><a class="registry-link text-xs" href="{% url 'returns:customer-return-detail' item.pk %}">{{ item.return_number }}</a><p class="mt-1 text-xs text-muted">{{ item.sales_invoice.invoice_number }}</p></td><td>{{ item.customer.name|default:item.sales_invoice.customer_name_snapshot|default:"Walk-in" }}</td><td>{% if item.status == 'POSTED' %}{% include "components/badge.html" with text="Posted" variant="success" only %}{% elif item.status == 'VOID' %}{% include "components/badge.html" with text="Void" variant="destructive" only %}{% else %}{% include "components/badge.html" with text="Draft" variant="warning" only %}{% endif %}</td><td class="ledger-number font-medium text-ink">{{ item.return_total|floatformat:2 }}</td><td class="ledger-number">{{ item.refunded_total|default:"0.00"|floatformat:2 }}</td><td><span class="whitespace-nowrap text-xs">{{ item.created_at|date:"d M Y, H:i" }}</span><p class="mt-1 text-xs text-muted">{{ item.processed_by.get_full_name|default:item.processed_by.username }}</p></td><td><a class="registry-link text-xs" href="{% url 'returns:customer-return-detail' item.pk %}">View</a></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% include "components/pagination.html" with label="customer returns" %}
+    {% else %}<div class="p-5"><div class="operational-empty"><h2 class="font-semibold text-ink-soft">No customer returns found</h2><p class="mt-1 text-sm text-muted">Adjust the filters or create a return against a completed sale.</p></div></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

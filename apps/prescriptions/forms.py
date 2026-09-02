@@ -5,6 +5,11 @@ from .models import Prescription, PrescriptionItem
 
 
 class PrescriptionForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound and self.instance.prescription_date:
+            self.initial["prescription_date"] = self.instance.prescription_date.isoformat()
+
     class Meta:
         model = Prescription
         fields = (

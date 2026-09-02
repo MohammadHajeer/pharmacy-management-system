@@ -1,0 +1,8 @@
+<nav class="flex flex-wrap gap-5 border-b border-line" aria-label="Return workflows">
+  {% if perms.returns.view_customerreturn %}
+    <a href="{% url 'returns:customer-return-list' %}" class="border-b-2 px-1 pb-3 text-sm font-semibold {% if returns_section == 'customer' %}border-primary-600 text-accent{% else %}border-transparent text-muted hover:text-ink{% endif %}" {% if returns_section == 'customer' %}aria-current="page"{% endif %}>Customer returns</a>
+  {% endif %}
+  {% if perms.returns.view_supplierreturn %}
+    <a href="{% url 'returns:supplier-return-list' %}" class="border-b-2 px-1 pb-3 text-sm font-semibold {% if returns_section == 'supplier' %}border-primary-600 text-accent{% else %}border-transparent text-muted hover:text-ink{% endif %}" {% if returns_section == 'supplier' %}aria-current="page"{% endif %}>Supplier returns</a>
+  {% endif %}
+</nav>
