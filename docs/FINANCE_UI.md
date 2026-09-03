@@ -64,9 +64,10 @@ Sales currently exposes POS JSON routes, not a sales invoice detail template.
 Finance therefore provides its own scoped sales-invoice financial context and
 invoice selector; no sales document/POS redesign is introduced.
 
-Statement queries are not implemented by the finance backend. No statements,
-ledger accounting, refunds, new payment states, approvals, editing, or deletion
-are exposed.
+Derived customer/supplier statement and invoice-search queries are available in
+`apps.finance.queries`. They remain read-only and are not yet exposed through
+Finance routes or templates. No ledger accounting, new payment states,
+approvals, editing, or deletion are exposed.
 
 ## Verification
 
