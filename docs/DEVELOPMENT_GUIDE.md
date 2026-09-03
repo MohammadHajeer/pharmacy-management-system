@@ -183,7 +183,7 @@ $env:DEV_AUTH_PASSWORD = "use-a-unique-local-password"
 uv run manage.py seed_dev_auth
 ```
 
-The command creates/fetches the four users/groups and assigns `finance.view_financial_reports` only to Owner / Admin and Accountant. It intentionally does not yet assign the remaining business permissions. Use the local admin at `http://127.0.0.1:8000/admin/` to attach the other permissions needed for the feature under test until deterministic permission provisioning is implemented. Test Owner/Admin as a normal group member, not only as a superuser, because the approved design grants full business access through group permissions.
+The command creates/fetches the four users/groups, grants Owner / Admin every permission in the approved capability registry, and assigns `finance.view_financial_reports` to Accountant. It intentionally does not yet seed the remaining operational-role permissions. An Owner/Admin can configure those permissions in the Roles & Permissions workspace (or through Django admin during development) until the team lead approves deterministic defaults. Test Owner/Admin as a normal group member, not only as a superuser, because the approved design grants full business access through group permissions.
 
 Use clearly fake data and unique local passwords. Never commit credentials, `.env` files, or `db.sqlite3`, and do not depend on another developer's local database. Automated tests must create their own users, groups, permissions, and records.
 

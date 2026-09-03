@@ -1,24 +1,23 @@
 # Repository Implementation Context
 
-This document records the current application foundation and Phase 1 schema scaffold so architecture, implementation, and AI-assisted work preserve what is already built. Repository facts are authoritative; planned behavior that is not implemented is identified explicitly.
+This document records the current Phase 1 application so architecture, implementation, and AI-assisted work preserve what is already built. Repository facts are authoritative; behavior not technically verified is identified explicitly.
 
 ## 1. Repository snapshot inspected
 
 - Repository: `https://github.com/MohammadHajeer/pharmacy-management-system.git`
 - Branch: `main`
-- Implementation commit: `5a4a98bfe9be324128dcfcdd47e39a90c38ee5b5`
-- Commit date: `2026-08-28T23:28:38+03:00`
-- Commit subject: `feat(auth): enhance login experience with toast notifications for errors`
-- Inspection date: 2026-08-29
-- Reconciliation date: 2026-08-29
-- Reconciliation scope: targeted Phase 1 unit economics, stock-traceability constraints, invoice-versus-statement balance rules, and finance-owned report permission
-- Database state: on 2026-08-29, read-only verification confirmed all repository migrations applied on Neon; `migrate --plan` reported no planned operations
+- Implementation commit: `2db2a4e2465151cc2ca3f56af83afcfa5e98a8d4`
+- Commit date: `2026-09-03`
+- Commit subject: `feat(finance): add derived statement queries`
+- Inspection and reconciliation date: 2026-09-03
+- Reconciliation scope: final Phase 1 repository, domain workflows, UI/routes, deployment configuration, migrations, and operational documentation
+- Database state: `showmigrations --plan` on 2026-09-03 confirmed every repository migration applied on the configured Neon database; `makemigrations --check --dry-run` reported no model drift
 
-The implementation snapshot remains valid when a later commit changes only documentation. Secrets are not reproduced here. The tracked settings file currently contains development-only values; see the risks section.
+The implementation snapshot remains valid when a later commit changes only documentation. Secrets are not reproduced here. Local and production settings are deliberately separate; see the configuration and risks sections.
 
 ### Maturity assessment
 
-The project is **M1 (foundation with an approved schema scaffold)**. Authentication, navigation, shared UI, domain apps, baseline models, migrations, and model-level tests exist. Most transactional services, forms, routed feature workflows, real dashboard queries, and end-to-end tests do not yet exist. Cross-app financial and inventory work remains architecture-sensitive.
+The project is **M3 (implementation-heavy)**. Authentication, permission administration, navigation, shared UI, domain models/migrations, transactional services, routed workflows, live dashboard/report queries, deployment configuration, and extensive domain tests exist. Cross-app stock and finance behavior remains architecture-sensitive. The final representative end-to-end technical gate (`E1-T07`) was explicitly deferred on 2026-09-03 and must not be described as passed.
 
 ## 2. Exact relevant tree
 
@@ -31,39 +30,46 @@ pharmacy-management-system/
 ├── uv.lock
 ├── package.json
 ├── package-lock.json
+├── Dockerfile
+├── build.sh
 ├── apps/
 │   ├── accounts/
 │   │   ├── management/commands/seed_dev_auth.py
-│   │   ├── templates/accounts/login.html
-│   │   ├── tests.py
+│   │   ├── permissions.py, services.py, forms.py
+│   │   ├── templates/accounts/{login,staff,permissions}/
+│   │   ├── tests.py, test_administration.py
 │   │   ├── urls.py
 │   │   └── views.py
 │   ├── dashboard/
-│   │   ├── templates/dashboard/index.html
-│   │   ├── tests.py
+│   │   ├── queries.py
+│   │   ├── templates/dashboard/
+│   │   ├── tests.py, test_queries.py, test_template_integrity.py
 │   │   ├── urls.py
 │   │   └── views.py
-│   ├── core/                  # models, admin, tests, migrations/0001_initial.py
-│   ├── catalog/               # models/admin/tests/unit-economics helper plus URLs/view/medicine-list template
-│   ├── parties/               # models, admin, tests, migrations/0001_initial.py
-│   ├── inventory/             # models, admin, tests, migrations/0001 and 0002 constraint
-│   ├── purchasing/            # models, admin, tests, migrations/0001_initial.py
-│   ├── prescriptions/         # models, admin, tests, migrations/0001_initial.py
-│   ├── sales/                 # models, admin, tests, migrations/0001 and 0002 constraint
-│   ├── finance/               # models, admin, tests, migrations/0001 and 0002 permission
-│   ├── returns/               # models/admin/tests plus migrations/0001 and 0002
-│   └── reports/               # placeholder app; no business models
+│   ├── dashboard_preview/     # isolated presentation-only comparison route
+│   ├── core/                  # settings workflows, document numbers, pagination, UI, tests, migration 0001
+│   ├── catalog/               # catalog workflows/UI, unit economics, tests, migration 0001
+│   ├── parties/               # supplier/customer/prescriber workflows/UI, tests, migration 0001
+│   ├── inventory/             # authoritative stock/FEFO services, UI, demo commands, tests, migrations 0001–0002
+│   ├── purchasing/            # purchase draft/posting services and UI, tests, migration 0001
+│   ├── prescriptions/         # prescription services/queries/UI, tests, migration 0001
+│   ├── sales/                 # POS/completion/invoice services/UI, tests, migrations 0001–0002
+│   ├── finance/               # payment and statement services/queries/UI, tests, migrations 0001–0002
+│   ├── returns/               # customer/supplier return and refund services/UI, tests, migrations 0001–0002
+│   └── reports/               # derived read-only report queries/UI; no business models
 ├── config/
 │   ├── context_processors.py
 │   ├── navigation.py
 │   ├── settings.py
+│   ├── settings_production.py
 │   ├── urls.py
+│   ├── urls_production.py
 │   ├── visual_test_settings.py
 │   ├── asgi.py
 │   └── wsgi.py
 ├── assets/css/input.css
 ├── static/
-│   ├── js/{form-submit,modal,sidebar,toast}.js
+│   ├── js/{custom-select,dashboard-charts,form-dirty-state,form-submit,modal,navigation-loading,registry-filters,settings-index,sidebar,theme,toast}.js
 │   ├── logo-icon.png
 │   ├── logo-white.png
 │   └── logo.png
@@ -71,7 +77,7 @@ pharmacy-management-system/
 │   ├── base.html
 │   ├── home.html
 │   ├── layouts/{auth,dashboard}.html
-│   └── components/{badge,button,card,input,modal,select,sidebar,textarea,toast,topbar}.html
+│   └── components/{badge,button,card,checkbox,icon,input,modal,navigation_loading,pagination,registry_filters,select,sidebar,textarea,theme_init,theme_toggle,toast,topbar}.html
 └── docs/
     ├── BACKUP_RUNBOOK.md
     ├── BRD.md
@@ -79,10 +85,17 @@ pharmacy-management-system/
     ├── DEVELOPMENT_GUIDE.md
     ├── ERD.md
     ├── JIRA_BACKLOG.csv
+    ├── DEPLOYMENT.md
+    ├── DEMO_DATA.md
+    ├── REPORTS.md
+    ├── SALES_UI.md
+    ├── FINANCE_UI.md
+    ├── TEAM_DASHBOARD.html
+    ├── task-status/
     └── REPO_IMPLEMENTATION_CONTEXT.md
 ```
 
-Every listed app uses `name = "apps.<app>"`. Only `accounts`, `dashboard`, and `catalog` currently expose URLconfs; only `catalog` has a routed Phase 1 business page.
+Every listed app uses `name = "apps.<app>"`. All Phase 1 owning apps expose namespaced URLconfs from `config.urls`; `dashboard_preview` is isolated and presentation-only.
 
 ## 3. Current stack and versions
 
@@ -94,8 +107,10 @@ Every listed app uses `name = "apps.<app>"`. Only `accounts`, `dashboard`, and `
 | PostgreSQL driver       | `psycopg 3.3.4` with binary extra                     |
 | Environment loading     | `python-dotenv 1.2.3`                                 |
 | Development reload      | `django-browser-reload 1.21.0`                        |
+| Production server/static | `gunicorn 26.2.0`; `whitenoise 6.12.0`               |
 | CSS                     | Tailwind CSS and `@tailwindcss/cli 4.3.3`             |
 | Frontend process runner | `concurrently 10.0.5`                                 |
+| Charts                   | Chart.js 4.5.1                                         |
 | Templates/forms/ORM     | Django built-ins                                      |
 | Browser behavior        | Vanilla JavaScript only                               |
 | Python tooling          | `uv` and `uv.lock`                                    |
@@ -115,7 +130,7 @@ No DRF, SPA framework, HTMX, Alpine.js, Bootstrap, task queue, Redis, or alterna
 - `/dashboard/` is protected by `login_required` and `never_cache`.
 - The Django admin remains at `/admin/`.
 
-Password reset/change, registration, invitations, MFA, login throttling, and custom staff-management screens are not implemented.
+Self-service password reset/change, public registration, invitations, MFA, and login throttling are not implemented. Owner/Admin staff-account and role-permission administration screens are implemented.
 
 ### Groups and permissions
 
@@ -126,9 +141,9 @@ The exact groups are:
 3. `Inventory Manager`
 4. `Accountant`
 
-`seed_dev_auth` creates/fetches local users `owner`, `pharmacist`, `inventory`, and `accountant`, using `DEV_AUTH_PASSWORD`, and attaches each user to its group. It assigns only `finance.view_financial_reports` to Owner / Admin and Accountant, does not yet assign the remaining model/custom permissions, and does not make `owner` a superuser.
+`seed_dev_auth` creates/fetches local users `owner`, `pharmacist`, `inventory`, and `accountant`, using `DEV_AUTH_PASSWORD`, and attaches each user to its group. It grants Owner / Admin every permission in the approved capability registry and grants `finance.view_financial_reports` to Accountant. It intentionally does not seed the rest of the operational-role matrix and does not make `owner` a superuser.
 
-The approved BRD chooses **full group permissions** for Owner/Admin, not reliance on `is_superuser`. Permission provisioning is therefore still an implementation task.
+The approved BRD chooses **full group permissions** for Owner/Admin, not reliance on `is_superuser`. Owner/Admin permissions are deterministic; the final default operational-role permission assignment remains a documented team-lead decision.
 
 `config.context_processors.dashboard_navigation` filters configured items through `request.user.has_perm()`, safely handles unavailable routes, and determines active state by namespace. Navigation visibility is not an authorization boundary; every protected view/action must enforce permissions server-side.
 
@@ -145,24 +160,24 @@ returns.process_refund
 finance.view_financial_reports
 ```
 
-`finance.view_financial_reports` is declared on `CustomerPayment`, avoiding a fake persistent reports model. The Reports navigation item uses this permission. Approved group provisioning grants it to Owner / Admin and Accountant only; deterministic provisioning of the complete role matrix remains an implementation task.
+`finance.view_financial_reports` is declared on `CustomerPayment`, avoiding a fake persistent reports model. Protected financial reports require it. Seed provisioning grants it to Owner / Admin and Accountant only; other operational capabilities are managed through the implemented Owner/Admin permission matrix until a deterministic default is approved.
 
 ## 5. App and module boundaries
 
 | App             | Current implementation boundary                                                                                               |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `accounts`      | Login/logout, auth tests, and development user/group seed command; no project-owned model                                     |
-| `dashboard`     | Authenticated dashboard shell with permission-filtered illustrative data; no project-owned model                              |
-| `core`          | `PharmacySettings`, `TaxRate`, `PaymentMethod` models and initial migration                                                   |
-| `catalog`       | Medicine master-data models plus the implemented medicine-list route/view/template                                            |
-| `parties`       | `Supplier`, `Customer`, `Prescriber` models and initial migration                                                             |
-| `inventory`     | `MedicineBatch`, append-style `StockMovement`, constraints/indexes; transactional services not yet implemented                |
-| `purchasing`    | `PurchaseInvoice`, `PurchaseInvoiceLine`, custom posting permission; posting service/UI not yet implemented                   |
-| `prescriptions` | `Prescription`, `PrescriptionItem`; routed workflows not yet implemented                                                      |
-| `sales`         | `SalesInvoice`, `SalesInvoiceLine`, `SaleBatchAllocation`, completion permission; POS/completion services not yet implemented |
-| `finance`       | Customer/supplier payment models and posting permissions; balance services not yet implemented                                |
-| `returns`       | Customer/supplier returns and customer refund models; posting/refund services not yet implemented                             |
-| `reports`       | Placeholder app with no transaction models; report queries/views not yet implemented                                          |
+| `accounts`      | Login/logout plus Owner/Admin staff and permission administration; no project-owned model |
+| `dashboard`     | Authenticated, permission-scoped live operational and commercial analytics; no project-owned model |
+| `core`          | Settings/tax/payment-method workflows, UUID document numbering, and shared pagination |
+| `catalog`       | Medicine/category/manufacturer/unit/barcode master-data workflows and unit economics |
+| `parties`       | Supplier, customer, and prescriber master-data workflows |
+| `inventory`     | Authoritative FEFO/stock mutation services, batch/movement visibility, and guarded demo data |
+| `purchasing`    | Purchase-invoice draft and atomic posting/receiving workflows |
+| `prescriptions` | Lightweight prescription workflows and POS warning query contract |
+| `sales`         | POS lookup/drafts, atomic FEFO completion, invoice registry/detail/print, and allocations |
+| `finance`       | Customer/supplier payment posting/reversal, invoice balances, and derived statements |
+| `returns`       | Customer returns/refunds and exact-batch supplier-return workflows |
+| `reports`       | Permission-scoped derived report queries and UI; no transaction models |
 
 Do not create duplicate apps named after navigation labels. `catalog` owns Medicines; `parties` owns Suppliers and Customers; `sales`/`purchasing` own invoices; `finance` owns Payments; and `core` owns Settings.
 
@@ -174,7 +189,7 @@ Do not create duplicate apps named after navigation labels. `catalog` owns Medic
 - Shared components live in `templates/components/`; `docs/COMPONENTS.md` is their usage contract.
 - Shared JavaScript uses small `DOMContentLoaded` modules and `data-*` hooks.
 - `assets/css/input.css` is the Tailwind source. `static/css/output.css` is generated, ignored, and must never be edited manually.
-- The dashboard currently displays explicit illustrative values filtered by permission. It is not yet connected to live pharmacy queries.
+- The operational dashboard uses live, permission-scoped queries. The separate `/dashboard-preview/` route remains an intentionally illustrative design-comparison artifact.
 
 Current navigation mapping:
 
@@ -189,12 +204,14 @@ Current navigation mapping:
 | Prescriptions     | `prescriptions` | `prescriptions.view_prescription` |
 | Purchases         | `purchasing`    | `purchasing.view_purchaseinvoice` |
 | Invoices          | `sales`         | `sales.view_salesinvoice`         |
-| Payments          | `finance`       | `finance.view_customerpayment`    |
-| Returns & Refunds | `returns`       | `returns.view_customerreturn`     |
-| Reports           | `reports`       | `finance.view_financial_reports`  |
+| Payments          | `finance`       | either customer- or supplier-payment view permission |
+| Returns & Refunds | `returns`       | either customer- or supplier-return view permission |
+| Reports           | `reports`       | any permission for an available report |
 | Settings          | `core`          | `core.change_pharmacysettings`    |
+| Staff Accounts    | `accounts`      | Owner/Admin plus `auth.view_user` |
+| Roles & Permissions | `accounts`    | Owner/Admin plus `auth.view_group` |
 
-Most non-catalog business links remain disabled because their `url_name` is `None`.
+All Phase 1 business navigation destinations are routed. Navigation remains permission-filtered and each view repeats its server-side authorization checks.
 
 ## 7. Database and configuration conventions
 
@@ -203,8 +220,8 @@ Most non-catalog business links remain disabled because their `url_name` is `Non
 - `.env`, `.env.*`, and `db.sqlite3` are ignored. `.env.example`/`.env.template` would be allowed but neither currently exists.
 - `config.visual_test_settings` is a SQLite-only visual-test override, not the normal settings module.
 - `USE_TZ = True` and `TIME_ZONE = "UTC"`; UTC is the explicit Phase 1 business timezone in the BRD/ERD.
-- Static assets use `STATIC_URL` plus `STATICFILES_DIRS`. No application media/upload configuration is present.
-- The settings file currently has `DEBUG = True`, empty `ALLOWED_HOSTS`, and a hard-coded development secret key. These are development-only and must be environment-driven before deployment.
+- Local static assets use `STATIC_URL` plus `STATICFILES_DIRS`. No application media/upload workflow is enabled.
+- `config.settings` remains development-only. `config.settings_production` requires environment-provided secret, hosts, trusted origins, and `DATABASE_URL`, disables debug/browser reload, enables secure cookies/HSTS, and serves collected static files through WhiteNoise. Render and local Docker procedures are documented in `docs/DEPLOYMENT.md`.
 
 ## 8. Existing models and migrations
 
@@ -236,7 +253,10 @@ Follow-up migrations define uniqueness of `(sales_invoice_line, batch)` for sale
 - The shared modal provides focus trapping, Escape/backdrop close, focus restoration, and confirmed POST actions.
 - Django messages feed accessible toast notifications.
 - Model `TextChoices`, `CheckConstraint`, `UniqueConstraint`, and named indexes are preferred over undocumented magic values.
-- Business transaction services are not established yet; implement them deliberately rather than putting cross-record posting logic into views or model `save()` methods.
+- `apps.inventory.services` is the sole stock-mutation boundary; purchasing, sales, and returns delegate to it inside atomic transactions.
+- `apps.core.document_numbers` owns deterministic UUID-derived document numbers.
+- `apps.catalog.unit_economics` owns approved quantity and unit-price/cost conversions.
+- Finance services own payment-only invoice balances; statement and report queries remain derived and read-only.
 
 ## 10. Integration constraints for Phase 1 features
 
@@ -265,9 +285,13 @@ Follow-up migrations define uniqueness of `(sales_invoice_line, batch)` for sale
 
 ### Before authentication or authorization changes
 
+- `apps/accounts/permissions.py`
+- `apps/accounts/services.py`
+- `apps/accounts/forms.py`
 - `apps/accounts/views.py`
 - `apps/accounts/urls.py`
 - `apps/accounts/tests.py`
+- `apps/accounts/test_administration.py`
 - `apps/accounts/management/commands/seed_dev_auth.py`
 - `config/context_processors.py`
 - `config/navigation.py`
@@ -295,26 +319,29 @@ Follow-up migrations define uniqueness of `(sales_invoice_line, batch)` for sale
 ### Before settings, database, or deployment changes
 
 - `docs/BACKUP_RUNBOOK.md`
+- `docs/DEPLOYMENT.md`
 - `config/settings.py`
+- `config/settings_production.py`
+- `config/urls_production.py`
 - `pyproject.toml`
 - `uv.lock`
 - `package.json`
 - `package-lock.json`
 - `.gitignore`
+- `.dockerignore`
+- `Dockerfile`
+- `build.sh`
 - `README.md`
 
 ## 12. Current risks and implementation gaps
 
 | Risk/gap                   | Current fact                                               | Required handling                                                                                           |
 | -------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Permission provisioning    | Only the financial-report permission is assigned deterministically | Add the remaining tested group-permission matrix before feature authorization is considered complete |
-| Transaction races          | No posting/allocation/payment services exist yet           | Use the BRD/ERD targeted row-lock rules from the first implementation                                       |
-| Applied schema verification | All reviewed follow-up migrations were confirmed applied on Neon on 2026-08-29 | Continue using coordinated, additive migrations; never rewrite shared migration history |
-| Document numbers           | Models validate uniqueness but do not generate identifiers | Implement the approved UUID-derived service helper centrally                                                |
-| Dashboard truth            | Values are illustrative samples                            | Replace with permission-scoped queries; never present sample values as live data                            |
-| Navigation coverage        | Only catalog has a Phase 1 business route                  | Add routes incrementally within owning apps and preserve disabled-link behavior                             |
+| Operational-role defaults | Owner/Admin is deterministic, but the complete default Pharmacist/Inventory Manager/Accountant assignment is intentionally undecided | Keep the implemented permission matrix; do not silently invent defaults before the team lead decides |
+| Final technical integration | Domain implementations and focused tests exist, but `E1-T07` was deferred on 2026-09-03 | Run and record the representative end-to-end and role-access gate before claiming final technical readiness |
+| Applied schema verification | All repository migrations were shown as applied on the configured Neon database on 2026-09-03, with no model drift | Continue using coordinated, additive migrations; never rewrite shared migration history |
 | Upload security            | No media configuration exists                              | Keep prescription attachments disabled unless storage/access/retention are approved                         |
-| Development security       | Hard-coded development secret, `DEBUG=True`, empty hosts   | Move deployment values to environment configuration before production                                       |
+| Environment separation     | Local settings are intentionally development-oriented; production uses strict environment-driven settings | Keep Render/Docker on `config.settings_production` and never commit secrets |
 | Shared Neon coordination   | Baseline migrations now exist                              | Never rewrite applied migration history; coordinate and review every new migration                          |
 
 ## 13. Do Not Break checklist
