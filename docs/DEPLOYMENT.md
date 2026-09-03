@@ -61,6 +61,10 @@ temporary container named `pharmanex`, publishes container port 8000 as host
 port 8000, and injects `docker.env`. Open
 [http://localhost:8000](http://localhost:8000).
 
+Before Docker starts, the npm script prints the application and login URLs. The
+container then stays attached so its Gunicorn startup, access, and error logs
+remain visible in the same terminal.
+
 The underlying behavior is equivalent to building with `docker build --tag
 pharmanex:local .` and running with `docker run --rm --name pharmanex --publish
 8000:8000 --env-file docker.env pharmanex:local`.
@@ -92,6 +96,10 @@ incomplete local connection does not block a worker. WhiteNoise serves the
 compressed, content-hashed files created by `collectstatic`, including the
 compiled Tailwind stylesheet. Node.js, npm, and the frontend dependency tree are
 build-stage tools and are not included in the final runtime image.
+
+Gunicorn writes concise access logs to standard output and keeps error logs
+visible. Each request line includes the HTTP method, path (including any query
+string), response status, and response time in milliseconds.
 
 The non-secret values used by the Dockerfile while running `collectstatic` are
 build-only settings placeholders. They do not connect to a database and are not

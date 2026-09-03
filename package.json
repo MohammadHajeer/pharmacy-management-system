@@ -15,7 +15,7 @@
     "test": "uv run manage.py test",
     "shell": "uv run manage.py shell",
     "docker:build": "docker build --tag pharmanex:local .",
-    "docker:run": "docker run --rm --name pharmanex --publish 8000:8000 --env-file docker.env pharmanex:local",
+    "docker:run": "node -e \"console.log('PHARMANEX Docker\\nLogin: http://localhost:8000/accounts/login/\\n')\" && docker run --rm --name pharmanex --publish 8000:8000 --env-file docker.env pharmanex:local",
     "docker:stop": "docker stop pharmanex"
   },
   "repository": {
