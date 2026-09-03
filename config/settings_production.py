@@ -23,6 +23,22 @@ def _csv_environment_values(name):
     return [value.strip() for value in os.getenv(name, "").split(",") if value.strip()]
 
 
+def _boolean_environment_value(name, *, default):
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+
+    normalized_value = value.strip().lower()
+    if normalized_value in {"1", "true", "yes", "on"}:
+        return True
+    if normalized_value in {"0", "false", "no", "off"}:
+        return False
+
+    raise ImproperlyConfigured(
+        f"{name} must be a boolean value (true/false, yes/no, on/off, or 1/0)."
+    )
+
+
 SECRET_KEY = _required_environment_value("DJANGO_SECRET_KEY")
 DEBUG = False
 
@@ -91,9 +107,15 @@ MAILERS = {
 }
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = _boolean_environment_value(
+    "DJANGO_SECURE_SSL_REDIRECT", default=True
+)
+SESSION_COOKIE_SECURE = _boolean_environment_value(
+    "DJANGO_SESSION_COOKIE_SECURE", default=True
+)
+CSRF_COOKIE_SECURE = _boolean_environment_value(
+    "DJANGO_CSRF_COOKIE_SECURE", default=True
+)
 SECURE_HSTS_SECONDS = 31_536_000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True

@@ -13,7 +13,10 @@
     "migrate": "uv run manage.py migrate",
     "makemigrations": "uv run manage.py makemigrations",
     "test": "uv run manage.py test",
-    "shell": "uv run manage.py shell"
+    "shell": "uv run manage.py shell",
+    "docker:build": "docker build --tag pharmanex:local .",
+    "docker:run": "docker run --rm --name pharmanex --publish 8000:8000 --env-file docker.env pharmanex:local",
+    "docker:stop": "docker stop pharmanex"
   },
   "repository": {
     "type": "git",

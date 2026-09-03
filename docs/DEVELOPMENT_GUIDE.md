@@ -19,6 +19,24 @@ It first builds CSS and copies the installed Chart.js browser assets. For direct
 `runserver` use or deployment, run `npm run build` before serving/collecting static
 files. See [`DASHBOARD.md`](DASHBOARD.md) for dashboard definitions and asset loading.
 
+### Local production-style Docker testing
+
+The normal development loop remains `npm run dev`. Use Docker when you need to
+check the production settings, Gunicorn, WhiteNoise, built static files, and the
+Neon connection together:
+
+```bash
+npm run docker:build
+npm run docker:run
+```
+
+The run command reads the private, gitignored `docker.env` and publishes the
+container at [http://localhost:8000](http://localhost:8000). Use
+`npm run docker:stop` from another terminal to stop it. Docker does not create a
+PostgreSQL service, apply migrations, or seed development/demo data. See
+[`DEPLOYMENT.md`](DEPLOYMENT.md) for the required environment variables, the
+manual migration command, and the distinction between local Docker and Render.
+
 ## Project structure
 
 ```text
